@@ -89,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CefFileDialogMode.cs" />
+    <Compile Include="IFocusHandler.cs" />
     <Compile Include="IsBrowserInitializedChangedEventArgs.cs" />
     <Compile Include="CefTerminationStatus.cs" />
     <Compile Include="IDialogHandler.cs" />
@@ -109,9 +110,13 @@
     <Compile Include="Internals\BrowserProcessServiceHost.cs" />
     <Compile Include="Internals\WCFExtensions.cs" />
     <Compile Include="KeyType.cs" />
+    <Compile Include="ResourceHandler.cs" />
+    <Compile Include="Response.cs" />
+    <Compile Include="ResponseAction.cs" />
     <Compile Include="TransitionType.cs" />
     <Compile Include="NavStateChangedEventArgs.cs" />
     <Compile Include="ICompletionHandler.cs" />
+    <Compile Include="CefFocusSource.cs" />
     <Compile Include="Internals\BitmapInfo.cs" />
     <Compile Include="Internals\IBrowserProcess.cs" />
     <Compile Include="Internals\JavascriptMethod.cs" />
@@ -131,7 +136,7 @@
     <Compile Include="IWebPluginInfo.cs" />
     <Compile Include="IRequest.cs" />
     <Compile Include="IRequestHandler.cs" />
-    <Compile Include="IRequestResponse.cs" />
+    <Compile Include="IResponse.cs" />
     <Compile Include="ISchemeHandler.cs" />
     <Compile Include="ISchemeHandlerFactory.cs" />
     <Compile Include="ISchemeHandlerResponse.cs" />

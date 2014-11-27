@@ -51,12 +51,14 @@ namespace CefSharp.Wpf
         public IDownloadHandler DownloadHandler { get; set; }
         public ILifeSpanHandler LifeSpanHandler { get; set; }
         public IMenuHandler MenuHandler { get; set; }
+        public IFocusHandler FocusHandler { get; set; }
 
         public event EventHandler<ConsoleMessageEventArgs> ConsoleMessage;
         public event EventHandler<StatusMessageEventArgs> StatusMessage;
         public event EventHandler<FrameLoadStartEventArgs> FrameLoadStart;
         public event EventHandler<FrameLoadEndEventArgs> FrameLoadEnd;
         public event EventHandler<LoadErrorEventArgs> LoadError;
+        public event EventHandler<NavStateChangedEventArgs> NavStateChanged;
 
         /// <summary>
         /// Raised before each render cycle, and allows you to adjust the bitmap before it's rendered/applied
@@ -471,12 +473,12 @@ namespace CefSharp.Wpf
 
         private void CreateOffscreenBrowserWhenActualSizeChanged()
         {
-            if (browserCreated)
+            if (browserCreated || System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
             {
                 return;
             }
 
-            managedCefBrowserAdapter.CreateOffscreenBrowser(BrowserSettings ?? new BrowserSettings());
+            managedCefBrowserAdapter.CreateOffscreenBrowser(BrowserSettings ?? new BrowserSettings(), Address);
             browserCreated = true;
         }
 
@@ -683,6 +685,12 @@ namespace CefSharp.Wpf
 
                 RaiseCommandsCanExecuteChanged();
             });
+
+            var handler = NavStateChanged;
+            if (handler != null)
+            {
+                handler(this, new NavStateChangedEventArgs(canGoBack, canGoForward, canReload));
+            }
         }
 
         private void RaiseCommandsCanExecuteChanged()
@@ -856,40 +864,17 @@ namespace CefSharp.Wpf
             // For some reason, not all kinds of keypresses triggers the appropriate WM_ messages handled by our SourceHook, so
             // we have to handle these extra keys here. Hooking the Tab key like this makes the tab focusing in essence work like
             // KeyboardNavigation.TabNavigation="Cycle"; you will never be able to Tab out of the web browser control.
+            var modifiers = GetModifiers(e);
+            var sendKey = KeysToSendtoBrowser.Contains(e.Key);
 
-            if (KeysToSendtoBrowser.Contains(e.Key))
+            if (sendKey || modifiers > 0)
             {
                 var message = (int)(e.IsDown ? WM.KEYDOWN : WM.KEYUP);
                 var virtualKey = KeyInterop.VirtualKeyFromKey(e.Key);
 
-                var modifiers = GetModifiers(e);
                 managedCefBrowserAdapter.SendKeyEvent(message, virtualKey, modifiers);
-                e.Handled = true;
-            }
 
-            if (e.IsDown && e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-            {
-                switch (e.Key)
-                {
-                    case Key.X:
-                        managedCefBrowserAdapter.Cut();
-                        break;
-                    case Key.C:
-                        managedCefBrowserAdapter.Copy();
-                        break;
-                    case Key.V:
-                        managedCefBrowserAdapter.Paste();
-                        break;
-                    case Key.A:
-                        managedCefBrowserAdapter.SelectAll();
-                        break;
-                    case Key.Z:
-                        managedCefBrowserAdapter.Undo();
-                        break;
-                    case Key.Y:
-                        managedCefBrowserAdapter.Redo();
-                        break;
-                }
+                e.Handled = sendKey;
             }
         }
 
@@ -917,6 +902,11 @@ namespace CefSharp.Wpf
                     deltaY: e.Delta
                     );
             }
+        }
+
+        public void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY)
+        {
+            managedCefBrowserAdapter.OnMouseWheel(x, y, deltaX, deltaY);
         }
 
         protected void PopupMouseEnter(object sender, MouseEventArgs e)
@@ -998,15 +988,19 @@ namespace CefSharp.Wpf
                 throw new InvalidOperationException("Cef::Initialize() failed");
             }
 
-            // TODO: Consider making the delay here configurable.
-            tooltipTimer = new DispatcherTimer(
-                TimeSpan.FromSeconds(0.5),
-                DispatcherPriority.Render,
-                OnTooltipTimerTick,
-                Dispatcher
-                );
+            //Added null check -> binding-triggered changes of Address will lead to a nullref after Dispose has been called.
+            if (managedCefBrowserAdapter != null)
+            {
+                // TODO: Consider making the delay here configurable.
+                tooltipTimer = new DispatcherTimer(
+                    TimeSpan.FromSeconds(0.5),
+                    DispatcherPriority.Render,
+                    OnTooltipTimerTick,
+                    Dispatcher
+                    );
 
-            managedCefBrowserAdapter.LoadUrl(url);
+                managedCefBrowserAdapter.LoadUrl(url);
+            }
         }
 
         public void LoadHtml(string html, string url)
@@ -1140,11 +1134,6 @@ namespace CefSharp.Wpf
             {
                 handler(this, new FrameLoadEndEventArgs(url, isMainFrame, httpStatusCode));
             }
-        }
-
-        void IWebBrowserInternal.OnTakeFocus(bool next)
-        {
-            throw new NotImplementedException();
         }
 
         void IWebBrowserInternal.OnConsoleMessage(string message, string source, int line)

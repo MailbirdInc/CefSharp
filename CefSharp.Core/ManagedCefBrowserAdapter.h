@@ -18,12 +18,11 @@ using namespace System::Threading::Tasks;
 
 namespace CefSharp
 {
-    private ref class ManagedCefBrowserAdapter : public DisposableResource
+    public ref class ManagedCefBrowserAdapter : public DisposableResource
     {
         MCefRefPtr<RenderClientAdapter> _renderClientAdapter;
         BrowserProcessServiceHost^ _browserProcessServiceHost;
         IWebBrowserInternal^ _webBrowserInternal;
-        String^ _address;
         JavascriptObjectRepository^ _javaScriptObjectRepository;
         
     protected:
@@ -39,7 +38,6 @@ namespace CefSharp
             }
 
             _webBrowserInternal = nullptr;
-            _address = nullptr;
             _javaScriptObjectRepository = nullptr;
 
             DisposableResource::DoDispose(isDisposing);
@@ -53,12 +51,12 @@ namespace CefSharp
             _javaScriptObjectRepository = gcnew JavascriptObjectRepository();
         }
 
-        void CreateOffscreenBrowser(BrowserSettings^ browserSettings)
+        void CreateOffscreenBrowser(BrowserSettings^ browserSettings, String^ address)
         {
             HWND hwnd = HWND();
             CefWindowInfo window;
             window.SetAsWindowless(hwnd, TRUE);
-            CefString addressNative = StringUtils::ToNative(_address);
+            CefString addressNative = StringUtils::ToNative(address);
 
             if (!CefBrowserHost::CreateBrowser(window, _renderClientAdapter.get(), addressNative,
                 *(CefBrowserSettings*) browserSettings->_internalBrowserSettings, NULL))
@@ -79,7 +77,6 @@ namespace CefSharp
 
         void LoadUrl(String^ address)
         {
-            _address = address;
             auto cefFrame = _renderClientAdapter->TryGetCefMainFrame();
 
             if (cefFrame != nullptr)
@@ -96,13 +93,6 @@ namespace CefSharp
             if(_webBrowserInternal != nullptr)
             {
                 _webBrowserInternal->OnInitialized();
-
-                auto address = _address;
-
-                if (address != nullptr)
-                {
-                    LoadUrl(address);
-                }
             }
         }
 
@@ -481,16 +471,10 @@ namespace CefSharp
                 *(CefBrowserSettings*)browserSettings->_internalBrowserSettings, NULL);
         }
 
-        void OnPaint(IntPtr^ sourceHandle)
+        void Resize(int width, int height)
         {
-            HWND hWnd = static_cast<HWND>(sourceHandle->ToPointer());
-            RECT rect;
-            GetClientRect(hWnd, &rect);
-            HDWP hdwp = BeginDeferWindowPos(1);
-
             HWND browserHwnd = _renderClientAdapter->GetBrowserHwnd();
-            hdwp = DeferWindowPos(hdwp, browserHwnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
-            EndDeferWindowPos(hdwp);
+            SetWindowPos(browserHwnd, NULL, 0, 0, width, height, SWP_NOZORDER);
         }
 
         void RegisterJsObject(String^ name, Object^ object)

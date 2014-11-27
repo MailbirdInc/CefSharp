@@ -8,6 +8,7 @@ using TaskExtensions = CefSharp.Internals.TaskExtensions;
 
 namespace CefSharp.BrowserSubprocess
 {
+    [CallbackBehavior(ConcurrencyMode = ConcurrencyMode.Multiple)]
     public class CefRenderProcess : CefSubProcess, IRenderProcess
     {
         private int? parentBrowserId;
@@ -58,30 +59,26 @@ namespace CefSharp.BrowserSubprocess
 
             channelFactory.Open();
 
-            var proxy = channelFactory.CreateChannel();
+            var browserProcess = channelFactory.CreateChannel();
+            var clientChannel = ((IClientChannel)browserProcess);
 
-            var clientChannel = ((IClientChannel)proxy);
-            
             try
             {
                 clientChannel.Open();
+                browserProcess.Connect();
 
-                proxy.Connect();
-
-                var javascriptObject = proxy.GetRegisteredJavascriptObjects();
+                var javascriptObject = browserProcess.GetRegisteredJavascriptObjects();
 
                 if (javascriptObject.MemberObjects.Count > 0)
                 {
                     browser.JavascriptRootObject = javascriptObject;
-                    browser.CreateBrowserProxyDelegate = channelFactory.CreateChannel;
                 }
 
                 browser.ChannelFactory = channelFactory;
-
+                browser.BrowserProcess = browserProcess;
             }
             catch(Exception)
             {
-
             }
         }
 
@@ -96,8 +93,15 @@ namespace CefSharp.BrowserSubprocess
                 channelFactory.Close();
             }
 
+            var clientChannel = ((IClientChannel)browser.BrowserProcess);
+
+            if (clientChannel.State == CommunicationState.Opened)
+            {
+                clientChannel.Close();
+            }
+
             browser.ChannelFactory = null;
-            browser.CreateBrowserProxyDelegate = null;
+            browser.BrowserProcess = null;
             browser.JavascriptRootObject = null;
         }
 

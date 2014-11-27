@@ -40,6 +40,13 @@ namespace CefSharp
         event EventHandler<LoadErrorEventArgs> LoadError;
 
         /// <summary>
+        /// Event handler that will get called when the Navigation state has changed (Maps to OnLoadingStateChange in Cef).
+        /// This event will be fired twice. Once when loading is initiated either programmatically or
+        /// by user action, and once when loading is terminated due to completion, cancellation of failure. 
+        /// </summary>
+        event EventHandler<NavStateChangedEventArgs> NavStateChanged;
+
+        /// <summary>
         /// Loads the specified URL.
         /// </summary>
         /// <param name="url">The URL to be loaded.</param>
@@ -109,6 +116,11 @@ namespace CefSharp
         /// Implement <see cref="IMenuHandler"/> and assign to handle events related to the browser context menu
         /// </summary>
         IMenuHandler MenuHandler { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IFocusHandler"/> and assign to handle events related to the browser component's focus
+        /// </summary>
+        IFocusHandler FocusHandler { get; set; }
 
         /// <summary>
         /// A flag that indicates whether the WebBrowser is initialized (true) or not (false).
@@ -270,9 +282,14 @@ namespace CefSharp
         /// </summary>
         /// <param name="word">The new word that will be added to the dictionary.</param>
         void AddWordToDictionary(string word);
-
-
         
-
+        /// <summary>
+        /// Send a mouse wheel event to the browser.
+        /// </summary>
+        /// <param name="x">X-Axis coordinate relative to the upper-left corner of the view.</param>
+        /// <param name="y">Y-Axis coordinate relative to the upper-left corner of the view.</param>
+        /// <param name="deltaX">Movement delta for X direction.</param>
+        /// <param name="deltaY">movement delta for Y direction.</param>
+        void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY);
     }
 }

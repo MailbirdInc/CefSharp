@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CefSharp.Internals;
+using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms
 {
@@ -26,6 +27,7 @@ namespace CefSharp.WinForms
         public IDownloadHandler DownloadHandler { get; set; }
         public ILifeSpanHandler LifeSpanHandler { get; set; }
         public IMenuHandler MenuHandler { get; set; }
+        public IFocusHandler FocusHandler { get; set; }
 
         public bool CanGoForward { get; private set; }
         public bool CanGoBack { get; private set; }
@@ -53,19 +55,14 @@ namespace CefSharp.WinForms
             Cef.AddDisposable(this);
             Address = address;
 
-            Paint += OnPaint;
-
-            //Redraw on Resize so Cef is notified and updates accordingly
-            SetStyle(ControlStyles.ResizeRedraw, true);
-            //Fix for #522 - Enable DoubleBuffering
-            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
-
             Dock = DockStyle.Fill;
+
+            FocusHandler = new DefaultFocusHandler(this);
         }
 
         protected override void Dispose(bool disposing)
         {
-            Paint -= OnPaint;
+            FocusHandler = null;
 
             Cef.RemoveDisposable(this);
 
@@ -83,6 +80,8 @@ namespace CefSharp.WinForms
         void IWebBrowserInternal.OnInitialized()
         {
             IsBrowserInitialized = true;
+
+            ResizeBrowser();
 
             var handler = IsBrowserInitializedChanged;
 
@@ -120,6 +119,11 @@ namespace CefSharp.WinForms
         public Task<JavascriptResponse> EvaluateScriptAsync(string script, TimeSpan? timeout)
         {
             return managedCefBrowserAdapter.EvaluateScriptAsync(script, timeout);
+        }
+
+        public void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY)
+        {
+            managedCefBrowserAdapter.OnMouseWheel(x, y, deltaX, deltaY);
         }
 
         public event EventHandler<LoadErrorEventArgs> LoadError;
@@ -208,11 +212,6 @@ namespace CefSharp.WinForms
             {
                 handler(this, new FrameLoadEndEventArgs(url, isMainFrame, httpStatusCode));
             }
-        }
-
-        void IWebBrowserInternal.OnTakeFocus(bool next)
-        {
-            SelectNextControl(this, next, true, true, true);
         }
 
         void IWebBrowserInternal.OnConsoleMessage(string message, string source, int line)
@@ -346,12 +345,18 @@ namespace CefSharp.WinForms
             return taskStringVisitor.Task;
         }
 
-        private void OnPaint(object sender, PaintEventArgs e)
+        protected override void OnSizeChanged(EventArgs e)
         {
-            // Size is 0x0 when we are on a modeless Form which is minimized.
-            if (!Size.IsEmpty && managedCefBrowserAdapter != null)
+            base.OnSizeChanged(e);
+            
+            ResizeBrowser();
+        }
+
+        private void ResizeBrowser()
+        {
+            if (IsBrowserInitialized && managedCefBrowserAdapter != null)
             {
-                managedCefBrowserAdapter.OnPaint(Handle);
+                managedCefBrowserAdapter.Resize(Width, Height);
             }
         }
 
