@@ -6,6 +6,7 @@ using System;
 using System.Windows.Controls;
 using System.Windows.Input;
 using CefSharp.Example;
+using CefSharp.Wpf.Example.Handlers;
 
 namespace CefSharp.Wpf.Example.Views
 {
@@ -19,6 +20,7 @@ namespace CefSharp.Wpf.Example.Views
             browser.RegisterJsObject("bound", new BoundObject());
 
             browser.MenuHandler = new Handlers.MenuHandler();
+            browser.FocusHandler = new DefaultFocusHandler(urlTextBox, urlTextBox);
         }
 
         private void OnTextBoxGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
