@@ -80,34 +80,34 @@ namespace CefSharp
         }
 
         ~ManagedCefBrowserAdapter()
-        {
-            // Release the MCefRefPtr<ClientAdapter> reference
-            // before calling _browserWrapper->CloseBrowser(true)
-            this->!ManagedCefBrowserAdapter();
-            if (_browserWrapper != nullptr)
-            {
-                _browserWrapper->CloseBrowser(true);
+        {		
+			_isDisposed = true;
+			// Release the MCefRefPtr<ClientAdapter> reference
+			// before calling _browserWrapper->CloseBrowser(true)
+			this->!ManagedCefBrowserAdapter();
+			if (_browserWrapper != nullptr)
+			{
+				_browserWrapper->CloseBrowser(true);
 
-                delete _browserWrapper;
-                _browserWrapper = nullptr;
-            }
+				delete _browserWrapper;
+				_browserWrapper = nullptr;
+			}
 
-            if (_methodRunnerQueue != nullptr)
-            {
-                _methodRunnerQueue->MethodInvocationComplete -= gcnew EventHandler<MethodInvocationCompleteArgs^>(this, &ManagedCefBrowserAdapter::MethodInvocationComplete);
-                _methodRunnerQueue->Stop();
-                _methodRunnerQueue = nullptr;
-            }
+			if (_methodRunnerQueue != nullptr)
+			{
+				_methodRunnerQueue->MethodInvocationComplete -= gcnew EventHandler<MethodInvocationCompleteArgs^>(this, &ManagedCefBrowserAdapter::MethodInvocationComplete);
+				_methodRunnerQueue->Stop();
+				_methodRunnerQueue = nullptr;
+			}
 
-            if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
-            {
-                _browserProcessServiceHost->Close();
-                _browserProcessServiceHost = nullptr;
-            }
+			if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
+			{
+				_browserProcessServiceHost->Close();
+				_browserProcessServiceHost = nullptr;
+			}
 
-            _webBrowserInternal = nullptr;
-            _javaScriptObjectRepository = nullptr;
-            _isDisposed = true;
+			_webBrowserInternal = nullptr;
+			_javaScriptObjectRepository = nullptr;
         }
 
         virtual property bool IsDisposed

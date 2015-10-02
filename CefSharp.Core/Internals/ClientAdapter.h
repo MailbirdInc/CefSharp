@@ -42,13 +42,13 @@ namespace CefSharp
             //contains in-progress eval script tasks
             gcroot<PendingTaskRepository<JavascriptResponse^>^> _pendingTaskRepository;
             //contains js callback factories for each browser
-
-            void ThrowUnknownPopupBrowser(String^ context)
+			
+			void ThrowUnknownPopupBrowser(String^ context)
             {
                 throw gcnew ApplicationException(String::Format("{0} couldn't find IBrowser entry! Please contact CefSharp development.", context));
             }
 
-            IBrowser^ GetBrowserWrapper(int browserId, bool isPopup);
+            IBrowser^ GetBrowserWrapper(int browserId, bool isPopup, bool triggerException);
 
         public:
             ClientAdapter(IWebBrowserInternal^ browserControl, IBrowserAdapter^ browserAdapter) :
@@ -57,7 +57,7 @@ namespace CefSharp
                 _pendingTaskRepository(gcnew PendingTaskRepository<JavascriptResponse^>()),
                 _browserAdapter(browserAdapter)
             {
-                
+
             }
 
             ~ClientAdapter()
@@ -76,7 +76,7 @@ namespace CefSharp
             }
 
             HWND GetBrowserHwnd() { return _browserHwnd; }
-            CefRefPtr<CefBrowser> GetCefBrowser() { return _cefBrowser; }
+			CefRefPtr<CefBrowser> GetCefBrowser() { return _cefBrowser; }
             PendingTaskRepository<JavascriptResponse^>^ GetPendingTaskRepository();
             void CloseAllPopups(bool forceClose);
             void MethodInvocationComplete(MethodInvocationResult^ result);

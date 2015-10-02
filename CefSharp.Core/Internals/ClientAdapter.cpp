@@ -33,7 +33,7 @@ namespace CefSharp
 {
     namespace Internals
     {
-        IBrowser^ ClientAdapter::GetBrowserWrapper(int browserId, bool isPopup)
+		IBrowser^ ClientAdapter::GetBrowserWrapper(int browserId, bool isPopup, bool triggerException = true)
         {
             if (_browserControl->HasParent)
             {
@@ -48,10 +48,13 @@ namespace CefSharp
                     return browserWrapper;
                 }
 
+				if (!triggerException)
+					return nullptr;
+
                 auto stackFrame = gcnew StackFrame(1);
                 auto callingMethodName = stackFrame->GetMethod()->Name;
-
-                ThrowUnknownPopupBrowser(gcnew String(L"ClientAdapter::" + callingMethodName));
+				
+				ThrowUnknownPopupBrowser(gcnew String(L"ClientAdapter::" + callingMethodName));
             }
 
             return _browserAdapter->GetBrowser();
@@ -504,19 +507,19 @@ namespace CefSharp
 
         void ClientAdapter::OnRenderViewReady(CefRefPtr<CefBrowser> browser)
         {
-            if (!Object::ReferenceEquals(_browserAdapter, nullptr))
+			if (!Object::ReferenceEquals(_browserAdapter, nullptr) && !_browserAdapter->IsDisposed && !browser->IsPopup())
             {
-                auto objectRepository = _browserAdapter->JavascriptObjectRepository;
+				auto objectRepository = _browserAdapter->JavascriptObjectRepository;
 
-                if (objectRepository->HasBoundObjects)
-                {
-                    //transmit async bound objects
-                    auto jsRootObjectMessage = CefProcessMessage::Create(kJavascriptRootObjectRequest);
-                    auto argList = jsRootObjectMessage->GetArgumentList();
-                    SerializeJsObject(objectRepository->AsyncRootObject, argList, 0);
-                    SerializeJsObject(objectRepository->RootObject, argList, 1);
-                    browser->SendProcessMessage(CefProcessId::PID_RENDERER, jsRootObjectMessage);
-                }
+				if (objectRepository->HasBoundObjects)
+				{
+					//transmit async bound objects
+					auto jsRootObjectMessage = CefProcessMessage::Create(kJavascriptRootObjectRequest);
+					auto argList = jsRootObjectMessage->GetArgumentList();
+					SerializeJsObject(objectRepository->AsyncRootObject, argList, 0);
+					SerializeJsObject(objectRepository->RootObject, argList, 1);
+					browser->SendProcessMessage(CefProcessId::PID_RENDERER, jsRootObjectMessage);
+				}
             }
 
             auto handler = _browserControl->RequestHandler;
@@ -623,7 +626,11 @@ namespace CefSharp
             }            
 
             auto frameWrapper = gcnew CefFrameWrapper(frame);
-            auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+            auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup(), false);
+			if (browserWrapper == nullptr)
+			{
+				return cef_return_value_t::RV_CONTINUE;
+			}
             auto requestWrapper = gcnew CefRequestWrapper(request);
             auto requestCallback = gcnew CefRequestCallbackWrapper(callback, frameWrapper, requestWrapper);
 
@@ -928,9 +935,9 @@ namespace CefSharp
 
                 handled = true;
             }
-            else if (name == kJavascriptAsyncMethodCallRequest)
+			else if (name == kJavascriptAsyncMethodCallRequest && !_browserAdapter->IsDisposed)
             {
-                if (!browser->IsPopup())
+				if (!browser->IsPopup())
                 {
                     auto objectId = GetInt64(argList, 0);
                     auto callbackId = GetInt64(argList, 1);
@@ -942,9 +949,8 @@ namespace CefSharp
                         methodInvocation->Parameters->Add(DeserializeObject(arguments, i, callbackFactory));
                     }
                     
-                    _browserAdapter->MethodRunnerQueue->Enqueue(methodInvocation);
+					_browserAdapter->MethodRunnerQueue->Enqueue(methodInvocation);
                 }
-
 
                 handled = true;
             }
