@@ -3,7 +3,7 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "vs2012",
     [Parameter(Position = 1)]
-    [string] $Version = "43.0.0-MB1",
+    [string] $Version = "43.0.0-MB3",
     [Parameter(Position = 2)]
     [string] $AssemblyVersion = "43.0.0",
     [Parameter(Position = 3)]
