@@ -188,5 +188,19 @@ namespace CefSharp
             }
             _cefExtensions->Add(extension);
         }
+
+		/// <summary>
+		/// The location where user data such as spell checking dictionary files will
+		/// be stored on disk. If empty then the default platform-specific user data
+		/// directory will be used ("~/.cef_user_data" directory on Linux,
+		/// "~/Library/Application Support/CEF/User Data" directory on Mac OS X,
+		/// "Local Settings\Application Data\CEF\User Data" directory under the user
+		/// profile directory on Windows).
+		/// </summary>
+		property String^ UserDataPath
+		{
+			String^ get() { return StringUtils::ToClr(_cefSettings->user_data_path); }
+			void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->user_data_path, value); }
+		}
     };
 }
