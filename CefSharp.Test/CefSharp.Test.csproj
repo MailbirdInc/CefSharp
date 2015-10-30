@@ -20,6 +20,8 @@
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>14231c1c</NuGetPackageImportStamp>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -136,8 +138,15 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <Import Project="$(SolutionDir)\CefSharp.props" />
-  <Import Project="$(SolutionDir)\CefSharp.Native.props" />
+  <Import Project="..\CefSharp.props" />
+  <Import Project="..\CefSharp.Native.props" />
   <Import Project="..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets')" />
   <Import Project="..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets')" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
 </Project>
