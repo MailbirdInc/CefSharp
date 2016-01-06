@@ -62,27 +62,30 @@ namespace CefSharp
         /// <summary>
         /// Retrieve this frame's HTML source as a string sent to the specified visitor.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        /// a <see cref="Task{String}"/> that when executed returns this frame's HTML source as a string.
+        /// </returns>
         Task<string> GetSourceAsync();
 
         /// <summary>
         /// Retrieve this frame's display text as a string sent to the specified visitor.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        /// a <see cref="Task{String}"/> that when executed returns the frame's display text as a string.
+        /// </returns>
         Task<string> GetTextAsync();
 
-        // TODO: Expose a public constructor to CefRequestWrapper maybe?
-        //
-        // Load the request represented by the |request| object.
-        //
-        /*--cef()--*/
-        //virtual void LoadRequest(CefRequestWrapper^ request) = 0;
+        /// <summary>
+        /// Load the custom request.
+        /// </summary>
+        /// <param name="request">request to be loaded in the frame</param>
+        void LoadRequest(IRequest request);
 
         /// <summary>
         /// Load the specified url.
         /// </summary>
         /// <param name="url">url to be loaded in the frame</param>
-        void LoadUrl(String url);
+        void LoadUrl(string url);
 
         /// <summary>
         /// Load the contents of html with the specified dummy url.
@@ -90,7 +93,7 @@ namespace CefSharp
         /// <param name="html">html to be loaded</param>
         /// <param name="url"> should have a standard scheme (for example, http scheme) or behaviors like 
         /// link clicks and web security restrictions may not behave as expected.</param>
-        void LoadStringForUrl(String html, String url);
+        void LoadStringForUrl(string html, string url);
 
         /// <summary>
         /// Execute a string of JavaScript code in this frame.
@@ -108,7 +111,7 @@ namespace CefSharp
         /// <param name="script">The Javascript code that should be executed.</param>
         /// <param name="timeout">The timeout after which the Javascript code execution should be aborted.</param>
         /// <returns>A Task that can be awaited to perform the script execution</returns>
-        Task<JavascriptResponse> EvaluateScriptAsync(string script, TimeSpan? timeout);
+        Task<JavascriptResponse> EvaluateScriptAsync(string script, TimeSpan? timeout = null);
 
         /// <summary>
         /// Returns true if this is the main (top-level) frame.
@@ -148,5 +151,17 @@ namespace CefSharp
         /// Returns the browser that this frame belongs to.
         /// </summary>
         IBrowser Browser { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the frame has been disposed of.
+        /// </summary>
+        bool IsDisposed { get; }
+
+        /// <summary>
+        /// Create a custom request for use with <see cref="LoadRequest"/>
+        /// </summary>
+        /// <param name="initializePostData">Initialize the PostData object when creating this request</param>
+        /// <returns>A new instance of the request</returns>
+        IRequest CreateRequest(bool initializePostData = true);
     }
 }

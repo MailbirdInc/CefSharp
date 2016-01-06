@@ -10,5 +10,15 @@ namespace CefSharp
     public interface IJavascriptCallback : IDisposable
     {
         Task<JavascriptResponse> ExecuteAsync(params object[] parms);
+
+        /// <summary>
+        /// Check to see if the underlying resource are still available to execute the callback
+        /// </summary>
+        bool CanExecute { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the callback has been disposed of.
+        /// </summary>
+        bool IsDisposed { get; }
     }
 }

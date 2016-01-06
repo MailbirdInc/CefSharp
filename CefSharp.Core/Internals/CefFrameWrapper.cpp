@@ -3,9 +3,13 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
+#include <msclr/lock.h>
 
-#include "Internals/CefSharpBrowserWrapper.h"
-#include "Internals/CefFrameWrapper.h"
+#include "Internals\CefSharpBrowserWrapper.h"
+#include "Internals\CefRequestWrapper.h"
+#include "Internals\CefFrameWrapper.h"
+#include "Internals\StringVisitor.h"
+#include "Internals\ClientAdapter.h"
 
 ///
 // True if this object is currently attached to a valid frame.
@@ -130,11 +134,12 @@ Task<String^>^ CefFrameWrapper::GetTextAsync()
 // Load the request represented by the |request| object.
 ///
 /*--cef()--*/
-//virtual void LoadRequest(CefRequestWrapper^ request)
-//{
-//    ThrowIfDisposed();
-//    _frame->LoadRequest(request->GetCefRequest().get());
-//}
+void CefFrameWrapper::LoadRequest(IRequest^ request)
+{
+    ThrowIfDisposed();
+    auto requestWrapper = (CefRequestWrapper^)request;
+    _frame->LoadRequest(requestWrapper);
+}
 
 ///
 // Load the specified |url|.
@@ -239,7 +244,7 @@ IFrame^ CefFrameWrapper::Parent::get()
     if (_parentFrame != nullptr)
     {
         // Be paranoid about creating the cached IBrowser.
-        lock sync(_syncRoot);
+        msclr::lock sync(_syncRoot);
 
         auto parent = _frame->GetParent();
         if (parent != nullptr && _parentFrame != nullptr)
@@ -281,7 +286,7 @@ IBrowser^ CefFrameWrapper::Browser::get()
     }
 
     // Be paranoid about creating the cached IBrowser.
-    lock sync(_syncRoot);
+    msclr::lock sync(_syncRoot);
 
     if (_owningBrowser != nullptr)
     {
@@ -292,10 +297,14 @@ IBrowser^ CefFrameWrapper::Browser::get()
     return _owningBrowser;
 }
 
-void CefFrameWrapper::ThrowIfDisposed()
+IRequest^ CefFrameWrapper::CreateRequest(bool initializePostData)
 {
-    if (_disposed)
+    auto request = CefRequest::Create();
+
+    if (initializePostData)
     {
-        throw gcnew ObjectDisposedException(gcnew String(L"This CefSharp IFrame instance has been disposed!"));
+        request->SetPostData(CefPostData::Create());
     }
+
+    return gcnew CefRequestWrapper(request);
 }

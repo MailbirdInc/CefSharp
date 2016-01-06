@@ -4,12 +4,18 @@
 
 #pragma once
 
-#include "include/internal/cef_ptr.h"
-#include "include/cef_download_item.h"
-#include "Internals/StringUtils.h"
+#include "Stdafx.h"
 
-using namespace System;
-using namespace CefSharp;
+#include "include/internal/cef_ptr.h"
+#include "include\cef_download_item.h"
+#include "include\cef_response.h"
+#include "include\cef_web_plugin.h"
+
+#include "Serialization\ObjectsSerialization.h"
+#include "Serialization\V8Serialization.h"
+
+using namespace System::Collections::Generic;
+using namespace CefSharp::Internals::Serialization;
 
 namespace CefSharp
 {
@@ -86,6 +92,139 @@ namespace CefSharp
                 managedWebPluginInfo->Version = StringUtils::ToClr(webPluginInfo->GetVersion());
 
                 return managedWebPluginInfo;
+            }
+
+            static IList<DraggableRegion>^ FromNative(const std::vector<CefDraggableRegion>& regions)
+            {
+                if (regions.size() == 0)
+                {
+                    return nullptr;
+                }
+
+                auto list = gcnew List<DraggableRegion>();
+
+                for each (CefDraggableRegion region in regions)
+                {
+                    list->Add(DraggableRegion(region.bounds.width, region.bounds.height, region.bounds.x, region.bounds.y, region.draggable == 1));
+                }
+                
+                return list;
+            }
+
+            static CefRefPtr<CefValue> ToNative(Object^ value)
+            {
+                auto cefValue = CefValue::Create();
+
+                if (value == nullptr)
+                {
+                    cefValue->SetNull();
+
+                    return cefValue;
+                }
+
+                auto type = value->GetType();
+                Type^ underlyingType = Nullable::GetUnderlyingType(type);
+                if (underlyingType != nullptr)
+                {
+                    type = underlyingType;
+                }
+
+                if (type == Boolean::typeid)
+                {
+                    cefValue->SetBool(safe_cast<bool>(value));
+                }
+                else if (type == Int32::typeid)
+                {
+                    cefValue->SetInt(safe_cast<int>(value));
+                }
+                else if (type == String::typeid)
+                {
+                    cefValue->SetString(StringUtils::ToNative(safe_cast<String^>(value)));
+                }
+                else if (type == Double::typeid)
+                {
+                    cefValue->SetDouble(safe_cast<double>(value));
+                }
+                else if (type == Decimal::typeid)
+                {
+                    cefValue->SetDouble(Convert::ToDouble(value));
+                }
+                else if (type == Dictionary<String^, Object^>::typeid)
+                {
+                    auto dictionary = safe_cast<Dictionary<String^, Object^>^>(value);
+                    auto cefDictionary = CefDictionaryValue::Create();
+
+                    for each (KeyValuePair<String^, Object^>^ entry in dictionary)
+                    {
+                        auto key = StringUtils::ToNative(entry->Key);
+                        auto value = entry->Value;
+                        SerializeV8Object(cefDictionary, key, value);
+                    }
+
+                    cefValue->SetDictionary(cefDictionary);
+                }
+            
+                return cefValue;
+            }
+
+            static Object^ FromNative(const CefRefPtr<CefValue>& value)
+            {
+                if (!value.get())
+                {
+                    return nullptr;
+                }
+
+                auto type = value->GetType();
+
+                if (type == CefValueType::VTYPE_BOOL)
+                {
+                    return value->GetBool();
+                }
+
+                if (type == CefValueType::VTYPE_DOUBLE)
+                {
+                    return value->GetDouble();
+                }
+
+                if (type == CefValueType::VTYPE_INT)
+                {
+                    return value->GetInt();
+                }
+
+                if (type == CefValueType::VTYPE_STRING)
+                {
+                    return StringUtils::ToClr(value->GetString());
+                }
+
+                if (type == CefValueType::VTYPE_DICTIONARY)
+                {
+                    return FromNative(value->GetDictionary());
+                }
+                
+                return nullptr;
+            }
+
+            static IDictionary<String^, Object^>^ FromNative(const CefRefPtr<CefDictionaryValue>& dictionary)
+            {
+                if (!dictionary.get() || dictionary->GetSize() == 0)
+                {
+                    return nullptr;
+                }
+
+                auto dict = gcnew Dictionary<String^, Object^>();
+
+                CefDictionaryValue::KeyList keys;
+                dictionary->GetKeys(keys);
+
+                for (auto i = 0; i < keys.size(); i++)
+                {
+                    auto key = StringUtils::ToClr(keys[i]);
+                    auto value = DeserializeObject(dictionary, keys[i], nullptr);
+
+                    dict->Add(key, value);
+                }
+
+                return dict;
             }
         };
     }

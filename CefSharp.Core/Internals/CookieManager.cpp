@@ -5,6 +5,11 @@
 #include "Stdafx.h"
 #include "CookieManager.h"
 
+#include "CookieAsyncWrapper.h"
+#include "CookieVisitor.h"
+#include "Internals\CefCompletionCallbackAdapter.h"
+#include "Cef.h"
+
 namespace CefSharp
 {
     namespace Internals
@@ -56,7 +61,7 @@ namespace CefSharp
             return _cookieManager->SetStoragePath(StringUtils::ToNative(path), persistSessionCookies, NULL);
         }
 
-        void CookieManager::SetSupportedSchemes(... array<String^>^ schemes)
+        void CookieManager::SetSupportedSchemes(... cli::array<String^>^ schemes)
         {
             ThrowIfDisposed();
 
@@ -81,13 +86,21 @@ namespace CefSharp
             return _cookieManager->VisitUrlCookies(StringUtils::ToNative(url), includeHttpOnly, cookieVisitor);
         }
 
-        bool CookieManager::FlushStore(ICompletionHandler^ handler)
+        Task<bool>^ CookieManager::FlushStoreAsync()
         {
             ThrowIfDisposed();
 
-            CefRefPtr<CefCompletionCallback> wrapper = new CompletionHandler(handler);
+            auto handler = gcnew TaskCompletionHandler();
 
-            return _cookieManager->FlushStore(wrapper);
+            CefRefPtr<CefCompletionCallback> wrapper = new CefCompletionCallbackAdapter(handler);
+
+            if (_cookieManager->FlushStore(wrapper))
+            {
+                return handler->Task;
+            }
+
+            //returns false if cookies cannot be accessed.
+            return TaskExtensions::FromResult(false);
         }
     }
 }

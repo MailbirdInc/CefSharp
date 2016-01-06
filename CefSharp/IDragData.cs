@@ -2,12 +2,13 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace CefSharp
 {
-    public interface IDragData
+    public interface IDragData : IDisposable
     {
         /// <summary>
         /// Returns true if this object is read-only.
@@ -84,10 +85,15 @@ namespace CefSharp
         void ResetFileContents();
 
         /// <summary>
-        /// Gets the Contents of the File as a <see cref="Stream"/>
+        /// Gets the contents of the File as a <see cref="Stream"/>
         /// For a suggested filename check the <see cref="FileName"/> property
         /// </summary>
-        /// <returns></returns>
+        /// <returns>the contents of the file</returns>
         Stream GetFileContents();
+
+        /// <summary>
+        /// Gets a value indicating whether the object has been disposed of.
+        /// </summary>
+        bool IsDisposed { get; }
     }
 }

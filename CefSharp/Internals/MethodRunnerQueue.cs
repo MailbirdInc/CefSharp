@@ -112,7 +112,9 @@ namespace CefSharp.Internals
 
             return new MethodInvocationResult
             {
+                BrowserId = methodInvocation.BrowserId,
                 CallbackId = methodInvocation.CallbackId,
+                FrameId = methodInvocation.FrameId,
                 Message = exception,
                 Result = result,
                 Success = success

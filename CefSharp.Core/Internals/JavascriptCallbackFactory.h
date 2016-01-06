@@ -4,8 +4,6 @@
 
 #pragma once
 
-using namespace System;
-
 namespace CefSharp
 {
     namespace Internals
@@ -20,7 +18,7 @@ namespace CefSharp
             {
             }
 
-            property WeakReference^ BrowserWrapper;
+            property WeakReference^ BrowserAdapter;
 
             virtual IJavascriptCallback^ Create(JavascriptCallback^ callback);
         };

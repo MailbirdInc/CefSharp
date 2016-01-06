@@ -5,21 +5,25 @@
 #pragma once
 
 #include "Stdafx.h"
-#include "MCefRefPtr.h"
+#include "CefWrapper.h"
 
-using namespace System;
+#include "include\cef_context_menu_handler.h"
+
 using namespace System::Collections::Generic;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefContextMenuParamsWrapper : public IContextMenuParams
+        public ref class CefContextMenuParamsWrapper : public IContextMenuParams, public CefWrapper
         {
             MCefRefPtr<CefContextMenuParams> _wrappedInfo;
 
         internal:
-            CefContextMenuParamsWrapper(CefRefPtr<CefContextMenuParams> &cefParams) : _wrappedInfo(cefParams) {}
+            CefContextMenuParamsWrapper(CefRefPtr<CefContextMenuParams> &cefParams) :
+                _wrappedInfo(cefParams)
+            {
+            }
 
             !CefContextMenuParamsWrapper()
             {
@@ -27,9 +31,10 @@ namespace CefSharp
             }
 
             ~CefContextMenuParamsWrapper()
-
             {
                 this->!CefContextMenuParamsWrapper();
+
+                _disposed = true;
             }
 
         public:
@@ -54,9 +59,6 @@ namespace CefSharp
             virtual property String^ MisspelledWord { String^ get(); }
 
             virtual property List<String^>^ DictionarySuggestions { List<String^>^ get(); }
-            
-            // TODO: Implement:
-            //virtual bool GetDictionarySuggestions(std::vector<CefString>& suggestions) OVERRIDE;
 
             virtual property bool IsEditable { bool get(); }
             virtual property bool IsSpellCheckEnabled { bool get(); }

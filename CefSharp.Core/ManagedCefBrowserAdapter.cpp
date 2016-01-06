@@ -3,8 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
-#include "Cef.h"
+
+#include "ManagedCefBrowserAdapter.h"
 #include "Internals/Messaging/Messages.h"
+#include "Internals/CefFrameWrapper.h"
+#include "Internals/CefSharpBrowserWrapper.h"
 
 using namespace CefSharp::Internals::Messaging;
 
@@ -13,9 +16,12 @@ bool ManagedCefBrowserAdapter::IsDisposed::get()
     return _isDisposed;
 }
 
-
 void ManagedCefBrowserAdapter::CreateOffscreenBrowser(IntPtr windowHandle, BrowserSettings^ browserSettings, RequestContext^ requestContext, String^ address)
 {
+    //Create the required BitmapInfo classes before the offscreen browser is initialized  
+    auto renderClientAdapter = dynamic_cast<RenderClientAdapter*>(_clientAdapter.get());  
+    renderClientAdapter->CreateBitmapInfo();
+
     auto hwnd = static_cast<HWND>(windowHandle.ToPointer());
 
     CefWindowInfo window;
@@ -32,35 +38,35 @@ void ManagedCefBrowserAdapter::CreateOffscreenBrowser(IntPtr windowHandle, Brows
 
 void ManagedCefBrowserAdapter::OnAfterBrowserCreated(int browserId)
 {
-	if (!_isDisposed)
-	{
-		//browser wrapper instance has to be set up for the BrowserProcessServiceHost
-		auto browser = _clientAdapter->GetCefBrowser();
-		if (browser != nullptr)
-		{
-			//the js callback factory needs the browser instance to pass it to the js callback implementations for messaging purposes
-			auto cefSharpBrowserWrapper = gcnew CefSharpBrowserWrapper(browser);
-			_browserWrapper = cefSharpBrowserWrapper;
-			_javascriptCallbackFactory->BrowserWrapper = gcnew WeakReference(cefSharpBrowserWrapper);
-		}
+    if (!_isDisposed)
+    {
+        //browser wrapper instance has to be set up for the BrowserProcessServiceHost
+        auto browser = _clientAdapter->GetCefBrowser();
+        if (browser != nullptr)
+        {
+            //the js callback factory needs the browser instance to pass it to the js callback implementations for messaging purposes
+            _browserWrapper = gcnew CefSharpBrowserWrapper(browser);
+        }
 
-		if (CefSharpSettings::WcfEnabled)
-		{
-			_browserProcessServiceHost = gcnew BrowserProcessServiceHost(_javaScriptObjectRepository, Process::GetCurrentProcess()->Id, this);
-			//NOTE: Attempt to solve timing issue where browser is opened and rapidly disposed. In some cases a call to Open throws
-			// an exception about the process already being closed. Two relevant issues are #862 and #804.
-			// Considering adding an IsDisposed check and also may have to revert to a try catch block
-			if (_browserProcessServiceHost->State == CommunicationState::Created)
-			{
-				_browserProcessServiceHost->Open();
-			}
-		}
+        _javascriptCallbackFactory->BrowserAdapter = gcnew WeakReference(this);
 
-		if (_webBrowserInternal != nullptr)
-		{
-			_webBrowserInternal->OnAfterBrowserCreated();
-		}
-	}
+        if (CefSharpSettings::WcfEnabled)
+        {
+            _browserProcessServiceHost = gcnew BrowserProcessServiceHost(_javaScriptObjectRepository, Process::GetCurrentProcess()->Id, this);
+            //NOTE: Attempt to solve timing issue where browser is opened and rapidly disposed. In some cases a call to Open throws
+            // an exception about the process already being closed. Two relevant issues are #862 and #804.
+            // Considering adding an IsDisposed check and also may have to revert to a try catch block
+            if (_browserProcessServiceHost->State == CommunicationState::Created)
+            {
+                _browserProcessServiceHost->Open();
+            }
+        }
+    
+        if (_webBrowserInternal != nullptr)
+        {
+            _webBrowserInternal->OnAfterBrowserCreated();
+        }
+    }
 }
 
 void ManagedCefBrowserAdapter::WasResized()
@@ -338,6 +344,26 @@ void ManagedCefBrowserAdapter::OnDragTargetDragDrop(MouseEvent^ mouseEvent)
     }
 }
 
+void ManagedCefBrowserAdapter::OnDragSourceEndedAt(int x, int y, DragOperationsMask op)
+{
+    auto browser = _clientAdapter->GetCefBrowser();
+
+    if (browser != nullptr)
+    {
+        browser->GetHost()->DragSourceEndedAt(x, y, (CefBrowserHost::DragOperationsMask)op);
+    }
+}
+
+void ManagedCefBrowserAdapter::OnDragSourceSystemDragEnded()
+{
+    auto browser = _clientAdapter->GetCefBrowser();
+
+    if (browser != nullptr)
+    {
+        browser->GetHost()->DragSourceSystemDragEnded();
+    }
+}
+
 /// <summary>
 /// Gets the CefBrowserWrapper instance
 /// </summary>
@@ -345,6 +371,11 @@ void ManagedCefBrowserAdapter::OnDragTargetDragDrop(MouseEvent^ mouseEvent)
 IBrowser^ ManagedCefBrowserAdapter::GetBrowser()
 {
     return _browserWrapper;
+}
+
+IBrowser^ ManagedCefBrowserAdapter::GetBrowser(int browserId)
+{
+    return _clientAdapter->GetBrowserWrapper(browserId);
 }
 
 IJavascriptCallbackFactory^ ManagedCefBrowserAdapter::JavascriptCallbackFactory::get()

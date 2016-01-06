@@ -6,19 +6,18 @@
 
 #include "Stdafx.h"
 
-#include "MCefRefPtr.h"
 #include "include/cef_drag_data.h"
 
+#include "CefWrapper.h"
+
 using namespace std;
-using namespace System;
 using namespace System::IO;
-using namespace CefSharp;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefDragDataWrapper : public IDragData
+        public ref class CefDragDataWrapper : public IDragData, public CefWrapper
         {
         private:
             MCefRefPtr<CefDragData> _wrappedDragData;
@@ -42,6 +41,8 @@ namespace CefSharp
             ~CefDragDataWrapper()
             {
                 this->!CefDragDataWrapper();
+
+                _disposed = true;
             }
 
         public:

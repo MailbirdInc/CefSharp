@@ -6,8 +6,6 @@
 #include "TypeUtils.h"
 #include "JavascriptMethodHandler.h"
 
-using namespace CefSharp::Internals;
-
 namespace CefSharp
 {
     bool JavascriptMethodHandler::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
@@ -38,7 +36,7 @@ namespace CefSharp
         }
         catch (Exception^ ex)
         {
-            exception = StringUtils::ToNative(ex->Message);
+            exception = StringUtils::ToNative(ex->ToString());
         }
 
         //NOTE: Return true otherwise exception is ignored

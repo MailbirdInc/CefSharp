@@ -6,17 +6,17 @@
 
 #include "Stdafx.h"
 
-#include "Internals/TypeConversion.h"
+#include "include\cef_request.h"
+#include "Internals\TypeConversion.h"
+#include "CefWrapper.h"
 
-using namespace System;
 using namespace System::Collections::Specialized;
-using namespace CefSharp;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefPostDataElementWrapper : public IPostDataElement
+        public ref class CefPostDataElementWrapper : public IPostDataElement, public CefWrapper
         {
             MCefRefPtr<CefPostDataElement> _postDataElement;
         internal:
@@ -34,6 +34,8 @@ namespace CefSharp
             ~CefPostDataElementWrapper()
             {
                 this->!CefPostDataElementWrapper();
+
+                _disposed = true;
             }
 
         public:
@@ -41,6 +43,8 @@ namespace CefSharp
             {
                 bool get()
                 {
+                    ThrowIfDisposed();
+
                     return _postDataElement->IsReadOnly();
                 }
             }
@@ -49,16 +53,22 @@ namespace CefSharp
             {
                 String^ get()
                 {
+                    ThrowIfDisposed();
+
                     return StringUtils::ToClr(_postDataElement->GetFile());
                 }
                 void set(String^ val)
                 {
+                    ThrowIfDisposed();
+
                     _postDataElement->SetToFile(StringUtils::ToNative(val));
                 }
             }
 
             virtual void SetToEmpty()
             {
+                ThrowIfDisposed();
+
                 _postDataElement->SetToEmpty();
             }
 
@@ -66,32 +76,47 @@ namespace CefSharp
             {
                 PostDataElementType get()
                 {
+                    ThrowIfDisposed();
+
                     return (PostDataElementType)_postDataElement->GetType();
                 }
             }
 
-            virtual property array<Byte>^ Bytes
+            virtual property cli::array<Byte>^ Bytes
             {
-                array<Byte>^ get()
+                cli::array<Byte>^ get()
                 {
+                    ThrowIfDisposed();
+
                     auto byteCount = _postDataElement->GetBytesCount();
                     if (byteCount == 0)
                     {
                         return nullptr;
                     }
 
-                    auto bytes = gcnew array<Byte>(byteCount);
+                    auto bytes = gcnew cli::array<Byte>(byteCount);
                     pin_ptr<Byte> src = &bytes[0]; // pin pointer to first element in arr
 
                     _postDataElement->GetBytes(byteCount, static_cast<void*>(src));
 
                     return bytes;
                 }
-                void set(array<Byte>^ val)
+                void set(cli::array<Byte>^ val)
                 {
+                    ThrowIfDisposed();
+
                     pin_ptr<Byte> src = &val[0];
                     _postDataElement->SetToBytes(val->Length, static_cast<void*>(src));
                 }
+            }
+
+            operator CefRefPtr<CefPostDataElement>()
+            {
+                if (this == nullptr)
+                {
+                    return NULL;
+                }
+                return _postDataElement.get();
             }
         };
     }

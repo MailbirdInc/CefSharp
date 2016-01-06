@@ -1,9 +1,15 @@
-﻿using CefSharp.Example;
+﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using CefSharp.Example;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CefSharp.WinForms.Example.Handlers;
 using CefSharp.WinForms.Internals;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CefSharp.WinForms.Example
 {
@@ -11,7 +17,7 @@ namespace CefSharp.WinForms.Example
     {
         public IWinFormsWebBrowser Browser { get; private set; }
 
-        public BrowserTabUserControl(string url)
+        public BrowserTabUserControl(Action<string, int?> openNewTab, string url)
         {
             InitializeComponent();
 
@@ -25,7 +31,7 @@ namespace CefSharp.WinForms.Example
             Browser = browser;
 
             browser.MenuHandler = new MenuHandler();
-            browser.RequestHandler = new RequestHandler();
+            browser.RequestHandler = new WinFormsRequestHandler(openNewTab);
             browser.JsDialogHandler = new JsDialogHandler();
             browser.GeolocationHandler = new GeolocationHandler();
             browser.DownloadHandler = new DownloadHandler();
@@ -39,11 +45,15 @@ namespace CefSharp.WinForms.Example
             browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
             browser.LoadError += OnLoadError;
             browser.DragHandler = new DragHandler();
-            if (CefSharpSettings.WcfEnabled)
-            {
-                browser.RegisterJsObject("bound", new BoundObject());
-            }
+            browser.RegisterJsObject("bound", new BoundObject());
             browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
+            browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
+
+            var eventObject = new ScriptedMethodsBoundObject();
+            eventObject.EventArrived += OnJavascriptEventArrived;
+            // Use the default of camelCaseJavascriptNames
+            // .Net methods starting with a capitol will be translated to starting with a lower case letter when called from js
+            browser.RegisterJsObject("boundEvent", eventObject, camelCaseJavascriptNames:true);
 
             CefExample.RegisterTestResources(browser);
 
@@ -82,6 +92,25 @@ namespace CefSharp.WinForms.Example
         private void OnBrowserAddressChanged(object sender, AddressChangedEventArgs args)
         {
             this.InvokeOnUiThreadIfRequired(() => urlTextBox.Text = args.Address);
+        }
+
+        private static void OnJavascriptEventArrived(string eventName, object eventData)
+        {
+            switch (eventName)
+            {
+                case "click":
+                {
+                    var message = eventData.ToString();
+                    var dataDictionary = eventData as Dictionary<string, object>;
+                    if (dataDictionary != null)
+                    {
+                        var result = string.Join(", ", dataDictionary.Select(pair => pair.Key + "=" + pair.Value));
+                        message = "event data: " + result;
+                    }
+                    MessageBox.Show(message, "Javascript event arrived", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                }
+            }
         }
 
         private void SetCanGoBack(bool canGoBack)

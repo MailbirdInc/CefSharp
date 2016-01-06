@@ -7,37 +7,45 @@
 #include "Stdafx.h"
 
 #include "include\cef_download_handler.h"
+#include "CefWrapper.h"
 
 namespace CefSharp
 {
-    public ref class CefBeforeDownloadCallbackWrapper : IBeforeDownloadCallback
+    namespace Internals
     {
-    private:
-        MCefRefPtr<CefBeforeDownloadCallback> _callback;
-
-    public:
-        CefBeforeDownloadCallbackWrapper(CefRefPtr<CefBeforeDownloadCallback> &callback)
-            : _callback(callback)
+        public ref class CefBeforeDownloadCallbackWrapper : public IBeforeDownloadCallback, public CefWrapper
         {
+        private:
+            MCefRefPtr<CefBeforeDownloadCallback> _callback;
+
+        public:
+            CefBeforeDownloadCallbackWrapper(CefRefPtr<CefBeforeDownloadCallback> &callback)
+                : _callback(callback)
+            {
             
-        }
+            }
 
-        !CefBeforeDownloadCallbackWrapper()
-        {
-            _callback = NULL;
-        }
+            !CefBeforeDownloadCallbackWrapper()
+            {
+                _callback = NULL;
+            }
 
-        ~CefBeforeDownloadCallbackWrapper()
-        {
-            this->!CefBeforeDownloadCallbackWrapper();
-        }
+            ~CefBeforeDownloadCallbackWrapper()
+            {
+                this->!CefBeforeDownloadCallbackWrapper();
 
-        virtual void Continue(String^ downloadPath, bool showDialog)
-        {
-            _callback->Continue(StringUtils::ToNative(downloadPath), showDialog);
+                _disposed = true;
+            }
 
-            delete this;
-        }
-    };
+            virtual void Continue(String^ downloadPath, bool showDialog)
+            {
+                ThrowIfDisposed();
+
+                _callback->Continue(StringUtils::ToNative(downloadPath), showDialog);
+
+                delete this;
+            }
+        };
+    }
 }
 

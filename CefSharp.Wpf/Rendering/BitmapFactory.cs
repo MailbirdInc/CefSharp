@@ -8,9 +8,18 @@ namespace CefSharp.Wpf.Rendering
 {
     public class BitmapFactory : IBitmapFactory
     {
-        public BitmapInfo CreateBitmap(bool isPopup)
+        public const int DefaultDpi = 96;
+
+        public BitmapInfo CreateBitmap(bool isPopup, double dpiScale)
         {
-            //return new WritableBitmapInfo { IsPopup = isPopup };
+            if (dpiScale > 1.0)
+            {
+                return new WritableBitmapInfo(DefaultDpi * dpiScale, DefaultDpi * dpiScale)
+                {
+                    IsPopup = isPopup
+                };
+            }
+
             return new InteropBitmapInfo { IsPopup = isPopup };
         }
     }

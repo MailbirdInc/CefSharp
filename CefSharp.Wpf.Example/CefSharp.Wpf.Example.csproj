@@ -48,6 +48,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
+    <NuGetPackageImportStamp>cc83ab8b</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -129,6 +130,10 @@
     <Compile Include="Handlers\GeolocationHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
     <Compile Include="Handlers\LifespanHandler.cs" />
+    <Compile Include="Handlers\PluginHandler.cs" />
+    <Compile Include="SpawnBrowsersWindow.xaml.cs">
+      <DependentUpon>SpawnBrowsersWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\BrowserTabView.xaml.cs">
       <DependentUpon>BrowserTabView.xaml</DependentUpon>
     </Compile>
@@ -145,6 +150,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="SpawnBrowsersWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\BrowserTabView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -198,4 +207,8 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
+  <Import Project="$(SolutionDir)\CefSharp.props" />
+  <Import Project="$(SolutionDir)\CefSharp.Native.props" />
+  <Import Project="..\packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets')" />
+  <Import Project="..\packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets')" />
 </Project>

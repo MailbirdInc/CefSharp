@@ -4,12 +4,13 @@
 
 #pragma once
 
-#include "include/cef_base.h"
+#include "Stdafx.h"
+
 #include "include/cef_app.h"
 
-#include "CefSharpBrowserWrapper.h"
+#include "..\ManagedCefBrowserAdapter.h"
+#include "Internals\CefSharpBrowserWrapper.h"
 
-using namespace System;
 using namespace System::Threading::Tasks;
 
 namespace CefSharp
@@ -19,23 +20,20 @@ namespace CefSharp
         private ref class JavascriptCallbackProxy : public IJavascriptCallback
         {
         private:
-            WeakReference^ _browserWrapper;
+            WeakReference^ _browserAdapter;
             JavascriptCallback^ _callback;
             PendingTaskRepository<JavascriptResponse^>^ _pendingTasks;
             bool _disposed;
 
-            CefRefPtr<CefProcessMessage> CreateCallMessage(int64 doneCallbackId, array<Object^>^ parameters);
             CefRefPtr<CefProcessMessage> CreateDestroyMessage();
-            CefSharpBrowserWrapper^ GetBrowser();
+            IBrowser^ GetBrowser();
             void DisposedGuard();
         public:
-            JavascriptCallbackProxy(JavascriptCallback^ callback, PendingTaskRepository<JavascriptResponse^>^ pendingTasks, WeakReference^ browserWrapper)
+            JavascriptCallbackProxy(JavascriptCallback^ callback, PendingTaskRepository<JavascriptResponse^>^ pendingTasks, WeakReference^ browserAdapter)
                 :_callback(callback), _pendingTasks(pendingTasks)
             {
-                _browserWrapper = browserWrapper;
+                _browserAdapter = browserAdapter;
             }
-
-            virtual Task<JavascriptResponse^>^ ExecuteAsync(array<Object^>^ parameters);
 
             ~JavascriptCallbackProxy()
             {
@@ -47,9 +45,22 @@ namespace CefSharp
                 auto browser = GetBrowser();
                 if (browser != nullptr && !browser->IsDisposed)
                 {
-                    browser->SendProcessMessage(CefProcessId::PID_RENDERER, CreateDestroyMessage());
+                    auto browserWrapper = static_cast<CefSharpBrowserWrapper^>(browser);
+                    browserWrapper->SendProcessMessage(CefProcessId::PID_RENDERER, CreateDestroyMessage());
                 }
                 _disposed = true;
+            }
+
+            virtual Task<JavascriptResponse^>^ ExecuteAsync(cli::array<Object^>^ parameters);
+
+            virtual property bool IsDisposed
+            {
+                bool get();
+            }
+
+            virtual property bool CanExecute
+            {
+                bool get();
             }
         };
     }

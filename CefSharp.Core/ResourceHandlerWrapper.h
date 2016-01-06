@@ -6,9 +6,7 @@
 
 #include "Stdafx.h"
 #include "include/cef_scheme.h"
-#include "Internals/AutoLock.h"
 
-using namespace System;
 using namespace System::IO;
 using namespace System::Collections::Specialized;
 
@@ -20,11 +18,9 @@ namespace CefSharp
         gcroot<IRequest^> _request;
         gcroot<IResourceHandler^> _handler;
         gcroot<Stream^> _stream;
-        gcroot<ICallback^> _callbackWrapper;
         gcroot<IBrowser^> _browser;
         gcroot<IFrame^> _frame;
 
-        CriticalSection _syncRoot;
         int64 SizeFromStream();
 
     public:
@@ -43,16 +39,17 @@ namespace CefSharp
         {
             _handler = nullptr;
             _stream = nullptr;
-            delete _callbackWrapper;
             delete _request;
             delete _browser;
             delete _frame;
         }
 
-        virtual bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback);
-        virtual void GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl);
-        virtual bool ReadResponse(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback);
-        virtual void Cancel();
+        virtual bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) OVERRIDE;
+        virtual void GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl) OVERRIDE;
+        virtual bool ReadResponse(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback) OVERRIDE;
+        virtual bool CanGetCookie(const CefCookie& cookie) OVERRIDE;
+        virtual bool CanSetCookie(const CefCookie& cookie) OVERRIDE;
+        virtual void Cancel() OVERRIDE;
 
         IMPLEMENT_REFCOUNTING(ResourceHandlerWrapper);
     };

@@ -5,11 +5,14 @@
 #pragma once
 
 #include "Stdafx.h"
-#include "include/cef_scheme.h"
-#include "Internals/AutoLock.h"
-#include "include/wrapper/cef_stream_resource_handler.h"
+#include "include\cef_scheme.h"
+#include "include\wrapper\cef_stream_resource_handler.h"
 
-using namespace System;
+#include "Internals\CefSharpBrowserWrapper.h"
+#include "Internals\CefFrameWrapper.h"
+#include "Internals\CefRequestWrapper.h"
+#include "ResourceHandlerWrapper.h"
+
 using namespace System::IO;
 using namespace System::Collections::Specialized;
 

@@ -9,11 +9,8 @@
 
 #include "ReportUnhandledExceptions.h"
 
-using namespace System;
 using namespace System::Threading::Tasks;
 using namespace System::Runtime::InteropServices;
-
-using namespace CefSharp;
 
 namespace CefSharp
 {
@@ -30,11 +27,6 @@ namespace CefSharp
                 _scheduler(scheduler)
             {
             };
-
-            ~CefTaskWrapper()
-            {
-                delete _task;
-            }
 
             virtual void Execute() OVERRIDE
             {

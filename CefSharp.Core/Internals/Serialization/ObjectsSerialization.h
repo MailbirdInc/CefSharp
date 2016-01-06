@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "Stdafx.h"
+
 #include "include/cef_values.h"
 
 namespace CefSharp
@@ -21,6 +23,9 @@ namespace CefSharp
 
             //Converts CefTime to DateTime
             DateTime ConvertCefTimeToDateTime(CefTime time);
+
+            template Object^ DeserializeObject(const CefRefPtr<CefListValue>& list, int index, IJavascriptCallbackFactory^ javascriptCallbackFactory);
+            template Object^ DeserializeObject(const CefRefPtr<CefDictionaryValue>& list, CefString index, IJavascriptCallbackFactory^ javascriptCallbackFactory);
         }
     }
 }

@@ -6,26 +6,23 @@
 
 #include "Stdafx.h"
 
-#include "Internals/TypeConversion.h"
+#include "TypeConversion.h"
+#include "CefWrapper.h"
 
-using namespace System;
 using namespace System::Collections::Specialized;
-using namespace CefSharp;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefResponseWrapper : public IResponse
+        public ref class CefResponseWrapper : public IResponse, public CefWrapper
         {
             MCefRefPtr<CefResponse> _response;
         internal:
             CefResponseWrapper(CefRefPtr<CefResponse> &response) :
                 _response(response)
             {
-                StatusCode = 200;
-                StatusText = "OK";
-                MimeType = "text/html";
+                
             }
 
             !CefResponseWrapper()
@@ -36,6 +33,8 @@ namespace CefSharp
             ~CefResponseWrapper()
             {
                 this->!CefResponseWrapper();
+
+                _disposed = true;
             }
 
         public:

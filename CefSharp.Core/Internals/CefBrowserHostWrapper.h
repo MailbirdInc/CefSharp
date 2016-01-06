@@ -4,22 +4,25 @@
 
 #pragma once
 
-using namespace System;
+#include "Stdafx.h"
+
+#include "CefWrapper.h"
+
+using namespace System::Threading::Tasks;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefBrowserHostWrapper : IBrowserHost
+        public ref class CefBrowserHostWrapper : public IBrowserHost, public CefWrapper
         {
         private:
             MCefRefPtr<CefBrowserHost> _browserHost;
-            bool _disposed;
             
             double GetZoomLevelOnUI();
 
         internal:
-            CefBrowserHostWrapper(CefRefPtr<CefBrowserHost> &browserHost) : _browserHost(browserHost), _disposed(false)
+            CefBrowserHostWrapper(CefRefPtr<CefBrowserHost> &browserHost) : _browserHost(browserHost)
             {
             }
             
@@ -35,12 +38,10 @@ namespace CefSharp
                 _disposed = true;
             }
 
-        private:
-            void ThrowIfDisposed();
-
         public:
             virtual void StartDownload(String^ url);
             virtual void Print();
+            virtual Task<bool>^ PrintToPdfAsync(String^ path, PdfPrintSettings^ settings);
             virtual void SetZoomLevel(double zoomLevel);
             virtual Task<double>^ GetZoomLevelAsync();
             virtual IntPtr GetWindowHandle();
@@ -66,6 +67,40 @@ namespace CefSharp
             virtual void SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers);
 
             virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
+
+            virtual void NotifyMoveOrResizeStarted();
+
+            virtual void NotifyScreenInfoChanged();
+
+            virtual void WasResized();
+
+            virtual void WasHidden(bool hidden);
+
+            virtual property int WindowlessFrameRate
+            {
+                int get();
+                void set(int val);
+            }
+
+            virtual property bool MouseCursorChangeDisabled
+            {
+                bool get();
+                void set(bool val);
+            }
+
+            virtual property bool WindowRenderingDisabled
+            {
+                bool get();
+            }
+
+            virtual IntPtr GetOpenerWindowHandle();
+
+            virtual void SendCaptureLostEvent();
+
+            virtual property IRequestContext^ RequestContext
+            {
+                IRequestContext^ get();
+            }
         };
     }
 }

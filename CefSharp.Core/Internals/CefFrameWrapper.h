@@ -6,8 +6,11 @@
 
 #include "Stdafx.h"
 
-#include <include\cef_frame.h>
-#include "Internals\CefRequestWrapper.h"
+#include "include\cef_frame.h"
+#include "include\cef_v8.h"
+#include "CefWrapper.h"
+
+using namespace System::Threading::Tasks;
 
 namespace CefSharp
 {
@@ -20,19 +23,18 @@ namespace CefSharp
         // methods of this class may only be called on the main thread.
         ///
         /*--cef(source=library)--*/
-        public ref class CefFrameWrapper : IFrame
+        public ref class CefFrameWrapper : public IFrame, public CefWrapper
         {
         private:
             MCefRefPtr<CefFrame> _frame;
             IFrame^ _parentFrame;
             IBrowser^ _owningBrowser;
             Object^ _syncRoot;
-            bool _disposed;
 
         internal:
             CefFrameWrapper::CefFrameWrapper(CefRefPtr<CefFrame> &frame)
-                : _frame(frame), _disposed(false), 
-                _parentFrame(nullptr), _owningBrowser(nullptr), _syncRoot(gcnew Object())
+                : _frame(frame), _parentFrame(nullptr),
+                _owningBrowser(nullptr), _syncRoot(gcnew Object())
             {
             }
 
@@ -52,9 +54,6 @@ namespace CefSharp
                 _syncRoot = nullptr;
                 _disposed = true;
             }
-
-        private:
-            void ThrowIfDisposed();
 
         public:
             ///
@@ -130,15 +129,11 @@ namespace CefSharp
             /*--cef()--*/
             virtual Task<String^>^ GetTextAsync();
 
-            // TODO: Do we need this?
             ///
-            // Load the request represented by the |request| object.
+            /// Load the request represented by the |request| object.
             ///
             /*--cef()--*/
-            //virtual void LoadRequest(CefRequestWrapper^ request)
-            //{
-            //    _frame->LoadRequest(request->GetCefRequest().get());
-            //}
+            virtual void LoadRequest(IRequest^ request);
 
             ///
             // Load the specified |url|.
@@ -244,9 +239,7 @@ namespace CefSharp
                 return _frame->GetV8Context();
             }
 
-            // NOTE: Don't include VisitDOM on purpose
-            // due to the depreciated nature of accessing the DOM via CEF.
-            //virtual void VisitDOM(CefRefPtr<CefDOMVisitor> visitor)
+            virtual IRequest^ CreateRequest(bool initializePostData);
         };
     }
 }

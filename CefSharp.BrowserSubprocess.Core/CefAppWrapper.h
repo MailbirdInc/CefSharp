@@ -12,21 +12,26 @@
 #include "CefAppUnmanagedWrapper.h"
 
 using namespace System::Collections::Generic;
+using namespace System::Linq;
+using namespace CefSharp::Internals;
 
 namespace CefSharp
 {
     // Wrap CefAppUnmangedWrapper in a nice managed wrapper
-    public ref class CefAppWrapper abstract : public DisposableResource
+    public ref class CefAppWrapper abstract
     {
     private:
         MCefRefPtr<CefAppUnmanagedWrapper> _cefApp;
-        
-    public:        
-        CefAppWrapper()
+
+    public:
+        CefAppWrapper(IEnumerable<String^>^ args)
         {
             auto onBrowserCreated = gcnew Action<CefBrowserWrapper^>(this, &CefAppWrapper::OnBrowserCreated);
             auto onBrowserDestroyed = gcnew Action<CefBrowserWrapper^>(this, &CefAppWrapper::OnBrowserDestroyed);
-            _cefApp = new CefAppUnmanagedWrapper(onBrowserCreated, onBrowserDestroyed);
+            auto schemes = CefCustomScheme::ParseCommandLineArguments(args);
+            auto enableFocusedNodeChanged = CommandLineArgsParser::HasArgument(args, CefSharpArguments::FocusedNodeChangedEnabledArgument);
+
+            _cefApp = new CefAppUnmanagedWrapper(schemes, enableFocusedNodeChanged, onBrowserCreated, onBrowserDestroyed);
         };
 
         !CefAppWrapper()
@@ -42,6 +47,11 @@ namespace CefSharp
         int Run();
 
         virtual void OnBrowserCreated(CefBrowserWrapper^ cefBrowserWrapper) abstract;
-        virtual void OnBrowserDestroyed(CefBrowserWrapper^ cefBrowserWrapper) abstract;		
+        virtual void OnBrowserDestroyed(CefBrowserWrapper^ cefBrowserWrapper) abstract;
+
+        static void EnableHighDPISupport()
+        {
+            CefEnableHighDPISupport();
+        }
     };
 }

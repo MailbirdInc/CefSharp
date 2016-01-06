@@ -5,10 +5,7 @@
 #pragma once
 
 #include "Stdafx.h"
-#include "Internals/StringUtils.h"
 #include "RequestContext.h"
-
-using namespace CefSharp::Internals;
 
 namespace CefSharp
 {
@@ -182,16 +179,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Controls whether the Java plugin will be loaded. Also configurable using
-        /// the "disable-java" command-line switch.
-        /// </summary>
-        property CefState Java
-        {
-            CefState get() { return (CefState)_browserSettings->java; }
-            void set(CefState value) { _browserSettings->java = (cef_state_t)value; }
-        } 
-
-        /// <summary>
         /// Controls whether any plugins will be loaded. Also configurable using the
         /// "disable-plugins" command-line switch.
         /// </summary>
@@ -342,6 +329,19 @@ namespace CefSharp
             String^ get() { return StringUtils::ToClr(_browserSettings->accept_language_list); }
             void set(String^ value) { StringUtils::AssignNativeFromClr(_browserSettings->accept_language_list, value); }
         }
+
+        /// <summary>
+        /// The maximum rate in frames per second (fps) that CefRenderHandler::OnPaint
+        /// will be called for a windowless browser. The actual fps may be lower if
+        /// the browser cannot generate frames at the requested rate. The minimum
+        /// value is 1 and the maximum value is 60 (default 30). This value can also be
+        /// changed dynamically via IBrowserHost.SetWindowlessFrameRate.
+        /// </summary>
+        virtual property int WindowlessFrameRate
+        {
+            int get() { return _browserSettings->windowless_frame_rate; }
+            void set(int value) { _browserSettings->windowless_frame_rate = value; }
+        }		
 
         property Nullable<bool> OffScreenTransparentBackground;
     };

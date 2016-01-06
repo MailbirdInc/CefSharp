@@ -14,6 +14,7 @@ namespace CefSharp.Example
         public string MyReadOnlyProperty { get; internal set; }
         public Type MyUnconvertibleProperty { get; set; }
         public SubBoundObject SubObject { get; set; }
+        public ExceptionTestBoundObject ExceptionTestObject { get; set; }
 
         public uint[] MyUintArray
         {
@@ -42,6 +43,7 @@ namespace CefSharp.Example
             IgnoredProperty = "I am an Ignored Property";
             MyUnconvertibleProperty = GetType();
             SubObject = new SubBoundObject();
+            ExceptionTestObject = new ExceptionTestBoundObject();
         }
 
         public void TestCallback(IJavascriptCallback javascriptCallback)
@@ -54,7 +56,9 @@ namespace CefSharp.Example
 
                 using (javascriptCallback)
                 {
-                    await javascriptCallback.ExecuteAsync("This callback from C# was delayed " + taskDelay + "ms");
+                    //NOTE: Classes are not supported, simple structs are
+                    var response = new CallbackResponseStruct("This callback from C# was delayed " + taskDelay + "ms");
+                    await javascriptCallback.ExecuteAsync(response);
                 }
             });
         }

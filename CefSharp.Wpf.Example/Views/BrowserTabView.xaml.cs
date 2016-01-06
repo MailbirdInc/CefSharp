@@ -16,31 +16,22 @@ namespace CefSharp.Wpf.Example.Views
             InitializeComponent();
 
             browser.RequestHandler = new RequestHandler();
-            if (CefSharpSettings.WcfEnabled)
-            {
-                browser.RegisterJsObject("bound", new BoundObject());
-            }
+            browser.RegisterJsObject("bound", new BoundObject());
             browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
+            // Enable touch scrolling - once properly tested this will likely become the default
+            browser.IsManipulationEnabled = true;
 
-            browser.LifeSpanHandler = new LifespanHandler();
+            //browser.LifeSpanHandler = new LifespanHandler();
             browser.MenuHandler = new MenuHandler();
             browser.GeolocationHandler = new GeolocationHandler();
             browser.DownloadHandler = new DownloadHandler();
-            browser.PreviewTextInput += (sender, args) =>
-            {
-                var host = browser.GetBrowser().GetHost();
-                var keyEvent = new KeyEvent();
-
-                foreach (var character in args.Text)
-                {
-                    keyEvent.WindowsKeyCode = character;
-                    keyEvent.Type = KeyEventType.Char;
-                    host.SendKeyEvent(keyEvent);
-                }
-
-                args.Handled = true;
-            };
-
+            //You can specify a custom RequestContext to share settings amount groups of ChromiumWebBrowsers
+            //Also this is now the only way to access OnBeforePluginLoad - need to implement IPluginHandler
+            //browser.RequestContext = new RequestContext(new PluginHandler());
+            
+            //browser.RequestContext.RegisterSchemeHandlerFactory(CefSharpSchemeHandlerFactory.SchemeName, null, new CefSharpSchemeHandlerFactory());
+            browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
+            
             browser.LoadError += (sender, args) =>
             {
                 // Don't display an error for downloaded files.

@@ -7,48 +7,53 @@
 #include "Stdafx.h"
 
 #include "include\cef_callback.h"
+#include "CefWrapper.h"
 
 namespace CefSharp
 {
-    public ref class CefCallbackWrapper : public ICallback
+    namespace Internals
     {
-    private:
-        MCefRefPtr<CefCallback> _callback;
-
-    public:
-        CefCallbackWrapper(CefRefPtr<CefCallback> &callback) : _callback(callback)
+        public ref class CefCallbackWrapper : public ICallback, public CefWrapper
         {
-            
-        }
+        private:
+            MCefRefPtr<CefCallback> _callback;
 
-        !CefCallbackWrapper()
-        {
-            _callback = NULL;
-        }
-
-        ~CefCallbackWrapper()
-        {
-            this->!CefCallbackWrapper();
-        }
-
-        virtual void Cancel()
-        {
-            if (_callback.get())
+        public:
+            CefCallbackWrapper(CefRefPtr<CefCallback> &callback) :
+                _callback(callback)
             {
+            
+            }
+
+            !CefCallbackWrapper()
+            {
+                _callback = NULL;
+            }
+
+            ~CefCallbackWrapper()
+            {
+                this->!CefCallbackWrapper();
+
+                _disposed = true;
+            }
+
+            virtual void Cancel()
+            {
+                ThrowIfDisposed();
+
                 _callback->Cancel();
 
                 delete this;
             }
-        }
 
-        virtual void Continue()
-        {
-            if (_callback.get())
+            virtual void Continue()
             {
+                ThrowIfDisposed();
+
                 _callback->Continue();
 
                 delete this;
             }
-        }
-    };
+        };
+    }
 }

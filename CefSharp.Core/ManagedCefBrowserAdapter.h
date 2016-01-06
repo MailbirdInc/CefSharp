@@ -6,19 +6,14 @@
 
 #include "Stdafx.h"
 
-#include <include/cef_runnable.h>
+#include "include\cef_client.h"
 
 #include "BrowserSettings.h"
 #include "Internals/ClientAdapter.h"
 #include "Internals/CefDragDataWrapper.h"
 #include "Internals/RenderClientAdapter.h"
-#include "Internals/MCefRefPtr.h"
-#include "Internals/StringVisitor.h"
-#include "Internals/CefFrameWrapper.h"
-#include "Internals/CefSharpBrowserWrapper.h"
 #include "Internals/JavascriptCallbackFactory.h"
 
-using namespace CefSharp::Internals;
 using namespace System::Diagnostics;
 using namespace System::ServiceModel;
 using namespace System::Threading;
@@ -80,14 +75,15 @@ namespace CefSharp
         }
 
         ~ManagedCefBrowserAdapter()
-        {		
-			_isDisposed = true;
-			// Release the MCefRefPtr<ClientAdapter> reference
-			// before calling _browserWrapper->CloseBrowser(true)
-			this->!ManagedCefBrowserAdapter();
-			if (_browserWrapper != nullptr)
-			{
-				_browserWrapper->CloseBrowser(true);
+        {
+            _isDisposed = true;
+            // Release the MCefRefPtr<ClientAdapter> reference
+            // before calling _browserWrapper->CloseBrowser(true)
+            this->!ManagedCefBrowserAdapter();
+
+            if (_browserWrapper != nullptr)
+            {
+                _browserWrapper->CloseBrowser(true);
 
 				delete _browserWrapper;
 				_browserWrapper = nullptr;
@@ -100,14 +96,21 @@ namespace CefSharp
 				_methodRunnerQueue = nullptr;
 			}
 
-			if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
-			{
-				_browserProcessServiceHost->Close();
-				_browserProcessServiceHost = nullptr;
-			}
+            if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
+            {
+                if (CefSharpSettings::WcfTimeout > TimeSpan::Zero)
+                {
+                    _browserProcessServiceHost->Close(CefSharpSettings::WcfTimeout);
+                }
+                else
+                {
+                    _browserProcessServiceHost->Abort();
+                }
+                _browserProcessServiceHost = nullptr;
+            }
 
-			_webBrowserInternal = nullptr;
-			_javaScriptObjectRepository = nullptr;
+            _webBrowserInternal = nullptr;
+            _javaScriptObjectRepository = nullptr;
         }
 
         virtual property bool IsDisposed
@@ -133,11 +136,16 @@ namespace CefSharp
         void OnDragTargetDragLeave();
         void OnDragTargetDragDrop(MouseEvent^ mouseEvent);
 
+        void OnDragSourceEndedAt(int x, int y, DragOperationsMask op);
+        void OnDragSourceSystemDragEnded();
+
         /// <summary>
         /// Gets the CefBrowserWrapper instance
         /// </summary>
         /// <returns>Gets the current instance or null</returns>
         virtual IBrowser^ GetBrowser();
+
+        virtual IBrowser^ GetBrowser(int browserId);
 
         virtual property IJavascriptCallbackFactory^ JavascriptCallbackFactory
         {

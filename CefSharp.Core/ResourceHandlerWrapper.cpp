@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
+
 #include "Internals/CefRequestWrapper.h"
 #include "Internals/CefResponseWrapper.h"
 #include "Internals/CefCallbackWrapper.h"
@@ -16,7 +17,7 @@ namespace CefSharp
 {
     bool ResourceHandlerWrapper::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
     {
-        _callbackWrapper = gcnew CefCallbackWrapper(callback);
+        auto callbackWrapper = gcnew CefCallbackWrapper(callback);
 
         // If we already have a non-null _request
         // dispose it via delete before using the parameter for the rest
@@ -26,27 +27,23 @@ namespace CefSharp
 
         _request = gcnew CefRequestWrapper(request);
 
-        AutoLock lock_scope(_syncRoot);
-
-        return _handler->ProcessRequestAsync(_request, _callbackWrapper);
+        return _handler->ProcessRequestAsync(_request, callbackWrapper);
     }
 
     void ResourceHandlerWrapper::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
     {
-        String^ newRedistUrl;
+        String^ newRedirectUrl;
 
         CefResponseWrapper responseWrapper(response);
 
-        _stream = _handler->GetResponse(%responseWrapper, response_length, newRedistUrl);
+        _stream = _handler->GetResponse(%responseWrapper, response_length, newRedirectUrl);
 
-        redirectUrl = StringUtils::ToNative(newRedistUrl);
+        redirectUrl = StringUtils::ToNative(newRedirectUrl);
     }
 
     bool ResourceHandlerWrapper::ReadResponse(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback)
     {
         bool hasData = false;
-
-        AutoLock lock_scope(_syncRoot);
 
         if (static_cast<Stream^>(_stream) == nullptr)
         {
@@ -54,7 +51,7 @@ namespace CefSharp
         }
         else
         {
-            array<Byte>^ buffer = gcnew array<Byte>(bytes_to_read);
+            auto buffer = gcnew cli::array<Byte>(bytes_to_read);
             bytes_read = _stream->Read(buffer, 0, bytes_to_read);
             pin_ptr<Byte> src = &buffer[0];
             memcpy(data_out, static_cast<void*>(src), bytes_read);
@@ -68,6 +65,18 @@ namespace CefSharp
         }
 
         return hasData;
+    }
+
+    bool ResourceHandlerWrapper::CanGetCookie(const CefCookie& cookie)
+    {
+        //Default value is true
+        return true;
+    }
+
+    bool ResourceHandlerWrapper::CanSetCookie(const CefCookie& cookie)
+    {
+        //Default value is true
+        return true;
     }
 
     void ResourceHandlerWrapper::Cancel()

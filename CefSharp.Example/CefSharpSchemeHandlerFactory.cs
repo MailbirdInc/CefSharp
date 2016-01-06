@@ -4,9 +4,10 @@
 
 namespace CefSharp.Example
 {
-    internal class CefSharpSchemeHandlerFactory : ISchemeHandlerFactory
+    public class CefSharpSchemeHandlerFactory : ISchemeHandlerFactory
     {
         public const string SchemeName = "custom";
+        public const string SchemeNameTest = "test";
 
         public IResourceHandler Create(IBrowser browser, IFrame frame, string schemeName, IRequest request)
         {

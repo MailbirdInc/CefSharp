@@ -2,15 +2,16 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
-#include "Stdafx.h"
-#include "CompletionHandler.h"
-
-using namespace System::Net;
-
 namespace CefSharp
 {
-    void CompletionHandler::OnComplete()
+    /// <summary>
+    /// Geoposition error codes. 
+    /// </summary>
+    public enum CefGeoPositionErrorCode
     {
-        _handler->OnComplete();
+        None = 0,
+        PermissionDenied,
+        PositionUnavailable,
+        Timeout
     }
 }

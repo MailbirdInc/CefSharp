@@ -13,7 +13,6 @@ using namespace System::Runtime::Serialization;
 using namespace System::Linq;
 using namespace System::Collections::Generic;
 
-using namespace CefSharp::Internals;
 using namespace CefSharp::Internals::Async;
 
 namespace CefSharp
@@ -28,9 +27,8 @@ namespace CefSharp
         initonly List<JavascriptObjectWrapper^>^ _wrappedObjects;
         initonly List<JavascriptAsyncObjectWrapper^>^ _wrappedAsyncObjects;
         initonly Dictionary<int64, JavascriptAsyncMethodCallback^>^ _methodCallbacks;
+        bool _isBound;
         int64 _lastCallback;
-        JavascriptRootObject^ _rootObject;
-        JavascriptRootObject^ _asyncRootObject;
         IBrowserProcess^ _browserProcess;
         // The entire set of possible JavaScript functions to
         // call directly into.
@@ -44,16 +42,20 @@ namespace CefSharp
             CefSharp::Internals::JavascriptCallbackRegistry^ get();
         }
 
-    public:
-        JavascriptRootObjectWrapper(int browserId, JavascriptRootObject^ rootObject, JavascriptRootObject^ asyncRootObject, IBrowserProcess^ browserProcess)
+        property bool IsBound
         {
-            _rootObject = rootObject;
-            _asyncRootObject = asyncRootObject;
+            bool get();
+        }
+
+    public:
+        JavascriptRootObjectWrapper(int browserId, IBrowserProcess^ browserProcess)
+        {
             _browserProcess = browserProcess;
             _wrappedObjects = gcnew List<JavascriptObjectWrapper^>();
             _wrappedAsyncObjects = gcnew List<JavascriptAsyncObjectWrapper^>();
             _callbackRegistry = gcnew JavascriptCallbackRegistry(browserId);
             _methodCallbacks = gcnew Dictionary<int64, JavascriptAsyncMethodCallback^>();
+            _isBound = false;
         }
 
         ~JavascriptRootObjectWrapper()
@@ -85,7 +87,7 @@ namespace CefSharp
 
         bool TryGetAndRemoveMethodCallback(int64 id, JavascriptAsyncMethodCallback^% callback);
 
-        void Bind(const CefRefPtr<CefV8Value>& v8Value);
+        void Bind(JavascriptRootObject^ rootObject, JavascriptRootObject^ asyncRootObject, const CefRefPtr<CefV8Value>& v8Value);
     };
 }
 

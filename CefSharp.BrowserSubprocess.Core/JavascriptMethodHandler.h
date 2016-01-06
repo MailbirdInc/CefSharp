@@ -7,8 +7,6 @@
 #include "include/cef_v8.h"
 #include "JavascriptCallbackRegistry.h"
 
-using namespace CefSharp::Internals;
-
 namespace CefSharp
 {
     private class JavascriptMethodHandler : public CefV8Handler
@@ -27,10 +25,12 @@ namespace CefSharp
         ~JavascriptMethodHandler()
         {
             delete _method;
-            delete _callbackRegistry;
+            // The callback registry is a shared instance among all method handlers (async & sync).
+            // It's lifecycle is managed in the JavascriptRootObjectWrapper.
+            _callbackRegistry = nullptr;
         }
 
-        virtual bool Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception);
+        virtual bool Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception) OVERRIDE;
 
         CefRefPtr<CefV8Value> ConvertToCefObject(Object^ obj);
 

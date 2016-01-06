@@ -36,6 +36,7 @@ namespace CefSharp.WinForms
         public ILifeSpanHandler LifeSpanHandler { get; set; }
         public IDisplayHandler DisplayHandler { get; set; }
         public IContextMenuHandler MenuHandler { get; set; }
+        public IRenderProcessMessageHandler RenderProcessMessageHandler { get; set; }
 
         /// <summary>
         /// The <see cref="IFocusHandler"/> for this ChromiumWebBrowser.
@@ -64,13 +65,14 @@ namespace CefSharp.WinForms
 
         public bool CanGoForward { get; private set; }
         public bool CanGoBack { get; private set; }
-        [Obsolete("Use IsLoading instead (inverse of this property)")]
-        public bool CanReload { get; private set; }
         public bool IsBrowserInitialized { get; private set; }
 
         static ChromiumWebBrowser()
         {
-            Application.ApplicationExit += OnApplicationExit;
+            if (CefSharpSettings.ShutdownOnExit)
+            {
+                Application.ApplicationExit += OnApplicationExit;
+            }
         }
 
         private static void OnApplicationExit(object sender, EventArgs e)
@@ -159,6 +161,10 @@ namespace CefSharp.WinForms
                 throw new Exception("Browser is already initialized. RegisterJsObject must be" +
                                     "called before the underlying CEF browser is created.");
             }
+
+            //Enable WCF if not already enabled
+            CefSharpSettings.WcfEnabled = true;
+
             managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, camelCaseJavascriptNames);
         }
 
@@ -222,7 +228,6 @@ namespace CefSharp.WinForms
         {
             CanGoBack = args.CanGoBack;
             CanGoForward = args.CanGoForward;
-            CanReload = !args.IsLoading;
             IsLoading = args.IsLoading;
 
             var handler = LoadingStateChanged;

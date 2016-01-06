@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "MCefRefPtr.h"
+#include "Stdafx.h"
+
 #include "include/cef_cookie.h"
 
 using namespace System::Threading::Tasks;
@@ -39,10 +40,10 @@ namespace CefSharp
             virtual Task<bool>^ DeleteCookiesAsync(String^ url, String^ name);
             virtual Task<bool>^ SetCookieAsync(String^ url, Cookie^ cookie);
             virtual bool SetStoragePath(String^ path, bool persistSessionSookies);
-            virtual void SetSupportedSchemes(... array<String^>^ schemes);
+            virtual void SetSupportedSchemes(... cli::array<String^>^ schemes);
             virtual bool VisitAllCookies(ICookieVisitor^ visitor);
             virtual bool VisitUrlCookies(String^ url, bool includeHttpOnly, ICookieVisitor^ visitor);
-            virtual bool FlushStore(ICompletionHandler^ handler);
+            virtual Task<bool>^ FlushStoreAsync();
         };
     }
 }

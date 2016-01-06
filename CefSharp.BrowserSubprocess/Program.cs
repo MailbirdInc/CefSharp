@@ -15,6 +15,8 @@ namespace CefSharp.BrowserSubprocess
         {
             Kernel32.OutputDebugString("BrowserSubprocess starting up with command line: " + String.Join("\n", args));
 
+            CefAppWrapper.EnableHighDPISupport();
+
             int result;
 
             using (var subprocess = Create(args))
@@ -26,11 +28,11 @@ namespace CefSharp.BrowserSubprocess
             return result;
         }
 
-        public static CefSubProcess Create(IEnumerable<string> args)
+        private static CefSubProcess Create(IEnumerable<string> args)
         {
             const string typePrefix = "--type=";
             var typeArgument = args.SingleOrDefault(arg => arg.StartsWith(typePrefix));
-            var wcfEnabled = args.Any(a => a.StartsWith(CefSharpArguments.WcfEnabledArgument));
+            var wcfEnabled = args.HasArgument(CefSharpArguments.WcfEnabledArgument);
 
             var type = typeArgument.Substring(typePrefix.Length);
 
@@ -41,9 +43,6 @@ namespace CefSharp.BrowserSubprocess
                     return wcfEnabled ? new CefRenderProcess(args) : new CefSubProcess(args);
                 }
                 case "gpu-process":
-                {
-                    return new CefGpuProcess(args);
-                }
                 default:
                 {
                     return new CefSubProcess(args);
