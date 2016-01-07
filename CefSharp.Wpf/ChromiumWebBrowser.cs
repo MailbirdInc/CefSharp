@@ -1306,10 +1306,5 @@ namespace CefSharp.Wpf
                 }
             }
         }
-
-        public bool IsDisposed
-        {
-            get { return disposeCount > 0; }
-        }
     }
 }
