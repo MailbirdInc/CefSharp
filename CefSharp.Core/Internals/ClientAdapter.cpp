@@ -57,7 +57,7 @@ namespace CefSharp
 			return nullptr;
 		}
 
-		IBrowser^ ClientAdapter::GetBrowserWrapper(int browserId, bool isPopup)
+		IBrowser^ ClientAdapter::GetBrowserWrapper(int browserId, bool isPopup, bool triggerException = true)
 		{
 			if (_browserControl->HasParent)
 			{
@@ -71,6 +71,9 @@ namespace CefSharp
 				{
 					return browserWrapper;
 				}
+
+				if (!triggerException)
+					return nullptr;
 
 				auto stackFrame = gcnew StackFrame(1);
 				auto callingMethodName = stackFrame->GetMethod()->Name;
@@ -695,7 +698,7 @@ namespace CefSharp
 			}
 
 			auto frameWrapper = gcnew CefFrameWrapper(frame);
-			auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+			auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup(), false);
 			auto requestWrapper = gcnew CefRequestWrapper(request);
 			auto requestCallback = gcnew CefRequestCallbackWrapper(callback, frameWrapper, requestWrapper);
 
