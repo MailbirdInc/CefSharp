@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -55,10 +55,16 @@ void ManagedCefBrowserAdapter::OnAfterBrowserCreated(int browserId)
             _browserProcessServiceHost = gcnew BrowserProcessServiceHost(_javaScriptObjectRepository, Process::GetCurrentProcess()->Id, this);
             //NOTE: Attempt to solve timing issue where browser is opened and rapidly disposed. In some cases a call to Open throws
             // an exception about the process already being closed. Two relevant issues are #862 and #804.
-            // Considering adding an IsDisposed check and also may have to revert to a try catch block
             if (_browserProcessServiceHost->State == CommunicationState::Created)
             {
-                _browserProcessServiceHost->Open();
+                try
+                {
+                    _browserProcessServiceHost->Open();
+                }
+                catch (Exception^)
+                {
+                    //Ignore exception as it's likely cause when the browser is closing
+                }
             }
         }
     
@@ -66,46 +72,6 @@ void ManagedCefBrowserAdapter::OnAfterBrowserCreated(int browserId)
         {
             _webBrowserInternal->OnAfterBrowserCreated();
         }
-    }
-}
-
-void ManagedCefBrowserAdapter::WasResized()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->WasResized();
-    }
-}
-
-void ManagedCefBrowserAdapter::WasHidden(bool hidden)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->WasHidden(hidden);
-    }
-}
-
-void ManagedCefBrowserAdapter::SendFocusEvent(bool isFocused)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->SendFocusEvent(isFocused);
-    }
-}
-
-void ManagedCefBrowserAdapter::SetFocus(bool isFocused)
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->SetFocus(isFocused);
     }
 }
 
@@ -256,26 +222,6 @@ void ManagedCefBrowserAdapter::Resize(int width, int height)
         {
             SetWindowPos(browserHwnd, NULL, 0, 0, width, height, SWP_NOZORDER);
         }
-    }
-}
-
-void ManagedCefBrowserAdapter::NotifyMoveOrResizeStarted()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->NotifyMoveOrResizeStarted();
-    }
-}
-
-void ManagedCefBrowserAdapter::NotifyScreenInfoChanged()
-{
-    auto browser = _clientAdapter->GetCefBrowser();
-
-    if (browser != nullptr)
-    {
-        browser->GetHost()->NotifyScreenInfoChanged();
     }
 }
 

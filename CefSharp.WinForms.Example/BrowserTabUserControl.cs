@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -48,6 +48,7 @@ namespace CefSharp.WinForms.Example
             browser.RegisterJsObject("bound", new BoundObject());
             browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
             browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
+            //browser.ResourceHandlerFactory = new FlashResourceHandlerFactory();
 
             var eventObject = new ScriptedMethodsBoundObject();
             eventObject.EventArrived += OnJavascriptEventArrived;

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -158,6 +159,8 @@ namespace CefSharp.Wpf
             BrowserSettings = new BrowserSettings();
 
             PresentationSource.AddSourceChangedHandler(this, PresentationSourceChangedHandler);
+
+            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
         }
 
         ~ChromiumWebBrowser()
@@ -842,7 +845,11 @@ namespace CefSharp.Wpf
 
                     if (notifyDpiChanged)
                     {
-                        managedCefBrowserAdapter.NotifyScreenInfoChanged();
+                        var browser = GetBrowser();
+                        if(browser != null)
+                        {
+                            browser.GetHost().NotifyScreenInfoChanged();
+                        }
                     }
                 }
             }
@@ -892,13 +899,25 @@ namespace CefSharp.Wpf
         {
             // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
             CreateOffscreenBrowserWhenActualSizeChanged();
-            managedCefBrowserAdapter.WasResized();
+
+            var browser = GetBrowser();
+
+            if (browser != null)
+            {
+                browser.GetHost().WasResized();
+            }
         }
 
         private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
         {
             var isVisible = (bool)args.NewValue;
-            managedCefBrowserAdapter.WasHidden(!isVisible);
+
+            var browser = GetBrowser();
+
+            if (browser != null)
+            {
+                browser.GetHost().WasHidden(!isVisible);
+            }
         }
 
         private static void OnApplicationExit(object sender, ExitEventArgs e)
@@ -928,9 +947,11 @@ namespace CefSharp.Wpf
         {
             var img = new Image();
 
-            var bitmapScalingMode = RenderOptions.GetBitmapScalingMode(this);
-            //Default to using BitmapScalingMode.NearestNeighbor
-            RenderOptions.SetBitmapScalingMode(img, (bitmapScalingMode == BitmapScalingMode.Unspecified ? BitmapScalingMode.NearestNeighbor : bitmapScalingMode));
+            BindingOperations.SetBinding(img, RenderOptions.BitmapScalingModeProperty, new Binding
+            {
+                Path = new PropertyPath(RenderOptions.BitmapScalingModeProperty),
+                Source = this,
+            });
 
             img.Stretch = Stretch.None;
             img.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1050,17 +1071,21 @@ namespace CefSharp.Wpf
 
         private void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            if (managedCefBrowserAdapter != null)
+            var browser = GetBrowser();
+
+            if (browser != null)
             {
-                managedCefBrowserAdapter.SendFocusEvent(true);
+                browser.GetHost().SendFocusEvent(true);
             }
         }
 
         private void OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            if (managedCefBrowserAdapter != null)
+            var browser = GetBrowser();
+
+            if (browser != null)
             {
-                managedCefBrowserAdapter.SendFocusEvent(false);
+                browser.GetHost().SendFocusEvent(false);
             }
         }
 
@@ -1118,18 +1143,19 @@ namespace CefSharp.Wpf
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
-            var point = e.GetPosition(this);
-
             var browser = GetBrowser();
 
             if (browser != null)
             {
+                var point = e.GetPosition(this);
+                var modifiers = e.GetModifiers();
+
                 browser.SendMouseWheelEvent(
                     (int)point.X,
                     (int)point.Y,
                     deltaX: 0,
                     deltaY: e.Delta,
-                    modifiers: CefEventFlags.None);
+                    modifiers: modifiers);
             }
         }
 

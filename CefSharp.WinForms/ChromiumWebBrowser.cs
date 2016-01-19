@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -347,31 +347,14 @@ namespace CefSharp.WinForms
             }
         }
 
-        public void NotifyMoveOrResizeStarted()
-        {
-            this.ThrowExceptionIfBrowserNotInitialized();
-
-            managedCefBrowserAdapter.NotifyMoveOrResizeStarted();
-        }
-
         protected override void OnGotFocus(EventArgs e)
         {
             if (IsBrowserInitialized)
             {
-                SetFocus(true);
+                GetBrowser().GetHost().SetFocus(true);
             }
 
             base.OnGotFocus(e);
-        }
-
-        /// <summary>
-        /// Tell the browser to acquire/release focus.
-        /// </summary>
-        public void SetFocus(bool isFocused)
-        {
-            this.ThrowExceptionIfBrowserNotInitialized();
-
-            managedCefBrowserAdapter.SetFocus(isFocused);
         }
 
         public IBrowser GetBrowser()

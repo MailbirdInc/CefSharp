@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -49,6 +49,27 @@ namespace CefSharp
             ThrowIfDisposed();
 
             _wrappedRequest->SetMethod(StringUtils::ToNative(method));
+        }
+
+        void CefRequestWrapper::SetReferrer(String^ referrerUrl, CefSharp::ReferrerPolicy policy)
+        {
+            ThrowIfDisposed();
+
+            _wrappedRequest->SetReferrer(StringUtils::ToNative(referrerUrl), (cef_referrer_policy_t)policy);
+        }
+
+        String^ CefRequestWrapper::ReferrerUrl::get()
+        {
+            ThrowIfDisposed();
+
+            return StringUtils::ToClr(_wrappedRequest->GetReferrerURL());
+        }
+
+        CefSharp::ReferrerPolicy CefRequestWrapper::ReferrerPolicy::get()
+        {
+            ThrowIfDisposed();
+
+            return (CefSharp::ReferrerPolicy)_wrappedRequest->GetReferrerPolicy();
         }
 
         NameValueCollection^ CefRequestWrapper::Headers::get()
