@@ -624,7 +624,7 @@ namespace CefSharp
 
 			if (handler != nullptr)
 			{
-				auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());;
+				auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup(), false);
 				CefFrameWrapper frameWrapper(frame);
 				CefRequestWrapper requestWrapper(request);
 				CefResponseWrapper responseWrapper(response);
