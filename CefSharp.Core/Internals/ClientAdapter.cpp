@@ -551,7 +551,7 @@ namespace CefSharp
             if (handler != nullptr)
             {
                 auto managedNewUrl = StringUtils::ToClr(newUrl);
-                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());;
+                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup(), false);
                 CefFrameWrapper frameWrapper(frame);
                 CefRequestWrapper requestWrapper(request);
 
