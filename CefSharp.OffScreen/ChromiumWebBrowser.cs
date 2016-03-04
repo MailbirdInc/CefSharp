@@ -35,6 +35,8 @@ namespace CefSharp.OffScreen
         /// </summary>
         private Size size = new Size(1366, 768);
 
+        private IBrowser browser;
+
         /// <summary>
         /// Flag to guard the creation of the underlying offscreen browser - only one instance can be created
         /// </summary>
@@ -143,6 +145,7 @@ namespace CefSharp.OffScreen
 
             if (disposing)
             {
+                browser = null;
                 IsBrowserInitialized = false;
 
                 if (bitmap != null)
@@ -199,9 +202,10 @@ namespace CefSharp.OffScreen
                 {
                     size = value;
 
-                    var browser = GetBrowser();
-
-                    browser.GetHost().WasResized();
+                    if (IsBrowserInitialized)
+                    {
+                        browser.GetHost().WasResized();
+                    }
                 }
             }
         }
@@ -271,7 +275,11 @@ namespace CefSharp.OffScreen
         {
             Address = url;
 
-            this.GetMainFrame().LoadUrl(url);
+            //Destroy the frame wrapper when we're done
+            using (var frame = this.GetMainFrame())
+            {
+                frame.LoadUrl(url);
+            }
         }
 
         public void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
@@ -312,7 +320,7 @@ namespace CefSharp.OffScreen
         {
             this.ThrowExceptionIfBrowserNotInitialized();
 
-            return managedCefBrowserAdapter.GetBrowser();
+            return browser;
         }
 
         ScreenInfo IRenderWebBrowser.GetScreenInfo()
@@ -421,8 +429,10 @@ namespace CefSharp.OffScreen
             }
         }
 
-        void IWebBrowserInternal.OnAfterBrowserCreated()
+        void IWebBrowserInternal.OnAfterBrowserCreated(IBrowser browser)
         {
+            this.browser = browser;
+
             IsBrowserInitialized = true;
 
             var handler = BrowserInitialized;

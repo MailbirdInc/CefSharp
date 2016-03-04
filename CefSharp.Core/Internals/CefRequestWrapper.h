@@ -21,7 +21,7 @@ namespace CefSharp
             IPostData^ _postData;
         internal:
             CefRequestWrapper(CefRefPtr<CefRequest> &cefRequest) : 
-                _wrappedRequest(cefRequest)
+                _wrappedRequest(cefRequest), _postData(nullptr)
             {
             }
 
@@ -44,6 +44,7 @@ namespace CefSharp
             virtual property String^ Method { String^ get(); void set(String^ method); }
             virtual void SetReferrer(String^ referrerUrl, CefSharp::ReferrerPolicy policy);
             virtual property String^ ReferrerUrl { String^ get(); }
+            virtual property ResourceType ResourceType { CefSharp::ResourceType get(); }
             virtual property ReferrerPolicy ReferrerPolicy { CefSharp::ReferrerPolicy get(); }
             virtual property NameValueCollection^ Headers { NameValueCollection^ get(); void set(NameValueCollection^ url); }
             virtual property TransitionType TransitionType { CefSharp::TransitionType get(); }

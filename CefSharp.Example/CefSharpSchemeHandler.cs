@@ -47,16 +47,17 @@ namespace CefSharp.Example
                 { "/FramedWebGLTest.html", Resources.FramedWebGLTest },
                 { "/MultiBindingTest.html", Resources.MultiBindingTest },
                 { "/ScriptedMethodsTest.html", Resources.ScriptedMethodsTest },
+                { "/ResponseFilterTest.html", Resources.ResponseFilterTest },
             };
         }
 
-        public bool ProcessRequestAsync(IRequest request, ICallback callback)
+        bool IResourceHandler.ProcessRequest(IRequest request, ICallback callback)
         {
             // The 'host' portion is entirely ignored by this scheme handler.
             var uri = new Uri(request.Url);
             var fileName = uri.AbsolutePath;
 
-            if(string.Equals(fileName, "/PostDataTest.html", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(fileName, "/PostDataTest.html", StringComparison.OrdinalIgnoreCase))
             {
                 var postDataElement = request.PostData.Elements.FirstOrDefault();
                 var resourceHandler = ResourceHandler.FromString("Post Data: " + (postDataElement == null ? "null" : postDataElement.GetBody()));
@@ -69,7 +70,7 @@ namespace CefSharp.Example
             if (string.Equals(fileName, "/PostDataAjaxTest.html", StringComparison.OrdinalIgnoreCase))
             {
                 var postData = request.PostData;
-                if(postData == null)
+                if (postData == null)
                 {
                     var resourceHandler = ResourceHandler.FromString("Post Data: null");
                     stream = (MemoryStream)resourceHandler.Stream;
@@ -77,7 +78,7 @@ namespace CefSharp.Example
                     callback.Continue();
                 }
                 else
-                { 
+                {
                     var postDataElement = postData.Elements.FirstOrDefault();
                     var resourceHandler = ResourceHandler.FromString("Post Data: " + (postDataElement == null ? "null" : postDataElement.GetBody()));
                     stream = (MemoryStream)resourceHandler.Stream;
@@ -88,13 +89,22 @@ namespace CefSharp.Example
                 return true;
             }
 
+            if (string.Equals(fileName, "/EmptyResponseFilterTest.html", StringComparison.OrdinalIgnoreCase))
+            {
+                stream = null;
+                mimeType = "text/html";
+                callback.Continue();
+
+                return true;
+            }
+
             string resource;
             if (ResourceDictionary.TryGetValue(fileName, out resource) && !string.IsNullOrEmpty(resource))
             {
                 Task.Run(() =>
                 {
                     using (callback)
-                    { 
+                    {
                         var bytes = Encoding.UTF8.GetBytes(resource);
                         stream = new MemoryStream(bytes);
 
@@ -114,17 +124,51 @@ namespace CefSharp.Example
 
             return false;
         }
+        
 
-        public Stream GetResponse(IResponse response, out long responseLength, out string redirectUrl)
+        void IResourceHandler.GetResponseHeaders(IResponse response, out long responseLength, out string redirectUrl)
         {
-            responseLength = stream.Length;
+            responseLength = stream == null ? 0 : stream.Length;
             redirectUrl = null;
 
             response.StatusCode = (int)HttpStatusCode.OK;
             response.StatusText = "OK";
             response.MimeType = mimeType;
+        }
 
-            return stream;
+        bool IResourceHandler.ReadResponse(Stream dataOut, out int bytesRead, ICallback callback)
+        {
+            //Dispose the callback as it's an unmanaged resource, we don't need it in this case
+            callback.Dispose();
+
+            if(stream == null)
+            {
+                bytesRead = 0;
+                return false;
+            }
+
+            //Data out represents an underlying buffer (typically 32kb in size).
+            var buffer = new byte[dataOut.Length];
+            bytesRead = stream.Read(buffer, 0, buffer.Length);
+            
+            dataOut.Write(buffer, 0, buffer.Length);
+
+            return bytesRead > 0;
+        }
+
+        bool IResourceHandler.CanGetCookie(Cookie cookie)
+        {
+            return true;
+        }
+
+        bool IResourceHandler.CanSetCookie(Cookie cookie)
+        {
+            return true;
+        }
+
+        void IResourceHandler.Cancel()
+        {
+            
         }
     }
 }

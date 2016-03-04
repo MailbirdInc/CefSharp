@@ -36,6 +36,7 @@ namespace CefSharp
             HWND _browserHwnd;
             CefRefPtr<CefBrowser> _cefBrowser;
 
+            gcroot<IBrowser^> _browser;
             gcroot<Dictionary<int, IBrowser^>^> _popupBrowsers;
             gcroot<String^> _tooltip;
             gcroot<IBrowserAdapter^> _browserAdapter;
@@ -48,14 +49,15 @@ namespace CefSharp
                 throw gcnew ApplicationException(String::Format("{0} couldn't find IBrowser entry! Please contact CefSharp development.", context));
             }
 
-			IBrowser^ GetBrowserWrapper(int browserId, bool isPopup, bool triggerException);
+            IBrowser^ GetBrowserWrapper(int browserId, bool isPopup, bool returnNullIfBrowserNotFound);
 
         public:
             ClientAdapter(IWebBrowserInternal^ browserControl, IBrowserAdapter^ browserAdapter) :
                 _browserControl(browserControl), 
                 _popupBrowsers(gcnew Dictionary<int, IBrowser^>()),
                 _pendingTaskRepository(gcnew PendingTaskRepository<JavascriptResponse^>()),
-                _browserAdapter(browserAdapter)
+                _browserAdapter(browserAdapter),
+                _browserHwnd(NULL)
             {
 
             }
@@ -67,6 +69,7 @@ namespace CefSharp
                 //this will dispose the repository and cancel all pending tasks
                 delete _pendingTaskRepository;
 
+                _browser = nullptr;
                 _browserControl = nullptr;
                 _browserHwnd = nullptr;
                 _cefBrowser = NULL;
@@ -76,7 +79,6 @@ namespace CefSharp
             }
 
             HWND GetBrowserHwnd() { return _browserHwnd; }
-			CefRefPtr<CefBrowser> GetCefBrowser() { return _cefBrowser; }
             PendingTaskRepository<JavascriptResponse^>^ GetPendingTaskRepository();
             void CloseAllPopups(bool forceClose);
             void MethodInvocationComplete(MethodInvocationResult^ result);
@@ -125,6 +127,7 @@ namespace CefSharp
             virtual DECL bool OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& originUrl, int64 newSize, CefRefPtr<CefRequestCallback> callback) OVERRIDE;
             virtual DECL void OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefString& newUrl) OVERRIDE;
             virtual DECL bool OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) OVERRIDE;
+            virtual DECL CefRefPtr<CefResponseFilter> GetResourceResponseFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) OVERRIDE;
             virtual DECL void OnResourceLoadComplete(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response, URLRequestStatus status, int64 receivedContentLength) OVERRIDE;
             virtual DECL void OnProtocolExecution(CefRefPtr<CefBrowser> browser, const CefString& url, bool& allowOSExecution) OVERRIDE;
             virtual DECL void OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path) OVERRIDE;
