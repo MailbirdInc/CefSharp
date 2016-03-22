@@ -85,11 +85,15 @@
     <Compile Include="DraggableRegion.cs" />
     <Compile Include="FilterStatus.cs" />
     <Compile Include="Geoposition.cs" />
+    <Compile Include="IBrowserSettings.cs" />
     <Compile Include="IDomNode.cs" />
+    <Compile Include="IFindHandler.cs" />
     <Compile Include="Internals\CommandLineArgsParser.cs" />
     <Compile Include="IPluginHandler.cs" />
+    <Compile Include="IPopupFeatures.cs" />
     <Compile Include="IRenderProcessMessageHandler.cs" />
     <Compile Include="IRequestContext.cs" />
+    <Compile Include="IResolveCallback.cs" />
     <Compile Include="IResponseFilter.cs" />
     <Compile Include="IRunContextMenuCallback.cs" />
     <Compile Include="MenuItemType.cs" />
@@ -177,7 +181,9 @@
     <Compile Include="PluginPolicy.cs" />
     <Compile Include="PostDataElementType.cs" />
     <Compile Include="PostDataExtensions.cs" />
+    <Compile Include="Rect.cs" />
     <Compile Include="ReferrerPolicy.cs" />
+    <Compile Include="ResolveCallbackResult.cs" />
     <Compile Include="ResourceHandler.cs" />
     <Compile Include="ResourceHandlerType.cs" />
     <Compile Include="ResourceType.cs" />
@@ -185,6 +191,7 @@
     <Compile Include="Internals\ScreenInfo.cs" />
     <Compile Include="TaskCompletionHandler.cs" />
     <Compile Include="TaskPrintToPdf.cs" />
+    <Compile Include="TaskResolveCallbackHandler.cs" />
     <Compile Include="TransitionType.cs" />
     <Compile Include="LoadingStateChangedEventArgs.cs" />
     <Compile Include="ICompletionCallback.cs" />

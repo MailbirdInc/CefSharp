@@ -49,6 +49,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
     <NuGetPackageImportStamp>cc83ab8b</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>abab765e</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -216,6 +217,6 @@
   </Target>
   <Import Project="..\CefSharp.props" />
   <Import Project="..\CefSharp.Native.props" />
-  <Import Project="..\packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2526.1362\build\cef.redist.x64.targets')" />
-  <Import Project="..\packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2526.1362\build\cef.redist.x86.targets')" />
+  <Import Project="..\packages\cef.redist.x64.3.2623.1395\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2623.1395\build\cef.redist.x64.targets')" />
+  <Import Project="..\packages\cef.redist.x86.3.2623.1395\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2623.1395\build\cef.redist.x86.targets')" />
 </Project>
