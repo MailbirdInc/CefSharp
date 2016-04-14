@@ -95,6 +95,8 @@ namespace CefSharp.Wpf
             }
         }
 
+        DispatcherTimer _resizeTimer;
+
         public ChromiumWebBrowser()
         {
             if (!Cef.IsInitialized && !Cef.Initialize())
@@ -152,6 +154,15 @@ namespace CefSharp.Wpf
             disposables.Add(managedCefBrowserAdapter);
             disposables.Add(new DisposableEventWrapper(this, ActualHeightProperty, OnActualSizeChanged));
             disposables.Add(new DisposableEventWrapper(this, ActualWidthProperty, OnActualSizeChanged));
+
+            _resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
+            _resizeTimer.Tick += (s, re) =>
+            {
+                _resizeTimer.Stop();
+                // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
+                CreateOffscreenBrowserWhenActualSizeChanged();
+                managedCefBrowserAdapter.WasResized();
+            };
 
             ResourceHandlerFactory = new DefaultResourceHandlerFactory();
             BrowserSettings = new BrowserSettings();
@@ -840,9 +851,10 @@ namespace CefSharp.Wpf
 
         private void OnActualSizeChanged(object sender, EventArgs e)
         {
-            // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
-            CreateOffscreenBrowserWhenActualSizeChanged();
-            managedCefBrowserAdapter.WasResized();
+            if(!_resizeTimer.IsEnabled)
+                _resizeTimer.Start();
+
+            _resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
         }
 
         private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
