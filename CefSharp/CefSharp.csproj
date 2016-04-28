@@ -59,15 +59,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CefDirtyRect.cs" />
@@ -89,6 +84,7 @@
     <Compile Include="IDomNode.cs" />
     <Compile Include="IFindHandler.cs" />
     <Compile Include="Internals\CommandLineArgsParser.cs" />
+    <Compile Include="Internals\MethodParameter.cs" />
     <Compile Include="IPluginHandler.cs" />
     <Compile Include="IPopupFeatures.cs" />
     <Compile Include="IRenderProcessMessageHandler.cs" />
@@ -224,7 +220,6 @@
     <Compile Include="Internals\Kernel32.cs" />
     <Compile Include="FrameLoadEndEventArgs.cs" />
     <Compile Include="LogSeverity.cs" />
-    <Compile Include="DisposableResource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScriptException.cs" />
     <Compile Include="Internals\RenderprocessClientFactory.cs" />

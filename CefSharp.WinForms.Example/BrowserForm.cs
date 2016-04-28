@@ -224,6 +224,38 @@ namespace CefSharp.WinForms.Example
             if (control != null)
             {
                 control.Browser.ShowDevTools();
+
+                //Example below shows how to use a control to host DevTools
+                //(in this case it's added as a new TabPage)
+                //var tabPage = new TabPage("DevTools")
+                //{
+                //    Dock = DockStyle.Fill
+                //};
+
+                //var panel = new Panel
+                //{
+                //    Dock = DockStyle.Fill
+                //};
+
+                ////We need to call CreateControl as we need the Handle later
+                //panel.CreateControl();
+
+                //tabPage.Controls.Add(panel);
+
+                //browserTabControl.TabPages.Add(tabPage);
+
+                ////Make newly created tab active
+                //browserTabControl.SelectedTab = tabPage;
+
+                ////Grab the client rect
+                //var rect = panel.ClientRectangle;
+                //var webBrowser = control.Browser;
+                //var browser = webBrowser.GetBrowser().GetHost();
+                //var windowInfo = new WindowInfo();
+                ////DevTools becomes a child of the panel, we use it's dimesions
+                //windowInfo.SetAsChild(panel.Handle, rect.Left, rect.Top, rect.Right, rect.Bottom);
+                ////Show DevTools in our panel 
+                //browser.ShowDevTools(windowInfo);
             }
         }
 
@@ -393,6 +425,42 @@ namespace CefSharp.WinForms.Example
 
                 //Execute extension method
                 frame.ListenForEvent("test-button", "click");
+            }
+        }
+
+        private async void printToPdfToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                var dialog = new SaveFileDialog
+                {
+                    DefaultExt = ".pdf",
+                    Filter = "Pdf documents (.pdf)|*.pdf"
+                };
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    var success = await control.Browser.PrintToPdfAsync(dialog.FileName, new PdfPrintSettings
+                    {
+                        MarginType = CefPdfPrintMarginType.Custom,
+                        MarginBottom = 10,
+                        MarginTop = 0,
+                        MarginLeft = 20,
+                        MarginRight = 10
+                    });
+
+                    if (success)
+                    {
+                        MessageBox.Show("Pdf was saved to " + dialog.FileName);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unable to save Pdf, check you have write permissions to " + dialog.FileName);
+                    }
+
+                }
+
             }
         }
     }
