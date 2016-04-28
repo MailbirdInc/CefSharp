@@ -180,29 +180,30 @@ namespace CefSharp
 
         void ClientAdapter::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         {
-            if (browser->IsPopup() && !_browserControl->HasParent)
-            {
-                // Remove from the browser popup list.
-                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), true);
-                _popupBrowsers->Remove(browser->GetIdentifier());
-                // Dispose the CefSharpBrowserWrapper
-                delete browserWrapper;
-            }
-            //TODO: When creating a new ChromiumWebBrowser and passing in a newBrowser to OnBeforePopup
-            //the handles don't match up (at least in WPF), need to investigate further.
-            else if (_browserHwnd == browser->GetHost()->GetWindowHandle() || _browserControl->HasParent)
-            {
-                _cefBrowser = NULL;
-            }
+			auto isPopup = browser->IsPopup() && !_browserControl->HasParent;
+			auto handler = _browserControl->LifeSpanHandler;
 
-            auto handler = _browserControl->LifeSpanHandler;
+			if (handler != nullptr)
+			{
+				auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), isPopup);
 
-            if (handler != nullptr)
-            {
-                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+				handler->OnBeforeClose(_browserControl, browserWrapper);
+			}
 
-                handler->OnBeforeClose(_browserControl, browserWrapper);
-            }
+			if (isPopup)
+			{
+				// Remove from the browser popup list.
+				auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), true);
+				_popupBrowsers->Remove(browser->GetIdentifier());
+				// Dispose the CefSharpBrowserWrapper
+				delete browserWrapper;
+			}
+			//TODO: When creating a new ChromiumWebBrowser and passing in a newBrowser to OnBeforePopup
+			//the handles don't match up (at least in WPF), need to investigate further.
+			else if (_browserHwnd == browser->GetHost()->GetWindowHandle() || _browserControl->HasParent)
+			{
+				_cefBrowser = NULL;
+			}
         }
 
         void ClientAdapter::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
