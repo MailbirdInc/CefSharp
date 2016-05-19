@@ -156,14 +156,8 @@ namespace CefSharp.Wpf
             disposables.Add(new DisposableEventWrapper(this, ActualWidthProperty, OnActualSizeChanged));
 
             _resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
-            _resizeTimer.Tick += (s, re) =>
-            {
-                _resizeTimer.Stop();
-                // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
-                CreateOffscreenBrowserWhenActualSizeChanged();
-                managedCefBrowserAdapter.WasResized();
-            };
-
+            _resizeTimer.Tick += ResizeTimer_Tick;
+            
             ResourceHandlerFactory = new DefaultResourceHandlerFactory();
             BrowserSettings = new BrowserSettings();
 
@@ -199,6 +193,8 @@ namespace CefSharp.Wpf
                 // No longer reference handlers:
                 this.SetHandlersToNull();
 
+                _resizeTimer.Stop();
+
                 if (isdisposing)
                 {
                     if (BrowserSettings != null)
@@ -225,6 +221,11 @@ namespace CefSharp.Wpf
                     if (tooltipTimer != null)
                     {
                         tooltipTimer.Tick -= OnTooltipTimerTick;
+                    }
+
+                    if (_resizeTimer != null)
+                    {
+                        _resizeTimer.Tick -= ResizeTimer_Tick;
                     }
 
                     if (CleanupElement != null)
@@ -855,6 +856,18 @@ namespace CefSharp.Wpf
                 _resizeTimer.Start();
 
             _resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
+        }
+
+        void ResizeTimer_Tick(object sender, EventArgs e)
+        {
+            _resizeTimer.Stop();
+            
+            if (managedCefBrowserAdapter == null) // Browser has been disposed
+                return;
+
+            // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
+            CreateOffscreenBrowserWhenActualSizeChanged();
+            managedCefBrowserAdapter.WasResized();
         }
 
         private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
