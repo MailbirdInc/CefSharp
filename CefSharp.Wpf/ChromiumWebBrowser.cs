@@ -175,8 +175,6 @@ namespace CefSharp.Wpf
             GC.SuppressFinalize(this);
         }
 
-        
-
         protected virtual void Dispose(bool isdisposing)
         {
             //Check if already disposed
@@ -852,10 +850,15 @@ namespace CefSharp.Wpf
 
         private void OnActualSizeChanged(object sender, EventArgs e)
         {
-            if(!_resizeTimer.IsEnabled)
-                _resizeTimer.Start();
+            if (browserCreated)
+            {
+                if (!_resizeTimer.IsEnabled)
+                    _resizeTimer.Start();
 
-            _resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
+                _resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
+            }
+            else
+                ResizeTimer_Tick(this, null);  // This will create the browser
         }
 
         void ResizeTimer_Tick(object sender, EventArgs e)
