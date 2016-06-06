@@ -16,45 +16,98 @@ namespace CefSharp.WinForms.Example.Handlers
 
             return false; //Return true to cancel the popup creation
 
-            //EXPERIMENTAL: Demonstrates using a new instance of ChromiumWebBrowser to host the popup.
-            var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+            //EXPERIMENTAL OPTION #1: Demonstrates using a new instance of ChromiumWebBrowser to host the popup.
+            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
-            ChromiumWebBrowser chromiumBrowser = null;
+            //ChromiumWebBrowser chromiumBrowser = null;
 
-            var windowX = windowInfo.X;
-            var windowY = windowInfo.Y;
-            var windowWidth = (windowInfo.Width == int.MinValue) ? 600 : windowInfo.Width;
-            var windowHeight = (windowInfo.Height == int.MinValue) ? 800 : windowInfo.Height;
+            //var windowX = windowInfo.X;
+            //var windowY = windowInfo.Y;
+            //var windowWidth = (windowInfo.Width == int.MinValue) ? 600 : windowInfo.Width;
+            //var windowHeight = (windowInfo.Height == int.MinValue) ? 800 : windowInfo.Height;
 
-            chromiumWebBrowser.Invoke(new Action(() =>
-            {
-                var owner = chromiumWebBrowser.FindForm();
-                chromiumBrowser = new ChromiumWebBrowser(targetUrl)
-                {
-                    LifeSpanHandler = this
-                };
-                chromiumBrowser.SetAsPopup();
+            //chromiumWebBrowser.Invoke(new Action(() =>
+            //{
+            //    var owner = chromiumWebBrowser.FindForm();
+            //    chromiumBrowser = new ChromiumWebBrowser(targetUrl)
+            //    {
+            //        LifeSpanHandler = this
+            //    };
 
-                var popup = new Form
-                {
-                    Left = windowX,
-                    Top = windowY,
-                    Width = windowWidth,
-                    Height = windowHeight,
-                    Text = targetFrameName
-                };
+            //    //NOTE: This is important and must be called before the handle is created
+            //    chromiumBrowser.SetAsPopup();
 
-                owner.AddOwnedForm(popup);
+            //    //Ask nicely for the control to create it's underlying handle as we'll need to
+            //    //pass it to IWindowInfo.SetAsChild
+            //    chromiumBrowser.CreateControl();
 
-                popup.Controls.Add(new Label { Text = "CefSharp Custom Popup" });
-                popup.Controls.Add(chromiumBrowser);
+            //    var popup = new Form
+            //    {
+            //        Left = windowX,
+            //        Top = windowY,
+            //        Width = windowWidth,
+            //        Height = windowHeight,
+            //        Text = targetFrameName
+            //    };
 
-                popup.Show();
-            }));
+            //    owner.AddOwnedForm(popup);
 
-            newBrowser = chromiumBrowser;
+            //    popup.Controls.Add(new Label { Text = "CefSharp Custom Popup" });
+            //    popup.Controls.Add(chromiumBrowser);
 
-            return false;
+            //    popup.Show();
+
+            //    var rect = chromiumBrowser.ClientRectangle;
+
+            //    //This is key, need to tell the Browser which handle will it's parent
+            //    //You maybe able to pass in 0 values for left, top, right and bottom though it's safest to provide them
+            //    windowInfo.SetAsChild(chromiumBrowser.Handle, rect.Left, rect.Top, rect.Right, rect.Bottom);
+            //}));
+
+            //newBrowser = chromiumBrowser;
+
+            //return false;
+
+            //EXPERIMENTAL OPTION #2: Use IWindowInfo.SetAsChild to specify the parent handle
+            //NOTE: Window resize not yet handled - it should be possible to get the
+            // IBrowserHost from the newly created IBrowser instance that represents the popup
+            // Then subscribe to window resize notifications and call NotifyMoveOrResizeStarted
+            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+
+            //var windowX = windowInfo.X;
+            //var windowY = windowInfo.Y;
+            //var windowWidth = (windowInfo.Width == int.MinValue) ? 600 : windowInfo.Width;
+            //var windowHeight = (windowInfo.Height == int.MinValue) ? 800 : windowInfo.Height;
+
+            //chromiumWebBrowser.Invoke(new Action(() =>
+            //{
+            //    var owner = chromiumWebBrowser.FindForm();
+
+            //    var popup = new Form
+            //    {
+            //        Left = windowX,
+            //        Top = windowY,
+            //        Width = windowWidth,
+            //        Height = windowHeight,
+            //        Text = targetFrameName
+            //    };
+
+            //    popup.CreateControl();
+
+            //    owner.AddOwnedForm(popup);
+
+            //    var control = new Control();
+            //    control.Dock = DockStyle.Fill;
+            //    control.CreateControl();
+
+            //    popup.Controls.Add(control);
+
+            //    popup.Show();
+
+            //    var rect = control.ClientRectangle;
+
+            //    windowInfo.SetAsChild(control.Handle, rect.Left, rect.Top, rect.Right, rect.Bottom);
+            //}));
         }
 
         void ILifeSpanHandler.OnAfterCreated(IWebBrowser browserControl, IBrowser browser)

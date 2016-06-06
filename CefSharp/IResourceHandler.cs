@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.IO;
 
 namespace CefSharp
@@ -16,7 +17,7 @@ namespace CefSharp
     /// a previous version <see cref="ResourceHandler"/>. For those upgrading, inherit from ResourceHandler instead of IResourceHandler
     /// add the override keywoard to existing methods e.g. ProcessRequestAsync.
     /// </summary>
-    public interface IResourceHandler
+    public interface IResourceHandler : IDisposable
     {
         /// <summary>
         /// Begin processing the request.  
@@ -35,7 +36,9 @@ namespace CefSharp
         /// set responseLength to -1 and ReadResponse() will be called until it
         /// returns false. If the response length is known set responseLength
         /// to a positive value and ReadResponse() will be called until it returns
-        /// false or the specified number of bytes have been read.  
+        /// false or the specified number of bytes have been read. 
+        /// If an error occured while setting up the request you can set <see cref="IResponse.ErrorCode"/>
+        /// to indicate the error condition.
         /// </summary>
         /// <param name="response">Use the response object to set the mime type, http status code and other optional header values.</param>
         /// <param name="responseLength">If the response length is not known set responseLength to -1</param>

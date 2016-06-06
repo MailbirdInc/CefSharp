@@ -62,12 +62,17 @@ namespace CefSharp.Example
             var url = new Uri(request.Url);
             if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName)
             {
-                var headers = request.Headers;
-
-                headers["Referer"] = "http://google.com";
-
-                request.Headers = headers;
+                //Referrer is now set using it's own method (was previously set in headers before)
+                request.SetReferrer("http://google.com", ReferrerPolicy.Default);
             }
+
+            //Example of setting User-Agent in every request.
+            //var headers = request.Headers;
+
+            //var userAgent = headers["User-Agent"];
+            //headers["User-Agent"] = userAgent + " CefSharp";
+
+            //request.Headers = headers;
 
             //NOTE: If you do not wish to implement this method returning false is the default behaviour
             // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
@@ -189,7 +194,7 @@ namespace CefSharp.Example
                     return new FindReplaceResponseFilter("REPLACE_THIS_STRING", "This is the replaced string!");
                 }
 
-                if (request.Url.Equals("custom://cefsharp/assets/js/application.js", StringComparison.OrdinalIgnoreCase))
+                if (request.Url.Equals("custom://cefsharp/assets/js/jquery.js", StringComparison.OrdinalIgnoreCase))
                 {
                     return new AppendResponseFilter(System.Environment.NewLine + "//CefSharp Appended this comment.");
                 }

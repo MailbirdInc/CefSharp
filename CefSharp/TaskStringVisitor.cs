@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Threading.Tasks;
 using CefSharp.Internals;
 
@@ -27,7 +28,7 @@ namespace CefSharp
         ///  Method that will be executed.
         /// </summary>
         /// <param name="str">string (result of async execution)</param>
-        public void Visit(string str)
+        void IStringVisitor.Visit(string str)
         {
             taskCompletionSource.TrySetResultAsync(str);
         }
@@ -38,6 +39,11 @@ namespace CefSharp
         public Task<string> Task
         {
             get { return taskCompletionSource.Task; }
+        }
+
+        void IDisposable.Dispose()
+        {
+            
         }
     }
 }

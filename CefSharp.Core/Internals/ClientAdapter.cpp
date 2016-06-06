@@ -130,20 +130,8 @@ namespace CefSharp
 
                 if (newBrowserInternal != nullptr)
                 {
+                    //This should already be set using the SetAsPopup extension, just making doubly sure
                     newBrowserInternal->HasParent = true;
-
-                    auto renderBrowser = dynamic_cast<IRenderWebBrowser^>(newBrowser);
-                    if (renderBrowser == nullptr)
-                    {
-                        HWND hwnd = (HWND)newBrowserInternal->ControlHandle.ToPointer();
-                        RECT rect;
-                        GetClientRect(hwnd, &rect);
-                        windowInfo.SetAsChild(hwnd, rect);
-                    }
-                    else
-                    {
-                        windowInfo.SetAsWindowless(windowInfo.parent_window, TRUE);
-                    }
 
                     auto browserAdapter = dynamic_cast<ManagedCefBrowserAdapter^>(newBrowserInternal->BrowserAdapter);
                     if (browserAdapter != nullptr)
@@ -863,7 +851,7 @@ namespace CefSharp
             }
         }
 
-        bool ClientAdapter::OnJSDialog(CefRefPtr<CefBrowser> browser, const CefString& origin_url, const CefString& accept_lang,
+        bool ClientAdapter::OnJSDialog(CefRefPtr<CefBrowser> browser, const CefString& origin_url,
             JSDialogType dialog_type, const CefString& message_text, const CefString& default_prompt_text,
             CefRefPtr<CefJSDialogCallback> callback, bool& suppress_message)
         {
@@ -877,7 +865,7 @@ namespace CefSharp
             auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
             auto callbackWrapper = gcnew CefJSDialogCallbackWrapper(callback);
             return handler->OnJSDialog(_browserControl, browserWrapper,
-                                       StringUtils::ToClr(origin_url), StringUtils::ToClr(accept_lang), (CefJsDialogType)dialog_type, 
+                                       StringUtils::ToClr(origin_url), (CefJsDialogType)dialog_type, 
                                        StringUtils::ToClr(message_text), StringUtils::ToClr(default_prompt_text), callbackWrapper, suppress_message);
         }
 

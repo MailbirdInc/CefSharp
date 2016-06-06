@@ -7,8 +7,8 @@
 #include "Stdafx.h"
 
 #include <msclr/lock.h>
+#include <msclr/marshal.h>
 #include <include/cef_version.h>
-#include <include/cef_runnable.h>
 #include <include/cef_origin_whitelist.h>
 #include <include/cef_web_plugin.h>
 
@@ -24,6 +24,7 @@
 using namespace System::Collections::Generic; 
 using namespace System::Linq;
 using namespace System::Reflection;
+using namespace msclr::interop;
 
 namespace CefSharp
 {
@@ -387,38 +388,11 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Add a plugin path (directory + file). This change may not take affect until after RefreshWebPlugins() is called.
-        /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void AddWebPluginPath(String^ path)
-        {
-            CefAddWebPluginPath(StringUtils::ToNative(path));
-        }
-
-        /// <summary>
-        /// Add a plugin directory. This change may not take affect until after CefRefreshWebPlugins() is called.
-        /// </summary>
-        /// <param name="directory">Directory.</param>
-        static void AddWebPluginDirectory(String^ directory)
-        {
-            CefAddWebPluginDirectory(StringUtils::ToNative(directory));
-        }
-
-        /// <summary>
         /// Cause the plugin list to refresh the next time it is accessed regardless of whether it has already been loaded.
         /// </summary>
         static void RefreshWebPlugins()
         {
             CefRefreshWebPlugins();
-        }
-
-        /// <summary>
-        /// Remove a plugin path (directory + file). This change may not take affect until after RefreshWebPlugins() is called. 
-        /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void RemoveWebPluginPath(String^ path)
-        {
-            CefRemoveWebPluginPath(StringUtils::ToNative(path));
         }
 
         /// <summary>
@@ -429,15 +403,6 @@ namespace CefSharp
         {
             CefUnregisterInternalWebPlugin(StringUtils::ToNative(path));
         }	
-
-        /// <summary>
-        /// Force a plugin to shutdown. 
-        /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void ForceWebPluginShutdown(String^ path)
-        {
-            CefForceWebPluginShutdown(StringUtils::ToNative(path));
-        }
 
         /// <summary>
         /// Call during process startup to enable High-DPI support on Windows 7 or newer.
@@ -487,6 +452,35 @@ namespace CefSharp
             }
 
             return nullptr;
+        }
+
+        /// <summary>
+        /// Calls LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH to load libcef.dll
+        /// Make sure to set settings.BrowserSubprocessPath and settings.LocalesDirPath
+        /// </summary>
+        /// <param name="path">Path to libcef.dll</param>
+        static void LoadLibCefLibrary(String^ path)
+        {
+            String^ absolutePathToLibCef;
+            if (path->EndsWith("libcef.dll", StringComparison::OrdinalIgnoreCase))
+            {
+                absolutePathToLibCef = path;
+            }
+            else
+            {
+                absolutePathToLibCef = Path::Combine(path, "libcef.dll");
+            }
+
+            if (!File::Exists(absolutePathToLibCef))
+            {
+                throw gcnew FileNotFoundException("Unable to locate libcef.dll", absolutePathToLibCef);
+            }
+
+            marshal_context context;
+
+            LPCTSTR cstr = context.marshal_as<const TCHAR*>(absolutePathToLibCef);
+
+            LoadLibraryEx(cstr, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
         }
     };
 }

@@ -68,6 +68,13 @@ namespace CefSharp
         public ResourceHandlerType Type { get; private set; }
 
         /// <summary>
+        /// When true the Stream will be Disposed when
+        /// this instance is Disposed. The default value for
+        /// this property is false.
+        /// </summary>
+        public bool AutoDisposeStream { get; set; }
+
+        /// <summary>
         /// Default Constructor
         /// </summary>
         public ResourceHandler() : this(DefaultMimeType, ResourceHandlerType.Stream)
@@ -870,6 +877,18 @@ namespace CefSharp
             }
             string mime;
             return Mappings.TryGetValue(extension, out mime) ? mime : "application/octet-stream";
+        }
+
+        /// <summary>
+        /// Dispose of resources here
+        /// </summary>
+        public virtual void Dispose()
+        {
+            if(AutoDisposeStream && Stream != null)
+            {
+                Stream.Dispose();
+                Stream = null;
+            }
         }
     }
 }
