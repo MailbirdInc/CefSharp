@@ -1,18 +1,20 @@
 param(
-    [ValidateSet("vs2013", "vs2012", "nupkg-only")]
+    [ValidateSet("vs2013", "vs2015", "nupkg-only")]
     [Parameter(Position = 0)] 
-    [string] $Target = "vs2012",
+    [string] $Target = "vs2013",
     [Parameter(Position = 1)]
-    [string] $Version = "43.0.0-MB4",
+    [string] $Version = "51.0.0",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "43.0.0",
-    [Parameter(Position = 3)]
-    [string] $RedistVersion = "3.2357.1287"
+    [string] $AssemblyVersion = "51.0.0"   
 )
 
 $WorkingDir = split-path -parent $MyInvocation.MyCommand.Definition
-
 $CefSln = Join-Path $WorkingDir 'CefSharp3.sln'
+
+# Extract the current CEF Redist version from the CefSharp.Core\packages.config file
+# Save having to update this file manually Example 3.2704.1418
+$CefSharpCorePackagesXml = [xml](Get-Content (Join-Path $WorkingDir 'CefSharp.Core\Packages.config'))
+$RedistVersion = $CefSharpCorePackagesXml.SelectSingleNode("//packages/package[@id='cef.sdk']/@version").value
 
 function Write-Diagnostic 
 {
@@ -106,7 +108,7 @@ function TernaryReturn
 function Msvs 
 {
     param(
-        [ValidateSet('v110', 'v120')]
+        [ValidateSet('v120', 'v140')]
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string] $Toolchain, 
 
@@ -125,17 +127,17 @@ function Msvs
     $VXXCommonTools = $null
 
     switch -Exact ($Toolchain) {
-        'v110' {
-            $MSBuildExe = join-path -path (Get-ItemProperty "HKLM:\software\Microsoft\MSBuild\ToolsVersions\4.0").MSBuildToolsPath -childpath "msbuild.exe"
-            $MSBuildExe = $MSBuildExe -replace "Framework64", "Framework"
-            $VisualStudioVersion = '11.0'
-            $VXXCommonTools = Join-Path $env:VS110COMNTOOLS '..\..\vc'
-        }
         'v120' {
             $MSBuildExe = join-path -path (Get-ItemProperty "HKLM:\software\Microsoft\MSBuild\ToolsVersions\12.0").MSBuildToolsPath -childpath "msbuild.exe"
             $MSBuildExe = $MSBuildExe -replace "Framework64", "Framework"
             $VisualStudioVersion = '12.0'
             $VXXCommonTools = Join-Path $env:VS120COMNTOOLS '..\..\vc'
+        }
+        'v140' {
+            $MSBuildExe = join-path -path (Get-ItemProperty "HKLM:\software\Microsoft\MSBuild\ToolsVersions\14.0").MSBuildToolsPath -childpath "msbuild.exe"
+            $MSBuildExe = $MSBuildExe -replace "Framework64", "Framework"
+            $VisualStudioVersion = '14.0'
+            $VXXCommonTools = Join-Path $env:VS140COMNTOOLS '..\..\vc'
         }
     }
 
@@ -200,7 +202,7 @@ function Msvs
 function VSX 
 {
     param(
-        [ValidateSet('v110', 'v120')]
+        [ValidateSet('v120', 'v140')]
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string] $Toolchain
     )
@@ -210,7 +212,7 @@ function VSX
         Return
     }
 
-    if($Toolchain -eq 'v110' -and $env:VS110COMNTOOLS -eq $null) {
+    if($Toolchain -eq 'v140' -and $env:VS140COMNTOOLS -eq $null) {
         Warn "Toolchain $Toolchain is not installed on your development machine, skipping build."
         Return
     }
@@ -253,10 +255,10 @@ function Nupkg
     Write-Diagnostic "Building nuget package"
 
     # Build packages
-    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget -Properties "RedistVersion=$RedistVersion"
-    . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-    . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-    . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget -Properties "RedistVersion=$RedistVersion"
+    . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
 
     # Invoke `AfterBuild` script if available (ie. upload packages to myget)
     if(-not (Test-Path $WorkingDir\AfterBuild.ps1)) {
@@ -289,6 +291,8 @@ function WriteAssemblyVersion
     $NewString | Set-Content $Filename -Encoding UTF8
 }
 
+Write-Diagnostic "CEF Redist Version = $RedistVersion"
+
 DownloadNuget
 
 NugetPackageRestore
@@ -306,9 +310,9 @@ switch -Exact ($Target)
         VSX v120
         Nupkg
     }
-    "vs2012"
+    "vs2015"
     {
-        VSX v110
+        VSX v140
         Nupkg
     }
 }

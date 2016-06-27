@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -18,5 +18,10 @@ namespace CefSharp
         /// or leave blank to use the suggested name and the default temp directory</param>
         /// <param name="showDialog">Set to true if you do wish to show the default "Save As" dialog</param>
         void Continue(string downloadPath, bool showDialog);
+
+        /// <summary>
+        /// Gets a value indicating whether the callback has been disposed of.
+        /// </summary>
+        bool IsDisposed { get; }
     }
 }

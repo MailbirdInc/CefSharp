@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -11,14 +11,18 @@ namespace CefSharp
     /// </summary>
     public class FrameLoadEndEventArgs : EventArgs
     {
+        /// <summary>
+        /// Creates a new FrameLoadEnd event args
+        /// </summary>
+        /// <param name="browser">browser</param>
+        /// <param name="frame">frame</param>
+        /// <param name="httpStatusCode">http statusCode</param>
         public FrameLoadEndEventArgs(IBrowser browser, IFrame frame, int httpStatusCode)
         {
             Browser = browser;
             Frame = frame;
             Url = frame.Url;
             HttpStatusCode = httpStatusCode;
-
-            IsMainFrame = frame.IsMain;
         }
 
         /// <summary>
@@ -40,11 +44,5 @@ namespace CefSharp
         /// Http Status Code
         /// </summary>
         public int HttpStatusCode { get; set; }
-
-        /// <summary>
-        /// Is this the Main Frame
-        /// </summary>
-        [Obsolete("Use Frame.IsMain instead")]
-        public bool IsMainFrame { get; private set; }
     }
 }

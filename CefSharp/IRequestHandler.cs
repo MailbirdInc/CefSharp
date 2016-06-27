@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,6 +6,10 @@ using System;
 
 namespace CefSharp
 {
+    /// <summary>
+    /// Implement this interface to handle events related to browser requests.
+    /// The methods of this class will be called on the thread indicated. 
+    /// </summary>
     public interface IRequestHandler
     {
         /// <summary>
@@ -101,17 +105,6 @@ namespace CefSharp
         bool GetAuthCredentials(IWebBrowser browserControl, IBrowser browser, IFrame frame, bool isProxy, string host, int port, string realm, string scheme, IAuthCallback callback);
 
         /// <summary>
-        /// Called on the browser process IO thread before a plugin is loaded.
-        /// </summary>
-        /// <param name="browserControl">The ChromiumWebBrowser control</param>
-        /// <param name="browser">the browser object</param>
-        /// <param name="url">URL</param>
-        /// <param name="policyUrl">policy URL</param>
-        /// <param name="info">plugin information</param>
-        /// <returns>Return true to block loading of the plugin.</returns>
-        bool OnBeforePluginLoad(IWebBrowser browserControl, IBrowser browser, string url, string policyUrl, WebPluginInfo info);
-
-        /// <summary>
         /// Called when the render process terminates unexpectedly.
         /// </summary>
         /// <param name="browserControl">The ChromiumWebBrowser control</param>
@@ -156,12 +149,52 @@ namespace CefSharp
         bool OnProtocolExecution(IWebBrowser browserControl, IBrowser browser, string url);
 
         /// <summary>
-        /// Called on the browser process UI thread when the render view associated
-        /// with |browser| is ready to receive/handle IPC messages in the render
+        /// Called on the CEF UI thread when the render view associated
+        /// with browser is ready to receive/handle IPC messages in the render
         /// process.
         /// </summary>
         /// <param name="browserControl">The ChromiumWebBrowser control</param>
         /// <param name="browser">the browser object</param>
         void OnRenderViewReady(IWebBrowser browserControl, IBrowser browser);
+        
+        /// <summary>
+        /// Called on the CEF IO thread when a resource response is received.
+        /// To allow the resource to load normally return false.
+        /// To redirect or retry the resource modify request (url, headers or post body) and return true.
+        /// The response object cannot be modified in this callback. 
+        /// </summary>
+        /// <param name="browserControl">The ChromiumWebBrowser control</param>
+        /// <param name="browser">the browser object</param>
+        /// <param name="frame">The frame that is being redirected.</param>
+        /// <param name="request">the request object</param>
+        /// <param name="response">the response object - cannot be modified in this callback</param>
+        /// <returns>
+        /// To allow the resource to load normally return false.
+        /// To redirect or retry the resource modify request (url, headers or post body) and return true.
+        /// </returns>
+        bool OnResourceResponse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response);
+
+        /// <summary>
+        /// Called on the CEF IO thread to optionally filter resource response content.
+        /// </summary>
+        /// <param name="browserControl">The ChromiumWebBrowser control</param>
+        /// <param name="browser">the browser object</param>
+        /// <param name="frame">The frame that is being redirected.</param>
+        /// <param name="request">the request object - cannot be modified in this callback</param>
+        /// <param name="response">the response object - cannot be modified in this callback</param>
+        /// <returns>Return an IResponseFilter to intercept this response, otherwise return null</returns>
+        IResponseFilter GetResourceResponseFilter(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response);
+        
+        /// <summary>
+        /// Called on the CEF IO thread when a resource load has completed.
+        /// </summary>
+        /// <param name="browserControl">The ChromiumWebBrowser control</param>
+        /// <param name="browser">the browser object</param>
+        /// <param name="frame">The frame that is being redirected.</param>
+        /// <param name="request">the request object - cannot be modified in this callback</param>
+        /// <param name="response">the response object - cannot be modified in this callback</param>
+        /// <param name="status">indicates the load completion status</param>
+        /// <param name="receivedContentLength">is the number of response bytes actually read.</param>
+        void OnResourceLoadComplete(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, UrlRequestStatus status, long receivedContentLength);
     }
 }

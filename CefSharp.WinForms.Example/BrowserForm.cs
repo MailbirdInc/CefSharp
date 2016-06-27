@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ using System;
 using System.Windows.Forms;
 using CefSharp.Example;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace CefSharp.WinForms.Example
 {
@@ -35,7 +36,7 @@ namespace CefSharp.WinForms.Example
         {
             browserTabControl.SuspendLayout();
 
-            var browser = new BrowserTabUserControl(url)
+            var browser = new BrowserTabUserControl(AddTab, url)
             {
                 Dock = DockStyle.Fill,
             };
@@ -224,6 +225,38 @@ namespace CefSharp.WinForms.Example
             if (control != null)
             {
                 control.Browser.ShowDevTools();
+
+                //Example below shows how to use a control to host DevTools
+                //(in this case it's added as a new TabPage)
+                //var tabPage = new TabPage("DevTools")
+                //{
+                //    Dock = DockStyle.Fill
+                //};
+
+                //var panel = new Panel
+                //{
+                //    Dock = DockStyle.Fill
+                //};
+
+                ////We need to call CreateControl as we need the Handle later
+                //panel.CreateControl();
+
+                //tabPage.Controls.Add(panel);
+
+                //browserTabControl.TabPages.Add(tabPage);
+
+                ////Make newly created tab active
+                //browserTabControl.SelectedTab = tabPage;
+
+                ////Grab the client rect
+                //var rect = panel.ClientRectangle;
+                //var webBrowser = control.Browser;
+                //var browser = webBrowser.GetBrowser().GetHost();
+                //var windowInfo = new WindowInfo();
+                ////DevTools becomes a child of the panel, we use it's dimesions
+                //windowInfo.SetAsChild(panel.Handle, rect.Left, rect.Top, rect.Right, rect.Bottom);
+                ////Show DevTools in our panel 
+                //browser.ShowDevTools(windowInfo);
             }
         }
 
@@ -245,7 +278,7 @@ namespace CefSharp.WinForms.Example
 
                 task.ContinueWith(previous =>
                 {
-                    if (previous.IsCompleted)
+                    if (previous.Status == TaskStatus.RanToCompletion)
                     {
                         var currentLevel = previous.Result;
                         control.Browser.SetZoomLevel(currentLevel + ZoomIncrement);
@@ -266,7 +299,7 @@ namespace CefSharp.WinForms.Example
                 var task = control.Browser.GetZoomLevelAsync();
                 task.ContinueWith(previous =>
                 {
-                    if (previous.IsCompleted)
+                    if (previous.Status == TaskStatus.RanToCompletion)
                     {
                         var currentLevel = previous.Result;
                         control.Browser.SetZoomLevel(currentLevel - ZoomIncrement);
@@ -287,7 +320,7 @@ namespace CefSharp.WinForms.Example
                 var task = control.Browser.GetZoomLevelAsync();
                 task.ContinueWith(previous =>
                 {
-                    if (previous.IsCompleted)
+                    if (previous.Status == TaskStatus.RanToCompletion)
                     {
                         var currentLevel = previous.Result;
                         MessageBox.Show("Current ZoomLevel: " + currentLevel.ToString());
@@ -297,6 +330,150 @@ namespace CefSharp.WinForms.Example
                         MessageBox.Show("Unexpected failure of calling CEF->GetZoomLevelAsync: " + previous.Exception.ToString());
                     }
                 }, TaskContinuationOptions.HideScheduler);
+            }
+        }
+
+        private void DoesActiveElementAcceptTextInputToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                var frame = control.Browser.GetFocusedFrame();
+                
+                //Execute extension method
+                frame.ActiveElementAcceptsTextInput().ContinueWith(task =>
+                {
+                    string message;
+                    var icon = MessageBoxIcon.Information;
+                    if (task.Exception == null)
+                    {
+                        var isText = task.Result;
+                        message = string.Format("The active element is{0}a text entry element.", isText ? " " : " not ");
+                    }
+                    else
+                    {
+                        message = string.Format("Script evaluation failed. {0}", task.Exception.Message);
+                        icon = MessageBoxIcon.Error;
+                    }
+
+                    MessageBox.Show(message, "Does active element accept text input", MessageBoxButtons.OK, icon);
+                });
+            }
+        }
+
+        private void DoesElementWithIdExistToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            // This is the main thread, it's safe to create and manipulate form
+            // UI controls.
+            var dialog = new InputBox
+            {
+                Instructions = "Enter an element ID to find.",
+                Title = "Find an element with an ID"
+            };
+
+            dialog.OnEvaluate += (senderDlg, eDlg) =>
+            {
+                // This is also the main thread.
+                var control = GetCurrentTabControl();
+                if (control != null)
+                {
+                    var frame = control.Browser.GetFocusedFrame();
+
+                    //Execute extension method
+                    frame.ElementWithIdExists(dialog.Value).ContinueWith(task =>
+                    {
+                        // Now we're not on the main thread, perhaps the
+                        // Cef UI thread. It's not safe to work with
+                        // form UI controls or to block this thread.
+                        // Queue up a delegate to be executed on the
+                        // main thread.
+                        BeginInvoke(new Action(() =>
+                        {
+                            string message;
+                            if (task.Exception == null)
+                            {
+                                message = task.Result.ToString();
+                            }
+                            else
+                            {
+                                message = string.Format("Script evaluation failed. {0}", task.Exception.Message);
+                            }
+
+                            dialog.Result = message;
+                        }));
+                    });
+                }
+            };
+
+            dialog.Show(this);
+        }
+
+        private void GoToDemoPageToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                control.Browser.Load("custom://cefsharp/ScriptedMethodsTest.html");
+            }
+        }
+
+        private void InjectJavascriptCodeToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                var frame = control.Browser.GetFocusedFrame();
+
+                //Execute extension method
+                frame.ListenForEvent("test-button", "click");
+            }
+        }
+
+        private async void PrintToPdfToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                var dialog = new SaveFileDialog
+                {
+                    DefaultExt = ".pdf",
+                    Filter = "Pdf documents (.pdf)|*.pdf"
+                };
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    var success = await control.Browser.PrintToPdfAsync(dialog.FileName, new PdfPrintSettings
+                    {
+                        MarginType = CefPdfPrintMarginType.Custom,
+                        MarginBottom = 10,
+                        MarginTop = 0,
+                        MarginLeft = 20,
+                        MarginRight = 10
+                    });
+
+                    if (success)
+                    {
+                        MessageBox.Show("Pdf was saved to " + dialog.FileName);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unable to save Pdf, check you have write permissions to " + dialog.FileName);
+                    }
+
+                }
+
+            }
+        }
+
+        private void OpenDataUrlToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                const string html = "<html><head><title>Test</title></head><body><h1>Html Encoded in URL!</h1></body></html>";
+                var base64EncodedHtml = Convert.ToBase64String(Encoding.UTF8.GetBytes(html));
+                control.Browser.Load("data:text/html;base64," + base64EncodedHtml);
+
             }
         }
     }

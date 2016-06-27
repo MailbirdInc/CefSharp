@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,6 +6,10 @@ using System;
 
 namespace CefSharp
 {
+    /// <summary>
+    /// Class used to Represent a cookie the built in .Net Cookie
+    /// class isn't used as some of it's properties have internal setters
+    /// </summary>
     public class Cookie
     {
         public string Name { get; set; }

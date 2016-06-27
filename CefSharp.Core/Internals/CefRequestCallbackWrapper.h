@@ -1,18 +1,17 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
 #include "Stdafx.h"
-
-using namespace CefSharp;
+#include "CefWrapper.h"
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefRequestCallbackWrapper : public IRequestCallback
+        private ref class CefRequestCallbackWrapper : public IRequestCallback, public CefWrapper
         {
         private:
             MCefRefPtr<CefRequestCallback> _callback;
@@ -21,7 +20,7 @@ namespace CefSharp
 
         internal:
             CefRequestCallbackWrapper(CefRefPtr<CefRequestCallback> &callback)
-                : _callback(callback)
+                : _callback(callback), _frame(nullptr), _request(nullptr)
             {
             }
 
@@ -45,18 +44,26 @@ namespace CefSharp
                 _request = nullptr;
                 delete _frame;
                 _frame = nullptr;
+
+                _disposed = true;
             }
 
         public:
             virtual void Continue(bool allow)
             {
+                ThrowIfDisposed();
+
                 _callback->Continue(allow);
+
                 delete this;
             }
 
             virtual void Cancel()
             {
+                ThrowIfDisposed();
+
                 _callback->Cancel();
+
                 delete this;
             }
         };

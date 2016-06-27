@@ -1,8 +1,9 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using CefSharp.Example.Filters;
 
 namespace CefSharp.Example
 {
@@ -18,23 +19,33 @@ namespace CefSharp.Example
 
         bool IRequestHandler.OnOpenUrlFromTab(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, WindowOpenDisposition targetDisposition, bool userGesture)
         {
+            return OnOpenUrlFromTab(browserControl, browser, frame, targetUrl, targetDisposition, userGesture);
+        }
+
+        protected virtual bool OnOpenUrlFromTab(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, WindowOpenDisposition targetDisposition, bool userGesture)
+        {
             return false;
         }
 
         bool IRequestHandler.OnCertificateError(IWebBrowser browserControl, IBrowser browser, CefErrorCode errorCode, string requestUrl, ISslInfo sslInfo, IRequestCallback callback)
         {
-            try
-            {
-                //To allow certificate
-                //callback.Continue(true);
-                //return true;
+            //NOTE: If you do not wish to implement this method returning false is the default behaviour
+            // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
+            //callback.Dispose();
+            //return false;
 
-                return false;
-            }
-            finally
+            //NOTE: When executing the callback in an async fashion need to check to see if it's disposed
+            if (!callback.IsDisposed)
             {
-                callback.Dispose();
+                using (callback)
+                {
+                    //To allow certificate
+                    //callback.Continue(true);
+                    //return true;
+                }
             }
+
+            return false;
         }
 
         void IRequestHandler.OnPluginCrashed(IWebBrowser browserControl, IBrowser browser, string pluginPath)
@@ -44,76 +55,105 @@ namespace CefSharp.Example
 
         CefReturnValue IRequestHandler.OnBeforeResourceLoad(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback)
         {
-            using (callback)
+            //Example of how to set Referer
+            // Same should work when setting any header
+
+            // For this example only set Referer when using our custom scheme
+            var url = new Uri(request.Url);
+            if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName)
             {
-                if (request.Method == "POST")
+                //Referrer is now set using it's own method (was previously set in headers before)
+                request.SetReferrer("http://google.com", ReferrerPolicy.Default);
+            }
+
+            //Example of setting User-Agent in every request.
+            //var headers = request.Headers;
+
+            //var userAgent = headers["User-Agent"];
+            //headers["User-Agent"] = userAgent + " CefSharp";
+
+            //request.Headers = headers;
+
+            //NOTE: If you do not wish to implement this method returning false is the default behaviour
+            // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
+            //callback.Dispose();
+            //return false;
+
+            //NOTE: When executing the callback in an async fashion need to check to see if it's disposed
+            if (!callback.IsDisposed)
+            {
+                using (callback)
                 {
-                    using (var postData = request.PostData)
+                    if (request.Method == "POST")
                     {
-                        var elements = postData.Elements;
-
-                        var charSet = request.GetCharSet();
-
-                        foreach (var element in elements)
+                        using (var postData = request.PostData)
                         {
-                            if (element.Type == PostDataElementType.Bytes)
-                            {
-                                var body = element.GetBody(charSet);
+                            if(postData != null)
+                            { 
+                                var elements = postData.Elements;
+
+                                var charSet = request.GetCharSet();
+
+                                foreach (var element in elements)
+                                {
+                                    if (element.Type == PostDataElementType.Bytes)
+                                    {
+                                        var body = element.GetBody(charSet);
+                                    }
+                                }
                             }
                         }
                     }
+
+                    //Note to Redirect simply set the request Url
+                    //if (request.Url.StartsWith("https://www.google.com", StringComparison.OrdinalIgnoreCase))
+                    //{
+                    //    request.Url = "https://github.com/";
+                    //}
+
+                    //Callback in async fashion
+                    //callback.Continue(true);
+                    //return CefReturnValue.ContinueAsync;
                 }
-
-                //Note to Redirect simply set the request Url
-                //if (request.Url.StartsWith("https://www.google.com", StringComparison.OrdinalIgnoreCase))
-                //{
-                //    request.Url = "https://github.com/";
-                //}
-
-                //Callback in async fashion
-                //callback.Continue(true);
-                //return CefReturnValue.ContinueAsync;
             }
-            
+
             return CefReturnValue.Continue;
         }
 
         bool IRequestHandler.GetAuthCredentials(IWebBrowser browserControl, IBrowser browser, IFrame frame, bool isProxy, string host, int port, string realm, string scheme, IAuthCallback callback)
         {
+            //NOTE: If you do not wish to implement this method returning false is the default behaviour
+            // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
+
+            callback.Dispose();
             return false;
-        }
-
-        bool IRequestHandler.OnBeforePluginLoad(IWebBrowser browserControl, IBrowser browser, string url, string policyUrl, WebPluginInfo info)
-        {
-            bool blockPluginLoad = false;
-
-            // Enable next line to demo: Block any plugin with "flash" in its name
-            // try it out with e.g. http://www.youtube.com/watch?v=0uBOtQOO70Y
-            //blockPluginLoad = info.Name.ToLower().Contains("flash");
-
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            return blockPluginLoad;
         }
 
         void IRequestHandler.OnRenderProcessTerminated(IWebBrowser browserControl, IBrowser browser, CefTerminationStatus status)
         {
             // TODO: Add your own code here for handling scenarios where the Render Process terminated for one reason or another.
+            browserControl.Load(CefExample.RenderProcessCrashedUrl);
         }
 
         bool IRequestHandler.OnQuotaRequest(IWebBrowser browserControl, IBrowser browser, string originUrl, long newSize, IRequestCallback callback)
         {
-            try
-            {
-                //Accept Request to raise Quota
-                //callback.Continue(true);
-                //return true;
+            //NOTE: If you do not wish to implement this method returning false is the default behaviour
+            // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
+            //callback.Dispose();
+            //return false;
 
-                return false;
-            }
-            finally
+            //NOTE: When executing the callback in an async fashion need to check to see if it's disposed
+            if (!callback.IsDisposed)
             {
-                callback.Dispose();
+                using (callback)
+                {
+                    //Accept Request to raise Quota
+                    //callback.Continue(true);
+                    //return true;
+                }
             }
+
+            return false;
         }
 
         void IRequestHandler.OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, ref string newUrl)
@@ -131,6 +171,41 @@ namespace CefSharp.Example
         }
 
         void IRequestHandler.OnRenderViewReady(IWebBrowser browserControl, IBrowser browser)
+        {
+            
+        }
+
+        bool IRequestHandler.OnResourceResponse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response)
+        {
+            //NOTE: You cannot modify the response, only the request
+            // You can now access the headers
+            //var headers = response.ResponseHeaders;
+
+            return false;
+        }
+
+        IResponseFilter IRequestHandler.GetResourceResponseFilter(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response)
+        {
+            var url = new Uri(request.Url);
+            if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName)
+            {
+                if(request.Url.Equals(CefExample.ResponseFilterTestUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new FindReplaceResponseFilter("REPLACE_THIS_STRING", "This is the replaced string!");
+                }
+
+                if (request.Url.Equals("custom://cefsharp/assets/js/jquery.js", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new AppendResponseFilter(System.Environment.NewLine + "//CefSharp Appended this comment.");
+                }
+
+                return new PassThruResponseFilter();
+            }
+
+            return null;
+        }
+
+        void IRequestHandler.OnResourceLoadComplete(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, UrlRequestStatus status, long receivedContentLength)
         {
             
         }

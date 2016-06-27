@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -8,25 +8,22 @@
 #include "include/cef_v8.h"
 #include "JavascriptCallbackRegistry.h"
 
-using namespace CefSharp::Internals;
-
 namespace CefSharp
 {
     private ref class JavascriptPropertyWrapper
     {
     private:
-        JavascriptProperty^ _javascriptProperty;
         int64 _ownerId;
         IBrowserProcess^ _browserProcess;
         //TODO: Strongly type this variable - currently trying to include JavascriptObjectWrapper.h creates a circular reference, so won't compile
         Object^ _javascriptObjectWrapper;
 
     public:
-        JavascriptPropertyWrapper(JavascriptProperty^ javascriptProperty, int64 ownerId, IBrowserProcess^ browserProcess)
+        JavascriptPropertyWrapper(int64 ownerId, IBrowserProcess^ browserProcess)
         {
-            _javascriptProperty = javascriptProperty;
             _ownerId = ownerId;
             _browserProcess = browserProcess;
+            _javascriptObjectWrapper = nullptr;
         }
 
         ~JavascriptPropertyWrapper()
@@ -36,9 +33,8 @@ namespace CefSharp
                 delete _javascriptObjectWrapper;
                 _javascriptObjectWrapper = nullptr;
             }
-            _javascriptProperty = nullptr;
         }
 
-        void Bind(const CefRefPtr<CefV8Value>& v8Value, JavascriptCallbackRegistry^ callbackRegistry);
+        void Bind(JavascriptProperty^ javascriptProperty, const CefRefPtr<CefV8Value>& v8Value, JavascriptCallbackRegistry^ callbackRegistry);
     };
 }

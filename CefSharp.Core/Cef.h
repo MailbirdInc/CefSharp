@@ -1,31 +1,30 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
+#include "Stdafx.h"
+
 #include <msclr/lock.h>
+#include <msclr/marshal.h>
 #include <include/cef_version.h>
-#include <include/cef_runnable.h>
 #include <include/cef_origin_whitelist.h>
 #include <include/cef_web_plugin.h>
 
 #include "Internals/CefSharpApp.h"
-#include "Internals/CookieVisitor.h"
 #include "Internals/CookieManager.h"
-#include "Internals/CompletionHandler.h"
-#include "Internals/StringUtils.h"
 #include "Internals/PluginVisitor.h"
-#include "ManagedCefBrowserAdapter.h"
 #include "CefSettings.h"
-#include "ResourceHandlerWrapper.h"
+#include "RequestContext.h"
 #include "SchemeHandlerFactoryWrapper.h"
 #include "Internals/CefTaskScheduler.h"
-#include "CookieAsyncWrapper.h"
+#include "Internals/CefGetGeolocationCallbackWrapper.h"
 
 using namespace System::Collections::Generic; 
 using namespace System::Linq;
 using namespace System::Reflection;
+using namespace msclr::interop;
 
 namespace CefSharp
 {
@@ -43,17 +42,11 @@ namespace CefSharp
             _disposables = gcnew HashSet<IDisposable^>();
         }
 
-        static void ParentProcessExitHandler(Object^ sender, EventArgs^ e)
-        {
-            if (Cef::IsInitialized)
-            {
-                Cef::Shutdown();
-            }
-        }
-
     public:
         /// <summary>
-        /// Called on the browser process UI thread immediately after the CEF context has been initialized. 
+        /// Called on the CEF UI thread immediately after the CEF context has been initialized.
+        /// You can now access the Global RequestContext through Cef.GetGlobalRequestContext() - this is the
+        /// first place you can set Preferences (e.g. proxy settings, spell check dictionaries).
         /// </summary>
         static property Action^ OnContextInitialized;
 
@@ -206,12 +199,38 @@ namespace CefSharp
 
             _initialized = success;
 
-            if (_initialized && shutdownOnProcessExit)
-            {
-                AppDomain::CurrentDomain->ProcessExit += gcnew EventHandler(ParentProcessExitHandler);
-            }
-
             return success;
+        }
+
+        /// <summary>Perform a single iteration of CEF message loop processing. This function is
+        /// used to integrate the CEF message loop into an existing application message
+        /// loop. Care must be taken to balance performance against excessive CPU usage.
+        /// This function should only be called on the main application thread and only
+        /// if CefInitialize() is called with a CefSettings.multi_threaded_message_loop
+        /// value of false. This function will not block.</summary>
+        static void DoMessageLoopWork()
+        {
+            CefDoMessageLoopWork();
+        }
+
+
+        /// <summary>
+        /// This function should be called from the application entry point function to execute a secondary process.
+        /// It can be used to run secondary processes from the browser client executable (default behavior) or
+        /// from a separate executable specified by the CefSettings.browser_subprocess_path value.
+        /// If called for the browser process (identified by no "type" command-line value) it will return immediately with a value of -1.
+        /// If called for a recognized secondary process it will block until the process should exit and then return the process exit code.
+        /// The |application| parameter may be empty. The |windows_sandbox_info| parameter is only used on Windows and may be NULL (see cef_sandbox_win.h for details). 
+        /// </summary>
+        static int ExecuteProcess()
+        {
+            auto hInstance = Process::GetCurrentProcess()->Handle;
+
+            CefMainArgs cefMainArgs((HINSTANCE)hInstance.ToPointer());
+            //TODO: Look at ways to expose an instance of CefApp
+            //CefRefPtr<CefSharpApp> app(new CefSharpApp(nullptr, nullptr));
+
+            return CefExecuteProcess(cefMainArgs, NULL, NULL);
         }
 
         /// <summary>Add an entry to the cross-origin whitelist.</summary>
@@ -308,7 +327,11 @@ namespace CefSharp
         static ICookieManager^ GetGlobalCookieManager()
         {
             auto cookieManager = CefCookieManager::GetGlobalManager(NULL);
-            return gcnew CookieManager(cookieManager);
+            if (cookieManager.get())
+            {
+                return gcnew CookieManager(cookieManager);
+            }
+            return nullptr;
         }
 
         /// <summary>
@@ -353,11 +376,6 @@ namespace CefSharp
         /// <summary>
         /// Async returns a list containing Plugin Information
         /// (Wrapper around CefVisitWebPluginInfo)
-        /// The Task will be cancelled and a TaskCanceledException throw
-        /// if the Task does not complete within 2000ms
-        /// Documentation for CefWebPluginInfoVisitor.Visit states
-        /// `This method may never be called if no plugins are found.`
-        /// hence the Task cancelled timeout
         /// </summary>
         /// <return>Returns List of <see cref="Plugin"/> structs.</return>
         static Task<List<Plugin>^>^ GetPlugins()
@@ -370,38 +388,11 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Add a plugin path (directory + file). This change may not take affect until after RefreshWebPlugins() is called.
-        /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void AddWebPluginPath(String^ path)
-        {
-            CefAddWebPluginPath(StringUtils::ToNative(path));
-        }
-
-        /// <summary>
-        /// Add a plugin directory. This change may not take affect until after CefRefreshWebPlugins() is called.
-        /// </summary>
-        /// <param name="directory">Directory.</param>
-        static void AddWebPluginDirectory(String^ directory)
-        {
-            CefAddWebPluginDirectory(StringUtils::ToNative(directory));
-        }
-
-        /// <summary>
         /// Cause the plugin list to refresh the next time it is accessed regardless of whether it has already been loaded.
         /// </summary>
         static void RefreshWebPlugins()
         {
             CefRefreshWebPlugins();
-        }
-
-        /// <summary>
-        /// Remove a plugin path (directory + file). This change may not take affect until after RefreshWebPlugins() is called. 
-        /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void RemoveWebPluginPath(String^ path)
-        {
-            CefRemoveWebPluginPath(StringUtils::ToNative(path));
         }
 
         /// <summary>
@@ -414,12 +405,53 @@ namespace CefSharp
         }	
 
         /// <summary>
-        /// Force a plugin to shutdown. 
+        /// Call during process startup to enable High-DPI support on Windows 7 or newer.
+        /// Older versions of Windows should be left DPI-unaware because they do not
+        /// support DirectWrite and GDI fonts are kerned very badly.
         /// </summary>
-        /// <param name="path">Path (directory + file).</param>
-        static void ForceWebPluginShutdown(String^ path)
+        static void EnableHighDPISupport()
         {
-            CefForceWebPluginShutdown(StringUtils::ToNative(path));
+            CefEnableHighDPISupport();
+        }
+
+        /// <summary>
+        /// Request a one-time geolocation update.
+        /// This function bypasses any user permission checks so should only be
+        /// used by code that is allowed to access location information. 
+        /// </summary>
+        /// <return>Returns 'best available' location info or, if the location update failed, with error info.</return>
+        static Task<Geoposition^>^ GetGeolocationAsync()
+        {
+            auto callback = new CefGetGeolocationCallbackWrapper();
+            
+            CefGetGeolocation(callback);
+
+            return callback->GetTask();
+        }
+
+        /// <summary>
+        /// Returns true if called on the specified CEF thread.
+        /// </summary>
+        /// <return>Returns true if called on the specified thread.</return>
+        static bool CurrentlyOnThread(CefThreadIds threadId)
+        {
+            return CefCurrentlyOn((CefThreadId)threadId);
+        }
+
+        /// <summary>
+        /// Gets the Global Request Context. Make sure to Dispose of this object when finished.
+        /// </summary>
+        /// <return>Returns the global request context or null.</return>
+        static IRequestContext^ GetGlobalRequestContext()
+        {
+            auto context = CefRequestContext::GetGlobalContext();
+
+            if (context.get())
+            {
+                return gcnew RequestContext(context);
+            }
+
+            return nullptr;
         }
     };
 }

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -11,8 +11,15 @@ namespace CefSharp
     /// </summary>
     public class TitleChangedEventArgs : EventArgs
     {
+        /// <summary>
+        /// The new title
+        /// </summary>
         public string Title { get; private set; }
 
+        /// <summary>
+        /// Creates a new TitleChanged event arg
+        /// </summary>
+        /// <param name="title">the new title</param>
         public TitleChangedEventArgs(string title)
         {
             Title = title;

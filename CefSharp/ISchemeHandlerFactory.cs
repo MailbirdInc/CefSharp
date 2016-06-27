@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -23,7 +23,7 @@ namespace CefSharp
         /// <param name="schemeName">the scheme name</param>
         /// <param name="request">The request. (will not contain cookie data)</param>
         /// <returns>
-        /// Return a new ISchemeHandler instance to handle the request or an empty
+        /// Return a new <see cref="IResourceHandler"/> instance to handle the request or an empty
         /// reference to allow default handling of the request
         /// </returns>
         IResourceHandler Create(IBrowser browser, IFrame frame, string schemeName, IRequest request);

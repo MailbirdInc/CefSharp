@@ -1,12 +1,10 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
 #include "TypeUtils.h"
 #include "JavascriptMethodHandler.h"
-
-using namespace CefSharp::Internals;
 
 namespace CefSharp
 {
@@ -38,7 +36,7 @@ namespace CefSharp
         }
         catch (Exception^ ex)
         {
-            exception = StringUtils::ToNative(ex->Message);
+            exception = StringUtils::ToNative(ex->ToString());
         }
 
         //NOTE: Return true otherwise exception is ignored

@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -20,6 +20,7 @@ namespace CefSharp
             auto result = gcnew JavascriptCallback();
             result->Id = newId;
             result->BrowserId = _browserId;
+            result->FrameId = context->GetFrame()->GetIdentifier();
             return result;
         }
 

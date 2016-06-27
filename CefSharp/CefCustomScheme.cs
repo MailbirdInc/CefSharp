@@ -1,9 +1,18 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System.Collections.Generic;
+using System.Linq;
+using CefSharp.Internals;
+
 namespace CefSharp
 {
+    /// <summary>
+    /// Used in conjunction with CefSettings.RegisterScheme to register a scheme.
+    /// You can register your own custom scheme e.g. custom:// or use an existing
+    /// scheme e.g. http://
+    /// </summary>
     public class CefCustomScheme
     {
         /// <summary>
@@ -65,13 +74,50 @@ namespace CefSharp
         /// </summary>
         public bool IsDisplayIsolated { get; set; }
 
+        /// <summary>
+        /// Factory Class that creates <see cref="IResourceHandler"/> instances
+        /// for handling scheme requests.
+        /// </summary>
         public ISchemeHandlerFactory SchemeHandlerFactory { get; set; }
 
+        /// <summary>
+        /// Creates a new CefCustomScheme.
+        /// </summary>
         public CefCustomScheme()
         {
             IsStandard = true;
             IsLocal = false;
             IsDisplayIsolated = false;
+        }
+
+        /// <summary>
+        /// Method used internally
+        /// </summary>
+        /// <param name="args">command line arguments</param>
+        /// <returns>list of scheme objects</returns>
+        public static List<CefCustomScheme> ParseCommandLineArguments(IEnumerable<string> args)
+        {
+            var schemes = args.FirstOrDefault(a => a.StartsWith(CefSharpArguments.CustomSchemeArgument));
+            var customSchemes = new List<CefCustomScheme>();
+
+            if (!string.IsNullOrEmpty(schemes))
+            {
+                //Remove the "--custom-scheme=" part of the argument
+                schemes.Substring(CefSharpArguments.CustomSchemeArgument.Length + 1).Split(';').ToList().ForEach(x =>
+                {
+                    var tokens = x.Split('|');
+                    var customScheme = new CefCustomScheme
+                    {
+                        SchemeName = tokens[0],
+                        IsStandard = tokens[1] == "T",
+                        IsLocal = tokens[2] == "T",
+                        IsDisplayIsolated = tokens[3] == "T"
+                    };
+                    customSchemes.Add(customScheme);
+                });
+            }
+
+            return customSchemes;
         }
     }
 }

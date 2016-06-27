@@ -1,8 +1,10 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
+
+#include "Stdafx.h"
 
 #include "include/cef_values.h"
 
@@ -21,6 +23,9 @@ namespace CefSharp
 
             //Converts CefTime to DateTime
             DateTime ConvertCefTimeToDateTime(CefTime time);
+
+            template Object^ DeserializeObject(const CefRefPtr<CefListValue>& list, int index, IJavascriptCallbackFactory^ javascriptCallbackFactory);
+            template Object^ DeserializeObject(const CefRefPtr<CefDictionaryValue>& list, CefString index, IJavascriptCallbackFactory^ javascriptCallbackFactory);
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -15,55 +15,76 @@ namespace CefSharp
 {
     namespace Internals
     {
-        Task<JavascriptResponse^>^ JavascriptCallbackProxy::ExecuteAsync(array<Object^>^ parameters)
+        Task<JavascriptResponse^>^ JavascriptCallbackProxy::ExecuteAsync(cli::array<Object^>^ parameters)
         {
             DisposedGuard();
 
             auto browser = GetBrowser();
             if (browser == nullptr)
             {
-                throw gcnew InvalidOperationException("Browser instance is null.");
+                throw gcnew InvalidOperationException("Browser instance is null. Check CanExecute before calling this method.");
             }
 
+            auto browserWrapper = static_cast<CefSharpBrowserWrapper^>(browser);
+
             auto doneCallback = _pendingTasks->CreatePendingTask(Nullable<TimeSpan>());
-            auto callbackMessage = CreateCallMessage(doneCallback.Key, parameters);
-            browser->SendProcessMessage(CefProcessId::PID_RENDERER, callbackMessage);
 
-            return doneCallback.Value->Task;
-        }
-
-        CefRefPtr<CefProcessMessage> JavascriptCallbackProxy::CreateCallMessage(int64 doneCallbackId, array<Object^>^ parameters)
-        {
-            auto result = CefProcessMessage::Create(kJavascriptCallbackRequest);
-            auto argList = result->GetArgumentList();
-            SetInt64(_callback->Id, argList, 0);
-            SetInt64(doneCallbackId, argList, 1);
+            auto callbackMessage = CefProcessMessage::Create(kJavascriptCallbackRequest);
+            auto argList = callbackMessage->GetArgumentList();
+            SetInt64(argList, 0, _callback->FrameId);
+            SetInt64(argList, 1, doneCallback.Key);
+            SetInt64(argList, 2, _callback->Id);
             auto paramList = CefListValue::Create();
             for (int i = 0; i < parameters->Length; i++)
             {
                 auto param = parameters[i];
-                SerializeV8Object(param, paramList, i);
+                SerializeV8Object(paramList, i, param);
             }
-            argList->SetList(2, paramList);
-            return result;
+            argList->SetList(3, paramList);
+
+            browserWrapper->SendProcessMessage(CefProcessId::PID_RENDERER, callbackMessage);
+
+            return doneCallback.Value->Task;
         }
 
         CefRefPtr<CefProcessMessage> JavascriptCallbackProxy::CreateDestroyMessage()
         {
             auto result = CefProcessMessage::Create(kJavascriptCallbackDestroyRequest);
             auto argList = result->GetArgumentList();
-            SetInt64(_callback->Id, argList, 0);
+            SetInt64(argList, 0, _callback->Id);
+            SetInt64(argList, 1, _callback->FrameId);
             return result;
         }
 
-        CefSharpBrowserWrapper^ JavascriptCallbackProxy::GetBrowser()
+        IBrowser^ JavascriptCallbackProxy::GetBrowser()
         {
-            CefSharpBrowserWrapper^ result = nullptr;
-            if (_browserWrapper->IsAlive)
+            IBrowser^ result = nullptr;
+            if (_browserAdapter->IsAlive)
             {
-                result = static_cast<CefSharpBrowserWrapper^>(_browserWrapper->Target);
+                auto browserAdapter = static_cast<IBrowserAdapter^>(_browserAdapter->Target);
+                if (!browserAdapter->IsDisposed)
+                {
+                    result = browserAdapter->GetBrowser(_callback->BrowserId);
+                }
             }
             return result;
+        }
+
+        bool JavascriptCallbackProxy::IsDisposed::get()
+        {
+            return _disposed;
+        }
+
+        bool JavascriptCallbackProxy::CanExecute::get()
+        {
+            if (_disposed)
+            {
+                return false;
+            }
+            
+            auto browser = GetBrowser();
+
+            return browser != nullptr;
         }
 
         void JavascriptCallbackProxy::DisposedGuard()

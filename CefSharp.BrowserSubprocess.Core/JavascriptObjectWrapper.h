@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -15,23 +15,20 @@ using namespace System::Runtime::Serialization;
 using namespace System::Linq;
 using namespace System::Collections::Generic;
 
-using namespace CefSharp::Internals;
-
 namespace CefSharp
 {
     private ref class JavascriptObjectWrapper
     {
     private:
-        JavascriptObject^ _object;
         List<JavascriptMethodWrapper^>^ _wrappedMethods;
         List<JavascriptPropertyWrapper^>^ _wrappedProperties;
         IBrowserProcess^ _browserProcess;
         MCefRefPtr<JavascriptPropertyHandler> _jsPropertyHandler;
+        int64 _objectId;
 
     public:
-        JavascriptObjectWrapper(JavascriptObject^ object, IBrowserProcess^ browserProcess)
+        JavascriptObjectWrapper(IBrowserProcess^ browserProcess)
         {
-            _object = object;
             _browserProcess = browserProcess;
 
             _wrappedMethods = gcnew List<JavascriptMethodWrapper^>();
@@ -57,7 +54,7 @@ namespace CefSharp
             }
         }
 
-        void Bind(const CefRefPtr<CefV8Value>& v8Value, JavascriptCallbackRegistry^ callbackRegistry);
+        void Bind(JavascriptObject^ object, const CefRefPtr<CefV8Value>& v8Value, JavascriptCallbackRegistry^ callbackRegistry);
         BrowserProcessResponse^ GetProperty(String^ memberName);
         BrowserProcessResponse^ SetProperty(String^ memberName, Object^ value);
     };

@@ -1,12 +1,12 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
 
-#include "Internals/CefFrameWrapper.h"
-#include "Internals/CefSharpBrowserWrapper.h"
-#include "CefBrowserHostWrapper.h"
+#include "Internals\CefFrameWrapper.h"
+#include "Internals\CefSharpBrowserWrapper.h"
+#include "Internals\CefBrowserHostWrapper.h"
 
 ///
 // Returns the browser host object. This method can only be called in the
@@ -240,20 +240,7 @@ bool CefSharpBrowserWrapper::SendProcessMessage(CefProcessId targetProcess, CefR
     return _browser->SendProcessMessage(targetProcess, message);
 }
 
-void CefSharpBrowserWrapper::ThrowIfDisposed()
-{
-    if (_disposed)
-    {
-        throw gcnew ObjectDisposedException(gcnew String(L"CefSharp disposes IBrowser instances after the OnBeforeClose handler has been called!"));
-    }
-}
-
 MCefRefPtr<CefBrowser> CefSharpBrowserWrapper::Browser::get()
 {
     return _browser;
-}
-
-bool CefSharpBrowserWrapper::IsDisposed::get()
-{
-    return _disposed;
 }

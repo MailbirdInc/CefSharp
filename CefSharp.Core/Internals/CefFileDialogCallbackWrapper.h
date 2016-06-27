@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -10,40 +10,50 @@
 
 namespace CefSharp
 {
-    public ref class CefFileDialogCallbackWrapper : IFileDialogCallback
+    namespace Internals
     {
-    private:
-        MCefRefPtr<CefFileDialogCallback> _callback;
-
-    public:
-        CefFileDialogCallbackWrapper(CefRefPtr<CefFileDialogCallback> &callback) : _callback(callback)
+        private ref class CefFileDialogCallbackWrapper : public IFileDialogCallback, public CefWrapper
         {
+        private:
+            MCefRefPtr<CefFileDialogCallback> _callback;
+
+        public:
+            CefFileDialogCallbackWrapper(CefRefPtr<CefFileDialogCallback> &callback) :
+                _callback(callback)
+            {
             
-        }
+            }
 
-        !CefFileDialogCallbackWrapper()
-        {
-            _callback = NULL;
-        }
+            !CefFileDialogCallbackWrapper()
+            {
+                _callback = NULL;
+            }
 
-        ~CefFileDialogCallbackWrapper()
-        {
-            this->!CefFileDialogCallbackWrapper();
-        }
+            ~CefFileDialogCallbackWrapper()
+            {
+                this->!CefFileDialogCallbackWrapper();
 
-        virtual void Continue(int selectedAcceptFilter, List<String^>^ filePaths)
-        {
-            _callback->Continue(selectedAcceptFilter, StringUtils::ToNative(filePaths));
+                _disposed = true;
+            }
 
-            delete this;
-        }
+            virtual void Continue(int selectedAcceptFilter, List<String^>^ filePaths)
+            {
+                ThrowIfDisposed();
+
+                _callback->Continue(selectedAcceptFilter, StringUtils::ToNative(filePaths));
+
+                delete this;
+            }
         
-        virtual void Cancel()
-        {
-            _callback->Cancel();
+            virtual void Cancel()
+            {
+                ThrowIfDisposed();
 
-            delete this;
-        }
-    };
+                _callback->Cancel();
+
+                delete this;
+            }
+        };
+    }
 }
 

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -70,10 +70,12 @@ namespace CefSharp.Wpf.Example.ViewModels
             set { Set(ref showSidebar, value); }
         }
 
-        public ICommand GoCommand { get; set; }
-        public ICommand HomeCommand { get; set; }
-        public ICommand ExecuteJavaScriptCommand { get; set; }
-        public ICommand EvaluateJavaScriptCommand { get; set; }
+        public ICommand GoCommand { get; private set; }
+        public ICommand HomeCommand { get; private set; }
+        public ICommand ExecuteJavaScriptCommand { get; private set; }
+        public ICommand EvaluateJavaScriptCommand { get; private set; }
+        public ICommand ShowDevToolsCommand { get; private set; }
+        public ICommand CloseDevToolsCommand { get; private set; }
 
         public BrowserTabViewModel(string address)
         {
@@ -84,10 +86,12 @@ namespace CefSharp.Wpf.Example.ViewModels
             HomeCommand = new RelayCommand(() => AddressEditable = Address = CefExample.DefaultUrl);
             ExecuteJavaScriptCommand = new RelayCommand<string>(ExecuteJavaScript, s => !String.IsNullOrWhiteSpace(s));
             EvaluateJavaScriptCommand = new RelayCommand<string>(EvaluateJavaScript, s => !String.IsNullOrWhiteSpace(s));
+            ShowDevToolsCommand = new RelayCommand(() => webBrowser.ShowDevTools());
+            CloseDevToolsCommand = new RelayCommand(() => webBrowser.CloseDevTools());
 
             PropertyChanged += OnPropertyChanged;
 
-            var version = String.Format("Chromium: {0}, CEF: {1}, CefSharp: {2}", Cef.ChromiumVersion, Cef.CefVersion, Cef.CefSharpVersion);
+            var version = string.Format("Chromium: {0}, CEF: {1}, CefSharp: {2}", Cef.ChromiumVersion, Cef.CefVersion, Cef.CefSharpVersion);
             OutputMessage = version;
         }
 
@@ -175,6 +179,24 @@ namespace CefSharp.Wpf.Example.ViewModels
 
             // Part of the Focus hack further described in the OnPropertyChanged() method...
             Keyboard.ClearFocus();
+        }
+
+        public void LoadCustomRequestExample()
+        {
+            var frame = WebBrowser.GetMainFrame();
+
+            //Create a new request knowing we'd like to use PostData
+            var request = frame.CreateRequest(initializePostData:true);
+            request.Method = "POST";
+            request.Url = "custom://cefsharp/PostDataTest.html";
+            request.PostData.AddData("test=123&data=456");
+
+            frame.LoadRequest(request);
+        }
+
+        internal void ShowDevtools()
+        {
+            webBrowser.ShowDevTools();
         }
     }
 }

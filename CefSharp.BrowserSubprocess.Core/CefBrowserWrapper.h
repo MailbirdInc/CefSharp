@@ -1,11 +1,10 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
 #include "include/cef_browser.h"
-#include "include/cef_runnable.h"
 #include "include/cef_v8.h"
 
 #include "TypeUtils.h"
@@ -13,9 +12,7 @@
 #include "JavascriptRootObjectWrapper.h"
 #include "Async/JavascriptAsyncMethodCallback.h"
 
-using namespace CefSharp::Internals;
 using namespace CefSharp::Internals::Async;
-using namespace System;
 using namespace System::ServiceModel;
 using namespace System::Threading;
 using namespace System::Threading::Tasks;
@@ -30,7 +27,7 @@ namespace CefSharp
         MCefRefPtr<CefBrowser> _cefBrowser;
     
     internal:
-        property JavascriptRootObjectWrapper^ JavascriptRootObjectWrapper;
+        property ConcurrentDictionary<int64, JavascriptRootObjectWrapper^>^ JavascriptRootObjectWrappers;
 
     public:
         CefBrowserWrapper(CefRefPtr<CefBrowser> cefBrowser)
@@ -38,6 +35,8 @@ namespace CefSharp
             _cefBrowser = cefBrowser;
             BrowserId = cefBrowser->GetIdentifier();
             IsPopup = cefBrowser->IsPopup();
+
+            JavascriptRootObjectWrappers = gcnew ConcurrentDictionary<int64, JavascriptRootObjectWrapper^>();
         }
         
         !CefBrowserWrapper()
@@ -49,11 +48,14 @@ namespace CefSharp
         {
             this->!CefBrowserWrapper();
 
-            if (JavascriptRootObjectWrapper != nullptr)
+            if (JavascriptRootObjectWrappers != nullptr)
             {
-                delete JavascriptRootObjectWrapper;
+                for each(KeyValuePair<int64, JavascriptRootObjectWrapper^> entry in JavascriptRootObjectWrappers)
+                {
+                    delete entry.Value;
+                }
 
-                JavascriptRootObjectWrapper = nullptr;
+                JavascriptRootObjectWrappers = nullptr;
             }
         }
 
@@ -62,12 +64,6 @@ namespace CefSharp
 
         // This allows us to create the WCF proxies back to our parent process.
         property ChannelFactory<IBrowserProcess^>^ ChannelFactory;
-
-        // The serialized registered object data waiting to be used (only contains methods and bound async).
-        property JavascriptRootObject^ JavascriptAsyncRootObject;
-
-        // The serialized registered object data waiting to be used.
-        property JavascriptRootObject^ JavascriptRootObject;
 
         // The WCF proxy to the parent process.
         property IBrowserProcess^ BrowserProcess;

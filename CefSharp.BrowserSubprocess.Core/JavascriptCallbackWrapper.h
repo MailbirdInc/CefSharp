@@ -1,12 +1,10 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
 #include "include\cef_v8.h"
-
-using namespace CefSharp::Internals;
 
 namespace CefSharp
 {
@@ -19,8 +17,15 @@ namespace CefSharp
             MCefRefPtr<CefV8Context> _context;
 
         internal:
-            CefRefPtr<CefV8Value> GetValue();
-            CefRefPtr<CefV8Context> GetContext();
+            CefRefPtr<CefV8Value> GetValue()
+            {
+                return _value.get();
+            }
+
+            CefRefPtr<CefV8Context> GetContext()
+            {
+                return _context.get();
+            }
 
         public:
             JavascriptCallbackWrapper(CefRefPtr<CefV8Value> value, CefRefPtr<CefV8Context> context)

@@ -1,25 +1,28 @@
-// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #pragma once
 
-using namespace System;
+#include "Stdafx.h"
+
+#include "CefWrapper.h"
+
+using namespace System::Threading::Tasks;
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefBrowserHostWrapper : IBrowserHost
+        private ref class CefBrowserHostWrapper : public IBrowserHost, public CefWrapper
         {
         private:
             MCefRefPtr<CefBrowserHost> _browserHost;
-            bool _disposed;
             
             double GetZoomLevelOnUI();
 
         internal:
-            CefBrowserHostWrapper(CefRefPtr<CefBrowserHost> &browserHost) : _browserHost(browserHost), _disposed(false)
+            CefBrowserHostWrapper(CefRefPtr<CefBrowserHost> &browserHost) : _browserHost(browserHost)
             {
             }
             
@@ -35,16 +38,22 @@ namespace CefSharp
                 _disposed = true;
             }
 
-        private:
-            void ThrowIfDisposed();
-
         public:
             virtual void StartDownload(String^ url);
             virtual void Print();
+            virtual Task<bool>^ PrintToPdfAsync(String^ path, PdfPrintSettings^ settings);
+            virtual void PrintToPdf(String^ path, PdfPrintSettings^ settings, IPrintToPdfCallback^ callback);
             virtual void SetZoomLevel(double zoomLevel);
             virtual Task<double>^ GetZoomLevelAsync();
             virtual IntPtr GetWindowHandle();
             virtual void CloseBrowser(bool forceClose);
+
+            virtual void DragTargetDragEnter(IDragData^ dragData, MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragOver(MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragDrop(MouseEvent^ mouseEvent);
+            virtual void DragSourceEndedAt(int x, int y, DragOperationsMask op);
+            virtual void DragTargetDragLeave();
+            virtual void DragSourceSystemDragEnded();
         
             virtual void ShowDevTools(IWindowInfo^ windowInfo, int inspectElementAtX, int inspectElementAtY);
             virtual void CloseDevTools();
@@ -58,6 +67,7 @@ namespace CefSharp
             virtual void SetFocus(bool focus);
             virtual void SendFocusEvent(bool setFocus);
             virtual void SendKeyEvent(KeyEvent keyEvent);
+            virtual void SendKeyEvent(int message, int wParam, int lParam);
 
             virtual void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY, CefEventFlags modifiers);
 
@@ -66,6 +76,52 @@ namespace CefSharp
             virtual void SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers);
 
             virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
+
+            virtual void NotifyMoveOrResizeStarted();
+
+            virtual void NotifyScreenInfoChanged();
+
+            virtual void WasResized();
+
+            virtual void WasHidden(bool hidden);
+
+            virtual void GetNavigationEntries(INavigationEntryVisitor^ visitor, bool currentOnly);
+
+            virtual property int WindowlessFrameRate
+            {
+                int get();
+                void set(int val);
+            }
+
+            virtual property bool MouseCursorChangeDisabled
+            {
+                bool get();
+                void set(bool val);
+            }
+
+            virtual property bool WindowRenderingDisabled
+            {
+                bool get();
+            }
+
+            virtual IntPtr GetOpenerWindowHandle();
+
+            virtual void SendCaptureLostEvent();
+
+            virtual property IRequestContext^ RequestContext
+            {
+                IRequestContext^ get();
+            }
+
+            // Misc. private functions:
+            CefMouseEvent GetCefMouseEvent(MouseEvent^ mouseEvent);
+            int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam);
+
+            // Private keyboard functions:
+            bool IsKeyDown(WPARAM wparam)
+            {
+                return (GetKeyState(wparam) & 0x8000) != 0;
+            }
         };
     }
 }

@@ -1,9 +1,13 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System.Drawing;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Collections.Generic;
 using CefSharp.Example;
 using CefSharp.Wpf.Example.Handlers;
 
@@ -11,36 +15,36 @@ namespace CefSharp.Wpf.Example.Views
 {
     public partial class BrowserTabView : UserControl
     {
+        //Store draggable region if we have one - used for hit testing
+        private Region region;
+
         public BrowserTabView()
         {
             InitializeComponent();
 
             browser.RequestHandler = new RequestHandler();
-            if (CefSharpSettings.WcfEnabled)
-            {
-                browser.RegisterJsObject("bound", new BoundObject());
-            }
+            browser.RegisterJsObject("bound", new BoundObject());
             browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
+            // Enable touch scrolling - once properly tested this will likely become the default
+            //browser.IsManipulationEnabled = true;
 
             browser.LifeSpanHandler = new LifespanHandler();
             browser.MenuHandler = new MenuHandler();
             browser.GeolocationHandler = new GeolocationHandler();
             browser.DownloadHandler = new DownloadHandler();
-            browser.PreviewTextInput += (sender, args) =>
-            {
-                var host = browser.GetBrowser().GetHost();
-                var keyEvent = new KeyEvent();
+            
+            var dragHandler = new DragHandler();
+            dragHandler.RegionsChanged += OnDragHandlerRegionsChanged;
 
-                foreach (var character in args.Text)
-                {
-                    keyEvent.WindowsKeyCode = character;
-                    keyEvent.Type = KeyEventType.Char;
-                    host.SendKeyEvent(keyEvent);
-                }
-
-                args.Handled = true;
-            };
-
+            browser.DragHandler = dragHandler;
+            //browser.ResourceHandlerFactory = new InMemorySchemeAndResourceHandlerFactory();
+            //You can specify a custom RequestContext to share settings amount groups of ChromiumWebBrowsers
+            //Also this is now the only way to access OnBeforePluginLoad - need to implement IPluginHandler
+            //browser.RequestContext = new RequestContext(new PluginHandler());
+            
+            //browser.RequestContext.RegisterSchemeHandlerFactory(CefSharpSchemeHandlerFactory.SchemeName, null, new CefSharpSchemeHandlerFactory());
+            browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
+            
             browser.LoadError += (sender, args) =>
             {
                 // Don't display an error for downloaded files.
@@ -68,6 +72,33 @@ namespace CefSharp.Wpf.Example.Views
             };
 
             CefExample.RegisterTestResources(browser);
+        }
+
+        private void OnBrowserMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var point = e.GetPosition(browser);
+
+            if (region.IsVisible((float)point.X, (float)point.Y))
+            {
+                var window = Window.GetWindow(this);
+                window.DragMove();
+
+                e.Handled = true;
+            }
+        }
+
+        private void OnDragHandlerRegionsChanged(Region region)
+        {
+            if(region != null)
+            {
+                //Only wire up event handler once
+                if(this.region == null)
+                { 
+                    browser.PreviewMouseLeftButtonDown += OnBrowserMouseLeftButtonDown;
+                }
+
+                this.region = region;
+            }
         }
 
         private void OnTextBoxGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)

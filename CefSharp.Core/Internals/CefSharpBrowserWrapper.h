@@ -1,4 +1,4 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -7,22 +7,21 @@
 #include "Stdafx.h"
 
 #include <include/cef_browser.h>
-#include "StringUtils.h"
+#include "CefWrapper.h"
 
 namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefSharpBrowserWrapper : IBrowser
+        private ref class CefSharpBrowserWrapper : public IBrowser, public CefWrapper
         {
         private:
             MCefRefPtr<CefBrowser> _browser;
             IBrowserHost^ _browserHost;
-            bool _disposed;
 
         internal:
             CefSharpBrowserWrapper::CefSharpBrowserWrapper(CefRefPtr<CefBrowser> &browser)
-                : _browser(browser), _disposed(false)
+                : _browser(browser), _browserHost(nullptr)
             {
             }
 
@@ -44,9 +43,6 @@ namespace CefSharp
             {
                 MCefRefPtr<CefBrowser> get();
             }
-
-        private:
-            void ThrowIfDisposed();
 
         public:
             ///
@@ -197,11 +193,6 @@ namespace CefSharp
             ///
             /*--cef()--*/
             virtual bool SendProcessMessage(CefProcessId targetProcess, CefRefPtr<CefProcessMessage> message);
-
-            property bool IsDisposed
-            {
-                bool get();
-            }
         };
     }
 }

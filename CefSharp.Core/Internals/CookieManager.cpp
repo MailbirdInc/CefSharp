@@ -1,9 +1,14 @@
-// Copyright © 2010-2015 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
 #include "CookieManager.h"
+
+#include "CookieAsyncWrapper.h"
+#include "CookieVisitor.h"
+#include "Internals\CefCompletionCallbackAdapter.h"
+#include "Cef.h"
 
 namespace CefSharp
 {
@@ -26,7 +31,7 @@ namespace CefSharp
             if (CefCurrentlyOn(TID_IO))
             {
                 auto source = gcnew TaskCompletionSource<bool>();
-                source->TrySetResult(cookieInvoker->DeleteCookies());
+                TaskExtensions::TrySetResultAsync<bool>(source, cookieInvoker->DeleteCookies());
                 return source->Task;
             }
 
@@ -42,7 +47,7 @@ namespace CefSharp
             if (CefCurrentlyOn(TID_IO))
             {
                 auto source = gcnew TaskCompletionSource<bool>();
-                source->TrySetResult(cookieInvoker->SetCookie());
+                TaskExtensions::TrySetResultAsync<bool>(source, cookieInvoker->SetCookie());
                 return source->Task;
             }
 
@@ -56,11 +61,27 @@ namespace CefSharp
             return _cookieManager->SetStoragePath(StringUtils::ToNative(path), persistSessionCookies, NULL);
         }
 
-        void CookieManager::SetSupportedSchemes(... array<String^>^ schemes)
+        void CookieManager::SetSupportedSchemes(... cli::array<String^>^ schemes)
         {
             ThrowIfDisposed();
 
             _cookieManager->SetSupportedSchemes(StringUtils::ToNative(schemes), NULL);
+        }
+
+        Task<List<Cookie^>^>^ CookieManager::VisitAllCookiesAsync()
+        {
+            ThrowIfDisposed();
+
+            auto cookieVisitor = gcnew TaskCookieVisitor();
+
+            auto result = VisitAllCookies(cookieVisitor);
+
+            if (result == false)
+            {
+                delete cookieVisitor;
+            }
+
+            return cookieVisitor->Task;
         }
 
         bool CookieManager::VisitAllCookies(ICookieVisitor^ visitor)
@@ -72,6 +93,22 @@ namespace CefSharp
             return _cookieManager->VisitAllCookies(cookieVisitor);
         }
 
+        Task<List<Cookie^>^>^ CookieManager::VisitUrlCookiesAsync(String^ url, bool includeHttpOnly)
+        {
+            ThrowIfDisposed();
+
+            auto cookieVisitor = gcnew TaskCookieVisitor();
+
+            auto result = VisitUrlCookies(url, includeHttpOnly, cookieVisitor);
+
+            if (result == false)
+            {
+                delete cookieVisitor;
+            }
+
+            return cookieVisitor->Task;
+        }
+
         bool CookieManager::VisitUrlCookies(String^ url, bool includeHttpOnly, ICookieVisitor^ visitor)
         {
             ThrowIfDisposed();
@@ -81,13 +118,21 @@ namespace CefSharp
             return _cookieManager->VisitUrlCookies(StringUtils::ToNative(url), includeHttpOnly, cookieVisitor);
         }
 
-        bool CookieManager::FlushStore(ICompletionHandler^ handler)
+        Task<bool>^ CookieManager::FlushStoreAsync()
         {
             ThrowIfDisposed();
 
-            CefRefPtr<CefCompletionCallback> wrapper = new CompletionHandler(handler);
+            auto handler = gcnew TaskCompletionHandler();
 
-            return _cookieManager->FlushStore(wrapper);
+            CefRefPtr<CefCompletionCallback> wrapper = new CefCompletionCallbackAdapter(handler);
+
+            if (_cookieManager->FlushStore(wrapper))
+            {
+                return handler->Task;
+            }
+
+            //returns false if cookies cannot be accessed.
+            return TaskExtensions::FromResult(false);
         }
     }
 }

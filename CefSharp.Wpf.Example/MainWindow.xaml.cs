@@ -1,14 +1,16 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using CefSharp.Example;
 using CefSharp.Wpf.Example.Controls;
 using CefSharp.Wpf.Example.ViewModels;
+using Microsoft.Win32;
 
 namespace CefSharp.Wpf.Example
 {
@@ -30,6 +32,8 @@ namespace CefSharp.Wpf.Example
 
             CommandBindings.Add(new CommandBinding(CefSharpCommands.Exit, Exit));
             CommandBindings.Add(new CommandBinding(CefSharpCommands.OpenTabCommand, OpenTabCommandBinding));
+            CommandBindings.Add(new CommandBinding(CefSharpCommands.PrintTabToPdfCommand, PrintToPdfCommandBinding));
+            CommandBindings.Add(new CommandBinding(CefSharpCommands.CustomCommand, CustomCommandBinding));
 
             Loaded += MainWindowLoaded;
 
@@ -44,7 +48,7 @@ namespace CefSharp.Wpf.Example
                 //Obtain the original source element for this event
                 var originalSource = (FrameworkElement)e.OriginalSource;
 
-                BrowserTabViewModel browserViewModel = null;
+                BrowserTabViewModel browserViewModel;
 
                 if (originalSource is MainWindow)
                 {
@@ -79,40 +83,95 @@ namespace CefSharp.Wpf.Example
             BrowserTabs.Add(new BrowserTabViewModel(url) { ShowSidebar = showSideBar });
         }
 
-        private void OpenTabCommandBinding(object sender, ExecutedRoutedEventArgs e)
+        private void CustomCommandBinding(object sender, ExecutedRoutedEventArgs e)
         {
             var param = e.Parameter.ToString();
-            string url = "";
 
-            switch(param)
+            if (BrowserTabs.Count > 0)
             {
-                case "BindingTest":
+                var originalSource = (FrameworkElement)e.OriginalSource;
+
+                //TODO: Remove duplicate code
+                BrowserTabViewModel browserViewModel;
+
+                if (originalSource is MainWindow)
                 {
-                    url = CefExample.BindingTestUrl;
-                    break;
+                    browserViewModel = BrowserTabs[TabControl.SelectedIndex];
                 }
-                case "ListPlugins":
+                else
                 {
-                    url = CefExample.PluginsTestUrl;
-                    break;
+                    browserViewModel = (BrowserTabViewModel)originalSource.DataContext;
                 }
-                case "PopupTest":
+
+                if (param == "CustomRequest")
                 {
-                    url = CefExample.PopupParentUrl;
-                    break;
+                    browserViewModel.LoadCustomRequestExample();
                 }
-                case "FishGl":
+
+                if(param == "OpenDevTools")
                 {
-                    url = "http://www.fishgl.com/";
-                    break;
-                } 
-                case "MsTestDrive":
+                    browserViewModel.ShowDevtools();
+                }
+
+                //NOTE: Add as required
+                //else if (param == "CustomRequest123")
+                //{
+                //    browserViewModel.LoadCustomRequestExample();
+                //}
+            }
+        }
+
+        private async void PrintToPdfCommandBinding(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (BrowserTabs.Count > 0)
+            {
+                var originalSource = (FrameworkElement)e.OriginalSource;
+
+                BrowserTabViewModel browserViewModel;
+
+                if (originalSource is MainWindow)
                 {
-                    url = "http://dev.modern.ie/testdrive/";
-                    break;
+                    browserViewModel = BrowserTabs[TabControl.SelectedIndex];
+                }
+                else
+                {
+                    browserViewModel = (BrowserTabViewModel)originalSource.DataContext;
+                }
+
+                var dialog = new SaveFileDialog
+                {
+                    DefaultExt = ".pdf",
+                    Filter = "Pdf documents (.pdf)|*.pdf"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    var success = await browserViewModel.WebBrowser.PrintToPdfAsync(dialog.FileName, new PdfPrintSettings
+                    {
+                        MarginType = CefPdfPrintMarginType.Custom,
+                        MarginBottom = 10,
+                        MarginTop = 0,
+                        MarginLeft = 20,
+                        MarginRight = 10,
+                    });
+
+                    if(success)
+                    {
+                        MessageBox.Show("Pdf was saved to " + dialog.FileName);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unable to save Pdf, check you have write permissions to " + dialog.FileName);
+                    }
+                    
                 }
             }
+        }
 
+        private void OpenTabCommandBinding(object sender, ExecutedRoutedEventArgs e)
+        {
+            var url = e.Parameter.ToString();
+            
             if (string.IsNullOrEmpty(url))
             {
                 throw new Exception("Please provide a valid command parameter for binding");

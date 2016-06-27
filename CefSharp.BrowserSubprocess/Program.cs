@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2015 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -15,40 +15,32 @@ namespace CefSharp.BrowserSubprocess
         {
             Kernel32.OutputDebugString("BrowserSubprocess starting up with command line: " + String.Join("\n", args));
 
+            SubProcess.EnableHighDPISupport();
+
             int result;
 
-            using (var subprocess = Create(args))
+            const string typePrefix = "--type=";
+            var typeArgument = args.SingleOrDefault(arg => arg.StartsWith(typePrefix));
+            var type = typeArgument.Substring(typePrefix.Length);
+
+            //Use our custom subProcess provides features like EvaluateJavascript
+            if (type == "renderer")
             {
-                result = subprocess.Run();
+                var wcfEnabled = args.HasArgument(CefSharpArguments.WcfEnabledArgument);
+                var subProcess = wcfEnabled ? new WcfEnabledSubProcess(args) : new SubProcess(args);
+
+                using (subProcess)
+                {
+                    result = subProcess.Run();
+                }
             }
+            else
+            {
+                result = SubProcess.ExecuteProcess();
+            }            
 
             Kernel32.OutputDebugString("BrowserSubprocess shutting down.");
             return result;
-        }
-
-        public static CefSubProcess Create(IEnumerable<string> args)
-        {
-            const string typePrefix = "--type=";
-            var typeArgument = args.SingleOrDefault(arg => arg.StartsWith(typePrefix));
-            var wcfEnabled = args.Any(a => a.StartsWith(CefSharpArguments.WcfEnabledArgument));
-
-            var type = typeArgument.Substring(typePrefix.Length);
-
-            switch (type)
-            {
-                case "renderer":
-                {
-                    return wcfEnabled ? new CefRenderProcess(args) : new CefSubProcess(args);
-                }
-                case "gpu-process":
-                {
-                    return new CefGpuProcess(args);
-                }
-                default:
-                {
-                    return new CefSubProcess(args);
-                }
-            }
         }
     }
 }
