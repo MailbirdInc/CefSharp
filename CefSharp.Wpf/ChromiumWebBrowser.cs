@@ -84,6 +84,10 @@ namespace CefSharp.Wpf
         /// The dispose count
         /// </summary>
         private volatile int disposeCount;
+        /// <summary>
+        /// Flag indicating the browser was hidden
+        /// </summary>
+        private bool wasHidden;
 
         /// <summary>
         /// Last browser size since last resize event
@@ -1486,6 +1490,12 @@ namespace CefSharp.Wpf
             if (browser != null)
             {
                 browser.GetHost().WasResized();
+
+                if (wasHidden && matrix.M11 > 1.0) // Hack until #1571 is solved
+                {
+                    browser.GetHost().WasHidden(true);
+                    browser.GetHost().WasHidden(false);
+                }
             }
         }
 
@@ -1501,6 +1511,8 @@ namespace CefSharp.Wpf
             if (browser != null)
             {
                 browser.GetHost().WasHidden(!isVisible);
+                if (!isVisible)
+                    wasHidden = true;
             }
         }
 
