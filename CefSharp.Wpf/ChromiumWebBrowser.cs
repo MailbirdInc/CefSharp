@@ -1421,7 +1421,7 @@ namespace CefSharp.Wpf
         /// </summary>
         /// <param name="size">size of the current control, must be greater than Size(0, 0)</param>
         /// <returns>bool to indicate if browser was created. If the browser has already been created then this will return false.</returns>
-        protected virtual bool CreateOffscreenBrowser(Size size)
+        protected virtual bool CreateOffscreenBrowser(Size size, Size? dpiMultiplier = null)
         {
             if (browserCreated || System.ComponentModel.DesignerProperties.GetIsInDesignMode(this) || size.IsEmpty || size.Equals(new Size(0, 0)))
             {
@@ -1431,6 +1431,12 @@ namespace CefSharp.Wpf
             var webBrowserInternal = this as IWebBrowserInternal;
             if (!webBrowserInternal.HasParent)
             {
+                if (dpiMultiplier.HasValue)
+                {
+                    matrix.M11 = dpiMultiplier.Value.Width;
+                    matrix.M22 = dpiMultiplier.Value.Height;
+                }
+
                 managedCefBrowserAdapter.CreateOffscreenBrowser(source == null ? IntPtr.Zero : source.Handle, BrowserSettings, RequestContext, Address);
             }
             browserCreated = true;
