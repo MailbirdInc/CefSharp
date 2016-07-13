@@ -3,16 +3,18 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "vs2013",
     [Parameter(Position = 1)]
-    [string] $Version = "43.0.0-MB4",
+    [string] $Version = "51.0.0",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "47.0.0",
-    [Parameter(Position = 3)]
-    [string] $RedistVersion = "3.2526.1362"
+    [string] $AssemblyVersion = "51.0.0"   
 )
 
 $WorkingDir = split-path -parent $MyInvocation.MyCommand.Definition
-
 $CefSln = Join-Path $WorkingDir 'CefSharp3.sln'
+
+# Extract the current CEF Redist version from the CefSharp.Core\packages.config file
+# Save having to update this file manually Example 3.2704.1418
+$CefSharpCorePackagesXml = [xml](Get-Content (Join-Path $WorkingDir 'CefSharp.Core\Packages.config'))
+$RedistVersion = $CefSharpCorePackagesXml.SelectSingleNode("//packages/package[@id='cef.sdk']/@version").value
 
 function Write-Diagnostic 
 {
@@ -253,10 +255,10 @@ function Nupkg
     Write-Diagnostic "Building nuget package"
 
     # Build packages
-    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget -Properties "RedistVersion=$RedistVersion"
-    . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-    . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-    . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.Common.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget -Properties "RedistVersion=$RedistVersion"
+    . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
+    . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Symbol -Version $Version -OutputDirectory nuget
 
     # Invoke `AfterBuild` script if available (ie. upload packages to myget)
     if(-not (Test-Path $WorkingDir\AfterBuild.ps1)) {
@@ -288,6 +290,8 @@ function WriteAssemblyVersion
     
     $NewString | Set-Content $Filename -Encoding UTF8
 }
+
+Write-Diagnostic "CEF Redist Version = $RedistVersion"
 
 DownloadNuget
 

@@ -11,7 +11,7 @@ namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefRequestCallbackWrapper : public IRequestCallback, public CefWrapper
+        private ref class CefRequestCallbackWrapper : public IRequestCallback, public CefWrapper
         {
         private:
             MCefRefPtr<CefRequestCallback> _callback;
@@ -20,7 +20,7 @@ namespace CefSharp
 
         internal:
             CefRequestCallbackWrapper(CefRefPtr<CefRequestCallback> &callback)
-                : _callback(callback)
+                : _callback(callback), _frame(nullptr), _request(nullptr)
             {
             }
 

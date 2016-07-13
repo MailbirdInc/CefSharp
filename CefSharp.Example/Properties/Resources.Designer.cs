@@ -337,6 +337,32 @@ namespace CefSharp.Example.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &lt;!DOCTYPE html&gt;
+        ///
+        ///&lt;html lang=&quot;en&quot; xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
+        ///&lt;head&gt;
+        ///    &lt;meta charset=&quot;utf-8&quot; /&gt;
+        ///    &lt;title&gt;Draggable Region Test&lt;/title&gt;
+        ///&lt;/head&gt;
+        ///&lt;body&gt;
+        ///
+        ///    &lt;h1&gt;Draggable Region Test&lt;/h1&gt;
+        ///    &lt;div style=&quot;-webkit-app-region: drag;width:200px;height:200px;border:1px solid black;&quot;&gt;
+        ///        A draggable area
+        ///    &lt;/div&gt;
+        ///    &lt;br/&gt;
+        ///
+        ///    &lt;div style=&quot;-webkit-app-region: drag;width:400px;height:400px;border:1px solid black;&quot;&gt;
+        ///        A draggable area
+        ///        &lt;div style=&quot;-webkit-app-region:  [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DraggableRegionTest {
+            get {
+                return ResourceManager.GetString("DraggableRegionTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0 Transitional//EN&quot;&gt;
         ///&lt;html&gt;
         ///    &lt;head&gt;
@@ -458,6 +484,22 @@ namespace CefSharp.Example.Properties {
         internal static string PopupTest {
             get {
                 return ResourceManager.GetString("PopupTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;html&gt;
+        ///&lt;head&gt;
+        ///    &lt;title&gt;Response Filter Test&lt;/title&gt;
+        ///&lt;/head&gt;
+        ///&lt;body bgcolor=&quot;white&quot;&gt;
+        ///    &lt;p&gt;The text shown below in &lt;font color=&quot;red&quot;&gt;red&lt;/font&gt; has been replaced by the filter. This document is &gt; 32kb in order to exceed the standard output buffer size.&lt;/p&gt;
+        ///    &lt;p&gt;&lt;font color=&quot;red&quot;&gt;REPLACE_THIS_STRING&lt;/font&gt;&lt;/p&gt;
+        ///    &lt;p&gt;0. It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string ResponseFilterTest {
+            get {
+                return ResourceManager.GetString("ResponseFilterTest", resourceCulture);
             }
         }
         

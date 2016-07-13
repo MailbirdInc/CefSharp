@@ -6,6 +6,10 @@ using System;
 
 namespace CefSharp
 {
+    /// <summary>
+    /// Implement this interface to handle events related to browser requests.
+    /// The methods of this class will be called on the thread indicated. 
+    /// </summary>
     public interface IRequestHandler
     {
         /// <summary>
@@ -145,14 +149,13 @@ namespace CefSharp
         bool OnProtocolExecution(IWebBrowser browserControl, IBrowser browser, string url);
 
         /// <summary>
-        /// Called on the browser process UI thread when the render view associated
+        /// Called on the CEF UI thread when the render view associated
         /// with browser is ready to receive/handle IPC messages in the render
         /// process.
         /// </summary>
         /// <param name="browserControl">The ChromiumWebBrowser control</param>
         /// <param name="browser">the browser object</param>
         void OnRenderViewReady(IWebBrowser browserControl, IBrowser browser);
-
         
         /// <summary>
         /// Called on the CEF IO thread when a resource response is received.
@@ -171,6 +174,17 @@ namespace CefSharp
         /// </returns>
         bool OnResourceResponse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response);
 
+        /// <summary>
+        /// Called on the CEF IO thread to optionally filter resource response content.
+        /// </summary>
+        /// <param name="browserControl">The ChromiumWebBrowser control</param>
+        /// <param name="browser">the browser object</param>
+        /// <param name="frame">The frame that is being redirected.</param>
+        /// <param name="request">the request object - cannot be modified in this callback</param>
+        /// <param name="response">the response object - cannot be modified in this callback</param>
+        /// <returns>Return an IResponseFilter to intercept this response, otherwise return null</returns>
+        IResponseFilter GetResourceResponseFilter(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response);
+        
         /// <summary>
         /// Called on the CEF IO thread when a resource load has completed.
         /// </summary>

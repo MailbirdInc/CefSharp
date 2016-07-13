@@ -19,7 +19,7 @@ namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefPostDataWrapper : public IPostData, public CefWrapper
+        private ref class CefPostDataWrapper : public IPostData, public CefWrapper
         {
             MCefRefPtr<CefPostData> _postData;
             List<IPostDataElement^>^ _postDataElements;
@@ -50,6 +50,8 @@ namespace CefSharp
 
                     _postDataElements = nullptr;
                 }
+
+                _disposed = true;
             }
 
         public:

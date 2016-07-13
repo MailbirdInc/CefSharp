@@ -11,15 +11,22 @@ namespace CefSharp
 {
     namespace Internals
     {
-        public class CefPdfPrintCallbackWrapper : public virtual CefPdfPrintCallback
+        private class CefPdfPrintCallbackWrapper : public CefPdfPrintCallback
         {
         private:
             gcroot<IPrintToPdfCallback^> _callback;
+
         public:
             CefPdfPrintCallbackWrapper(IPrintToPdfCallback^ callback)
                 :_callback(callback)
             {
                 
+            }
+
+            ~CefPdfPrintCallbackWrapper()
+            {
+                delete _callback;
+                _callback = nullptr;
             }
 
             virtual void OnPdfPrintFinished(const CefString& path, bool ok) OVERRIDE

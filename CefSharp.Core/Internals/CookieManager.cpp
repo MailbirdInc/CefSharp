@@ -31,7 +31,7 @@ namespace CefSharp
             if (CefCurrentlyOn(TID_IO))
             {
                 auto source = gcnew TaskCompletionSource<bool>();
-                source->TrySetResult(cookieInvoker->DeleteCookies());
+                TaskExtensions::TrySetResultAsync<bool>(source, cookieInvoker->DeleteCookies());
                 return source->Task;
             }
 
@@ -47,7 +47,7 @@ namespace CefSharp
             if (CefCurrentlyOn(TID_IO))
             {
                 auto source = gcnew TaskCompletionSource<bool>();
-                source->TrySetResult(cookieInvoker->SetCookie());
+                TaskExtensions::TrySetResultAsync<bool>(source, cookieInvoker->SetCookie());
                 return source->Task;
             }
 
@@ -68,6 +68,22 @@ namespace CefSharp
             _cookieManager->SetSupportedSchemes(StringUtils::ToNative(schemes), NULL);
         }
 
+        Task<List<Cookie^>^>^ CookieManager::VisitAllCookiesAsync()
+        {
+            ThrowIfDisposed();
+
+            auto cookieVisitor = gcnew TaskCookieVisitor();
+
+            auto result = VisitAllCookies(cookieVisitor);
+
+            if (result == false)
+            {
+                delete cookieVisitor;
+            }
+
+            return cookieVisitor->Task;
+        }
+
         bool CookieManager::VisitAllCookies(ICookieVisitor^ visitor)
         {
             ThrowIfDisposed();
@@ -75,6 +91,22 @@ namespace CefSharp
             CefRefPtr<CookieVisitor> cookieVisitor = new CookieVisitor(visitor);
 
             return _cookieManager->VisitAllCookies(cookieVisitor);
+        }
+
+        Task<List<Cookie^>^>^ CookieManager::VisitUrlCookiesAsync(String^ url, bool includeHttpOnly)
+        {
+            ThrowIfDisposed();
+
+            auto cookieVisitor = gcnew TaskCookieVisitor();
+
+            auto result = VisitUrlCookies(url, includeHttpOnly, cookieVisitor);
+
+            if (result == false)
+            {
+                delete cookieVisitor;
+            }
+
+            return cookieVisitor->Task;
         }
 
         bool CookieManager::VisitUrlCookies(String^ url, bool includeHttpOnly, ICookieVisitor^ visitor)

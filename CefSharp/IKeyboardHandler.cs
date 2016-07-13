@@ -4,14 +4,16 @@
 
 namespace CefSharp
 {
+    /// <summary>
+    /// Implement this interface to handle events related to keyboard input.
+    /// </summary>
     public interface IKeyboardHandler
     {
         /// <summary>
-        /// Called before a keyboard event is sent to the renderer. |event| contains
-        /// information about the keyboard event. |os_event| is the operating system
-        /// event message, if any. Return true if the event was handled or false
-        /// otherwise. If the event will be handled in OnKeyEvent() as a keyboard
-        /// shortcut set |isKeyboardShortcut| to true and return false.
+        /// Called before a keyboard event is sent to the renderer.
+        /// Return true if the event was handled or false
+        /// otherwise. If the event will be handled in <see cref="OnKeyEvent"/> as a keyboard
+        /// shortcut set isKeyboardShortcut to true and return false.
         /// </summary>
         /// <param name="browserControl">The <see cref="IWebBrowser"/> control this request is for.</param>
         /// <param name="browser">The browser instance.</param>

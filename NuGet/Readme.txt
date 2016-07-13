@@ -10,12 +10,18 @@ Post Installation:
   - Check your output `\bin` directory to make sure the appropriate references have been copied.
   - Build fails even though packages are installed. Short term rebuild again and everything should be find. Long term we recommend reading http://www.xavierdecoster.com/migrate-away-from-msbuild-based-nuget-package-restore
   
+Deployment:
+  - Make sure `Visual C++ 2013` is installed (`x86` or x64` depending on your build) or you package the runtime dlls with your application, see the FAQ for details.
+  
 What's New:
   See https://github.com/cefsharp/CefSharp/wiki/ChangeLog
-  IMPORTANT NOTE - VC++ 2013 Redist is now required.
+  IMPORTANT NOTE - .NET Framework 4.5.2 is now required.  
+  
+  The Microsoft .NET Framework 4.5.2 Developer Pack for Visual Studio 2012 and Visual Studio 2013 is available here: 
+  https://www.microsoft.com/en-gb/download/details.aspx?id=42637
 
 Basic Troubleshooting:
-  - Minimum of .Net 4.0 Client Profile
+  - Minimum of .Net 4.5.2
   - Make sure `VC++ 2013 Redist` is installed (either `x86` or `x64` depending on your application)
   - Please ensure your binaries directory contains these required dependencies:
     * libcef.dll (CEF code)
@@ -37,9 +43,10 @@ For further help please read the following content:
   - Minimal Example Projects showing the browser in action (https://github.com/cefsharp/CefSharp.MinimalExample)
   - FAQ: https://github.com/cefsharp/CefSharp/wiki/Frequently-asked-questions
   - Troubleshooting guide (https://github.com/cefsharp/CefSharp/wiki/Trouble-Shooting)
-  - Google Groups (https://groups.google.com/forum/#!forum/cefsharp)
+  - Google Groups (https://groups.google.com/forum/#!forum/cefsharp) - Historic reference only
   - CefSharp vs Cef (https://github.com/cefsharp/CefSharp/blob/master/CONTRIBUTING.md#cefsharp-vs-cef)
-  - Only when you've exhausted all other options then open an issue on `GitHub`
+  - Join the active cummunity and ask your question on Gitter Chat (https://gitter.im/cefsharp/CefSharp)
+  - If you have a reproducible bug then please open an issue on `GitHub`
 
 Please consider giving back, it's only with your help will this project to continue.
 

@@ -14,7 +14,7 @@ namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefBrowserHostWrapper : public IBrowserHost, public CefWrapper
+        private ref class CefBrowserHostWrapper : public IBrowserHost, public CefWrapper
         {
         private:
             MCefRefPtr<CefBrowserHost> _browserHost;
@@ -42,10 +42,18 @@ namespace CefSharp
             virtual void StartDownload(String^ url);
             virtual void Print();
             virtual Task<bool>^ PrintToPdfAsync(String^ path, PdfPrintSettings^ settings);
+            virtual void PrintToPdf(String^ path, PdfPrintSettings^ settings, IPrintToPdfCallback^ callback);
             virtual void SetZoomLevel(double zoomLevel);
             virtual Task<double>^ GetZoomLevelAsync();
             virtual IntPtr GetWindowHandle();
             virtual void CloseBrowser(bool forceClose);
+
+            virtual void DragTargetDragEnter(IDragData^ dragData, MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragOver(MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragDrop(MouseEvent^ mouseEvent);
+            virtual void DragSourceEndedAt(int x, int y, DragOperationsMask op);
+            virtual void DragTargetDragLeave();
+            virtual void DragSourceSystemDragEnded();
         
             virtual void ShowDevTools(IWindowInfo^ windowInfo, int inspectElementAtX, int inspectElementAtY);
             virtual void CloseDevTools();
@@ -59,6 +67,7 @@ namespace CefSharp
             virtual void SetFocus(bool focus);
             virtual void SendFocusEvent(bool setFocus);
             virtual void SendKeyEvent(KeyEvent keyEvent);
+            virtual void SendKeyEvent(int message, int wParam, int lParam);
 
             virtual void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY, CefEventFlags modifiers);
 
@@ -75,6 +84,8 @@ namespace CefSharp
             virtual void WasResized();
 
             virtual void WasHidden(bool hidden);
+
+            virtual void GetNavigationEntries(INavigationEntryVisitor^ visitor, bool currentOnly);
 
             virtual property int WindowlessFrameRate
             {
@@ -100,6 +111,16 @@ namespace CefSharp
             virtual property IRequestContext^ RequestContext
             {
                 IRequestContext^ get();
+            }
+
+            // Misc. private functions:
+            CefMouseEvent GetCefMouseEvent(MouseEvent^ mouseEvent);
+            int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam);
+
+            // Private keyboard functions:
+            bool IsKeyDown(WPARAM wparam)
+            {
+                return (GetKeyState(wparam) & 0x8000) != 0;
             }
         };
     }

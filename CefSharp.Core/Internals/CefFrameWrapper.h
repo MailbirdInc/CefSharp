@@ -23,7 +23,7 @@ namespace CefSharp
         // methods of this class may only be called on the main thread.
         ///
         /*--cef(source=library)--*/
-        public ref class CefFrameWrapper : public IFrame, public CefWrapper
+        private ref class CefFrameWrapper : public IFrame, public CefWrapper
         {
         private:
             MCefRefPtr<CefFrame> _frame;
@@ -123,11 +123,25 @@ namespace CefSharp
             virtual Task<String^>^ GetSourceAsync();
 
             ///
+            // Retrieve this frame's HTML source as a string sent to the specified
+            // visitor.
+            ///
+            /*--cef()--*/
+            virtual void GetSource(IStringVisitor^ visitor);
+
+            ///
             // Retrieve this frame's display text as a string sent to the specified
             // visitor.
             ///
             /*--cef()--*/
             virtual Task<String^>^ GetTextAsync();
+
+            ///
+            // Retrieve this frame's display text as a string sent to the specified
+            // visitor.
+            ///
+            /*--cef()--*/
+            virtual void GetText(IStringVisitor^ visitor);
 
             ///
             /// Load the request represented by the |request| object.

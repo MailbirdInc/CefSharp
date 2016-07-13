@@ -15,7 +15,7 @@ namespace CefSharp
 {
     namespace Internals
     {
-        public ref class CefResponseWrapper : public IResponse, public CefWrapper
+        private ref class CefResponseWrapper : public IResponse, public CefWrapper
         {
             MCefRefPtr<CefResponse> _response;
         internal:
@@ -38,14 +38,44 @@ namespace CefSharp
             }
 
         public:
+            virtual property bool IsReadOnly
+            {
+                bool get()
+                {
+                    ThrowIfDisposed();
+
+                    return _response->IsReadOnly();
+                }
+            }
+
+            virtual property CefErrorCode ErrorCode
+            {
+                CefErrorCode get()
+                {
+                    ThrowIfDisposed();
+
+                    return (CefErrorCode)_response->GetError();
+                }
+                void set(CefErrorCode val)
+                {
+                    ThrowIfDisposed();
+
+                    _response->SetError((cef_errorcode_t)val);
+                }
+            }
+
             virtual property int StatusCode
             {
                 int get()
                 {
+                    ThrowIfDisposed();
+
                     return _response->GetStatus();
                 }
                 void set(int val)
                 {
+                    ThrowIfDisposed();
+
                     _response->SetStatus(val);
                 }
             }
@@ -54,10 +84,14 @@ namespace CefSharp
             {
                 String^ get()
                 {
+                    ThrowIfDisposed();
+
                     return StringUtils::ToClr(_response->GetStatusText());
                 }
                 void set(String^ val)
                 {
+                    ThrowIfDisposed();
+
                     _response->SetStatusText(StringUtils::ToNative(val));
                 }
             }
@@ -66,10 +100,14 @@ namespace CefSharp
             {
                 String^ get()
                 {
+                    ThrowIfDisposed();
+
                     return StringUtils::ToClr(_response->GetMimeType());
                 }
                 void set(String^ val)
                 {
+                    ThrowIfDisposed();
+
                     _response->SetMimeType(StringUtils::ToNative(val));
                 }
             }
@@ -78,6 +116,8 @@ namespace CefSharp
             {
                 NameValueCollection^ get()
                 {
+                    ThrowIfDisposed();
+
                     //TODO: Extract this code out as it's duplicated in CefRequestWrapper
                     CefRequest::HeaderMap hm;
                     _response->GetHeaderMap(hm);
@@ -95,6 +135,8 @@ namespace CefSharp
                 }
                 void set(NameValueCollection^ headers)
                 {
+                    ThrowIfDisposed();
+
                     _response->SetHeaderMap(TypeConversion::ToNative(headers));
                 }
             }

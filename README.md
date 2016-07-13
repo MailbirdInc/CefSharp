@@ -31,7 +31,7 @@ Stable binaries are released on NuGet, and contain everything you need  to embed
 
 If you have a simple question please start by asking it on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cefsharp/CefSharp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge). Before opening an issue or submitting a `PR` please read [CONTRIBUTING](https://github.com/cefsharp/CefSharp/blob/master/CONTRIBUTING.md)
 
-[Stackoverflow](http://stackoverflow.com/questions/tagged/cefsharp) as always is a useful resource. The [CefSharp Google Group](https://groups.google.com/forum/#!forum/cefsharp) is no longer very active. It is however a useful resource for archived questions/answers.
+[Stackoverflow](http://stackoverflow.com/questions/tagged/cefsharp) as always is a useful resource. The [CefSharp Google Group](https://groups.google.com/forum/#!forum/cefsharp) is **no longer active**. It is however a useful resource for archived questions/answers.
 
 ## Branches & Forks
 
@@ -44,7 +44,7 @@ When a new release is imminent a `release` branch is created. We try to avoid ma
 ### Build Status
 
 **CI Builds**<br/>
-Every commit on `master` produces a `Nuget` package. Use at your own risk! [CefSharp MyGet Feed](https://www.myget.org/F/cefsharp/)
+Every commit on `master` produces a `Nuget` package. Use at your own risk! [CefSharp MyGet Feed](https://www.myget.org/gallery/cefsharp)
 
 **Pre-release**<br>
 ![CefSharp.Wpf](http://img.shields.io/nuget/vpre/CefSharp.Wpf.svg?style=flat)
@@ -58,13 +58,15 @@ Every commit on `master` produces a `Nuget` package. Use at your own risk! [CefS
 
 | Branch | CEF Version | VC++ Version | .Net Version | Status |
 |--------|-------------|--------------|--------------|--------|
-| [master](https://github.com/cefsharp/CefSharp/) | 2526 | 2013 | 4.0 | Development |
-| [cefsharp/47](https://github.com/cefsharp/CefSharp/tree/cefsharp/47) | 2526 | 2013 | 4.0 | **Release** |
-| [cefsharp/45](https://github.com/cefsharp/CefSharp/tree/cefsharp/45) | 2454 | 2013 | 4.0 | Unsupported |
-| [cefsharp/43](https://github.com/cefsharp/CefSharp/tree/cefsharp/43) | 2357 | 2012 | 4.0 | **Release** |
-| [cefsharp/41](https://github.com/cefsharp/CefSharp/tree/cefsharp/41) | 2272 | 2012 | 4.0 | Unsupported |
-| [cefsharp/39](https://github.com/cefsharp/CefSharp/tree/cefsharp/39) | 2171 | 2012 | 4.0 | Unsupported |
-| [cefsharp/37](https://github.com/cefsharp/CefSharp/tree/cefsharp/37) | 2062 | 2013 | 4.0 | Unsupported |
+| [master](https://github.com/cefsharp/CefSharp/) | 2704 | 2013 | 4.5.2 | Development |
+| [cefsharp/51](https://github.com/cefsharp/CefSharp/tree/cefsharp/51) | 2704 | 2013 | 4.5.2 | Pre-Release |
+| [cefsharp/49](https://github.com/cefsharp/CefSharp/tree/cefsharp/49) | 2623 | 2013 | 4.0   | **Release** |
+| [cefsharp/47](https://github.com/cefsharp/CefSharp/tree/cefsharp/47) | 2526 | 2013 | 4.0   | Unsupported |
+| [cefsharp/45](https://github.com/cefsharp/CefSharp/tree/cefsharp/45) | 2454 | 2013 | 4.0   | Unsupported |
+| [cefsharp/43](https://github.com/cefsharp/CefSharp/tree/cefsharp/43) | 2357 | 2012 | 4.0   | Unsupported |
+| [cefsharp/41](https://github.com/cefsharp/CefSharp/tree/cefsharp/41) | 2272 | 2012 | 4.0   | Unsupported |
+| [cefsharp/39](https://github.com/cefsharp/CefSharp/tree/cefsharp/39) | 2171 | 2012 | 4.0   | Unsupported |
+| [cefsharp/37](https://github.com/cefsharp/CefSharp/tree/cefsharp/37) | 2062 | 2013 | 4.0   | Unsupported |
 
 ## Links
 

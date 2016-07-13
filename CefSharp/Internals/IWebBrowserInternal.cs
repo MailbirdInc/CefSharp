@@ -12,7 +12,7 @@ namespace CefSharp.Internals
     /// </summary>
     public interface IWebBrowserInternal : IWebBrowser
     {
-        void OnAfterBrowserCreated();
+        void OnAfterBrowserCreated(IBrowser browser);
 
         void SetAddress(AddressChangedEventArgs args);
         void SetLoadingStateChange(LoadingStateChangedEventArgs args);
@@ -27,6 +27,5 @@ namespace CefSharp.Internals
 
         IBrowserAdapter BrowserAdapter { get; }
         bool HasParent { get; set; }
-        IntPtr ControlHandle { get; }
     }
 }
