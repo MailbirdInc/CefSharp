@@ -73,6 +73,9 @@ namespace CefSharp.Wpf.Rendering
         public override void ClearBitmap()
         {
             Bitmap = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         /// <summary>
