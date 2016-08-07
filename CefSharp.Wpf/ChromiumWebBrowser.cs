@@ -623,7 +623,8 @@ namespace CefSharp.Wpf
                         var img = bitmapInfo.IsPopup ? popupImage : image;
 
                         img.Source = null;
-                        GC.Collect(1);
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
 
                         img.Source = wpfBitmapInfo.CreateBitmap();
                     }
