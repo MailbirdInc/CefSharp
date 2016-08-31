@@ -7,6 +7,7 @@ using CefSharp.Wpf.Internals;
 using CefSharp.Wpf.Rendering;
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,6 +17,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace CefSharp.Wpf
@@ -623,16 +625,29 @@ namespace CefSharp.Wpf
                         var img = bitmapInfo.IsPopup ? popupImage : image;
 
                         img.Source = null;
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
 
-                        img.Source = wpfBitmapInfo.CreateBitmap();
+                        img.Source = CreateBitmap(wpfBitmapInfo);
                     }
 
                     wpfBitmapInfo.Invalidate();
                 }
             },
             DispatcherPriority.Render);
+        }
+
+        private BitmapSource CreateBitmap(WpfBitmapInfo wpfBitmapInfo)
+        {
+            try
+            {
+                GC.Collect(1);
+                return wpfBitmapInfo.CreateBitmap();
+            }
+            catch (COMException) {}
+            catch (OutOfMemoryException) {}
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            return wpfBitmapInfo.CreateBitmap();
         }
 
         /// <summary>
