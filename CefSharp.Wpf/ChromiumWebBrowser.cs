@@ -19,6 +19,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using CefSharp.ModelBinding;
 
 namespace CefSharp.Wpf
 {
@@ -418,7 +419,7 @@ namespace CefSharp.Wpf
 
             PresentationSource.AddSourceChangedHandler(this, PresentationSourceChangedHandler);
 
-            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.NearestNeighbor);
+            RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);
         }
 
         /// <summary>
@@ -455,9 +456,6 @@ namespace CefSharp.Wpf
                 LoadingStateChanged = null;
                 Rendering = null;
 
-                // No longer reference handlers:
-                this.SetHandlersToNull();
-
                 _resizeTimer.Stop();
                 if (isDisposing)
 
@@ -485,9 +483,18 @@ namespace CefSharp.Wpf
 
                     IsVisibleChanged -= OnIsVisibleChanged;
 
+                    if(popup != null)
+                    { 
+                        popup.MouseEnter -= PopupMouseEnter;
+                        popup.MouseLeave -= PopupMouseLeave;
+                        popup = null;
+                    }
+
                     if (tooltipTimer != null)
                     {
                         tooltipTimer.Tick -= OnTooltipTimerTick;
+                        tooltipTimer.Stop();
+                        tooltipTimer = null;
                     }
 
                     if (_resizeTimer != null)
@@ -514,6 +521,11 @@ namespace CefSharp.Wpf
                         WebBrowser = null;
                     });
                 }
+
+                // Release reference to handlers, make sure this is done after we dispose managedCefBrowserAdapter
+                // otherwise the ILifeSpanHandler.DoClose will not be invoked. (More important in the WinForms version,
+                // we do it here for consistency)
+                this.SetHandlersToNull();
 
                 Cef.RemoveDisposable(this);
 
@@ -548,6 +560,28 @@ namespace CefSharp.Wpf
             };
 
             return viewRect;
+        }
+
+        bool IRenderWebBrowser.GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
+        {
+            screenX = 0;
+            screenY = 0;
+
+            var point = new Point(viewX, viewY);
+
+            UiThreadRunSync(() =>
+            {
+                point = PointToScreen(point);
+
+                PresentationSource source = PresentationSource.FromVisual(this);
+
+                point = matrix.Transform(point);
+            });
+
+            screenX = (int)point.X;
+            screenY = (int)point.Y;
+
+            return true;
         }
 
         /// <summary>
@@ -603,6 +637,11 @@ namespace CefSharp.Wpf
             });
 
             return true;
+        }
+
+        void IRenderWebBrowser.UpdateDragCursor(DragOperationsMask operation)
+        {
+            //TODO: Someone should implement this
         }
 
         /// <summary>
@@ -678,10 +717,31 @@ namespace CefSharp.Wpf
         /// <param name="type">The type.</param>
         void IRenderWebBrowser.SetCursor(IntPtr handle, CefCursorType type)
         {
-            UiThreadRunAsync(() =>
+            //Custom cursors are handled differently, for now keep standard ones executing
+            //in an async fashion
+            if(type == CefCursorType.Custom)
             {
-                Cursor = CursorInteropHelper.Create(new SafeFileHandle(handle, ownsHandle: false));
-            });
+                //When using a custom it appears we need to update the cursor in a sync fashion
+                //Likely the underlying handle/buffer is being released before the cursor
+                // is created when executed in an async fashion. Doesn't seem to be a problem
+                //for build in cursor types
+                UiThreadRunSync(() =>
+                {
+                    Cursor = CursorInteropHelper.Create(new SafeFileHandle(handle, ownsHandle: false));
+                });
+            }
+            else
+            {
+                UiThreadRunAsync(() =>
+                {
+                    Cursor = CursorInteropHelper.Create(new SafeFileHandle(handle, ownsHandle: false));
+                });
+            }            
+        }
+
+        void IRenderWebBrowser.OnImeCompositionRangeChanged(Range selectedRange, Rect[] characterBounds)
+        {
+            //TODO: Implement this
         }
 
         /// <summary>
@@ -1238,13 +1298,16 @@ namespace CefSharp.Wpf
                 return;
             }
 
-            timer.Stop();
-
-            if (String.IsNullOrEmpty(TooltipText))
+            if (string.IsNullOrEmpty(TooltipText))
             {
                 UiThreadRunAsync(() => UpdateTooltip(null), DispatcherPriority.Render);
+
+                if(timer.IsEnabled)
+                {
+                    timer.Stop();
+                }
             }
-            else
+            else if(!timer.IsEnabled)
             {
                 timer.Start();
             }
@@ -1461,7 +1524,7 @@ namespace CefSharp.Wpf
         }
 
         /// <summary>
-        /// UIs the thread run asynchronous.
+        /// Runs the specific Action on the Dispatcher in an async fashion
         /// </summary>
         /// <param name="action">The action.</param>
         /// <param name="priority">The priority.</param>
@@ -1478,6 +1541,23 @@ namespace CefSharp.Wpf
         }
 
         
+
+        /// <summary>
+        /// Runs the specific Action on the Dispatcher in an sync fashion
+        /// </summary>
+        /// <param name="action">The action.</param>
+        /// <param name="priority">The priority.</param>
+        private void UiThreadRunSync(Action action, DispatcherPriority priority = DispatcherPriority.DataBind)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else if (!Dispatcher.HasShutdownStarted)
+            {
+                Dispatcher.Invoke(action, priority);
+            }
+        }
 
         /// <summary>
         /// Handles the <see cref="E:ActualSizeChanged" /> event.
@@ -1559,6 +1639,15 @@ namespace CefSharp.Wpf
             {
                 CleanupElement = Window.GetWindow(this);
             }
+
+            // TODO: Consider making the delay here configurable.
+            tooltipTimer = new DispatcherTimer(
+                TimeSpan.FromSeconds(0.5),
+                DispatcherPriority.Render,
+                OnTooltipTimerTick,
+                Dispatcher
+                );
+            tooltipTimer.IsEnabled = false;
         }
 
         /// <summary>
@@ -1616,13 +1705,14 @@ namespace CefSharp.Wpf
         }
 
         /// <summary>
-        /// Sources the hook.
+        /// WindowProc callback interceptor. Handles Windows messages intended for the source hWnd, and passes them to the
+        /// contained browser as needed.
         /// </summary>
-        /// <param name="hWnd">The hWnd.</param>
+        /// <param name="hWnd">The source handle.</param>
         /// <param name="message">The message.</param>
-        /// <param name="wParam">The w parameter.</param>
-        /// <param name="lParam">The l parameter.</param>
-        /// <param name="handled">if set to <c>true</c> [handled].</param>
+        /// <param name="wParam">Additional message info.</param>
+        /// <param name="lParam">Even more message info.</param>
+        /// <param name="handled">if set to <c>true</c>, the event has already been handled by someone else.</param>
         /// <returns>IntPtr.</returns>
         protected virtual IntPtr SourceHook(IntPtr hWnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -1855,35 +1945,42 @@ namespace CefSharp.Wpf
             {
                 var point = e.GetPosition(this);
                 var modifiers = e.GetModifiers();
+                var isShiftKeyDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+                var pointX = (int)point.X;
+                var pointY= (int)point.Y;
+
+                System.Diagnostics.Trace.WriteLine("PointX:" + pointX);
+                System.Diagnostics.Trace.WriteLine("PointY:" + pointY);
+                System.Diagnostics.Trace.WriteLine("Delta:" + e.Delta);
 
                 browser.SendMouseWheelEvent(
-                    (int)point.X,
-                    (int)point.Y,
-                    deltaX: 0,
-                    deltaY: e.Delta,
+                    pointX,
+                    pointY,
+                    deltaX: isShiftKeyDown ? e.Delta : 0,
+                    deltaY: !isShiftKeyDown ? e.Delta : 0,
                     modifiers: modifiers);
             }
         }
 
         /// <summary>
-        /// Popups the mouse enter.
+        /// Handle the mouse cursor entering the pop-up.
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="MouseEventArgs"/> instance containing the event data.</param>
-        protected void PopupMouseEnter(object sender, MouseEventArgs e)
+        private void PopupMouseEnter(object sender, MouseEventArgs e)
         {
             Focus();
-            Mouse.Capture(this);
+            Mouse.Capture(this, CaptureMode.Element);
         }
 
         /// <summary>
-        /// Popups the mouse leave.
+        /// Handle the mouse cursor exiting the pop-up.
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="MouseEventArgs"/> instance containing the event data.</param>
-        protected void PopupMouseLeave(object sender, MouseEventArgs e)
+        private void PopupMouseLeave(object sender, MouseEventArgs e)
         {
-            Mouse.Capture(null);
+            Mouse.Capture(this, CaptureMode.None);
         }
 
         /// <summary>
@@ -1937,13 +2034,15 @@ namespace CefSharp.Wpf
                 return;
             }
 
-            var modifiers = e.GetModifiers();
-            var mouseUp = (e.ButtonState == MouseButtonState.Released);
-            var point = e.GetPosition(this);
-
             if (browser != null)
             {
+                var modifiers = e.GetModifiers();
+                var mouseUp = (e.ButtonState == MouseButtonState.Released);
+                var point = e.GetPosition(this);
+
                 browser.GetHost().SendMouseClickEvent((int)point.X, (int)point.Y, (MouseButtonType)e.ChangedButton, mouseUp, e.ClickCount, modifiers);
+
+                e.Handled = true;
             }
         }
 
@@ -1957,19 +2056,6 @@ namespace CefSharp.Wpf
             // or before OnApplyTemplate has been called
             if (browser != null)
             {
-                if (tooltipTimer != null)
-                {
-                    tooltipTimer.Tick -= OnTooltipTimerTick;
-                }
-
-                // TODO: Consider making the delay here configurable.
-                tooltipTimer = new DispatcherTimer(
-                    TimeSpan.FromSeconds(0.5),
-                    DispatcherPriority.Render,
-                    OnTooltipTimerTick,
-                    Dispatcher
-                    );
-
                 browser.MainFrame.LoadUrl(url);
             }
         }
@@ -1997,7 +2083,7 @@ namespace CefSharp.Wpf
         }
 
         /// <summary>
-        /// Zooms the browser reset.
+        /// Reset the browser's zoom level to default.
         /// </summary>
         private void ZoomReset()
         {
@@ -2012,10 +2098,10 @@ namespace CefSharp.Wpf
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of properties/methods, defaults to true</param>
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
         ///                                     called before the underlying CEF browser is created.</exception>
-        public void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
+        public void RegisterJsObject(string name, object objectToBind, BindingOptions options = null)
         {
             if (browserInitialized)
             {
@@ -2026,7 +2112,7 @@ namespace CefSharp.Wpf
             //Enable WCF if not already enabled
             CefSharpSettings.WcfEnabled = true;
 
-            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, camelCaseJavascriptNames);
+            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, options);
         }
 
         /// <summary>
@@ -2035,19 +2121,19 @@ namespace CefSharp.Wpf
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of methods, defaults to true</param>
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
         ///                                     called before the underlying CEF browser is created.</exception>
         /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
         /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
-        public void RegisterAsyncJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
+        public void RegisterAsyncJsObject(string name, object objectToBind, BindingOptions options = null)
         {
             if (browserInitialized)
             {
                 throw new Exception("Browser is already initialized. RegisterJsObject must be" +
                                     "called before the underlying CEF browser is created.");
             }
-            managedCefBrowserAdapter.RegisterAsyncJsObject(name, objectToBind, camelCaseJavascriptNames);
+            managedCefBrowserAdapter.RegisterAsyncJsObject(name, objectToBind, options);
         }
 
         /// <summary>

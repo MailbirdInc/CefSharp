@@ -70,6 +70,27 @@ namespace CefSharp.Wpf.Example.ViewModels
             set { Set(ref showSidebar, value); }
         }
 
+        private bool showDownloadInfo;
+        public bool ShowDownloadInfo
+        {
+            get { return showDownloadInfo; }
+            set { Set(ref showDownloadInfo, value); }
+        }
+
+        private string lastDownloadAction;
+        public string LastDownloadAction
+        {
+            get { return lastDownloadAction; }
+            set { Set(ref lastDownloadAction, value); }
+        }
+
+        private DownloadItem downloadItem;
+        public DownloadItem DownloadItem
+        {
+            get { return downloadItem; }
+            set { Set(ref downloadItem, value); }
+        }
+
         public ICommand GoCommand { get; private set; }
         public ICommand HomeCommand { get; private set; }
         public ICommand ExecuteJavaScriptCommand { get; private set; }
@@ -143,7 +164,15 @@ namespace CefSharp.Wpf.Example.ViewModels
                         // TODO: This is a bit of a hack. It would be nicer/cleaner to give the webBrowser focus in the Go()
                         // TODO: method, but it seems like "something" gets messed up (= doesn't work correctly) if we give it
                         // TODO: focus "too early" in the loading process...
-                        WebBrowser.FrameLoadEnd += delegate { Application.Current.Dispatcher.BeginInvoke((Action)(() => webBrowser.Focus())); };
+                        WebBrowser.FrameLoadEnd += (s, args) =>
+                        {
+                            //Sender is the ChromiumWebBrowser object 
+                            var browser = s as ChromiumWebBrowser;
+                            if (browser != null && !browser.IsDisposed)
+                            {
+                                browser.Dispatcher.BeginInvoke((Action)(() => browser.Focus()));
+                            }
+                        };
                     }
 
                     break;
@@ -192,11 +221,6 @@ namespace CefSharp.Wpf.Example.ViewModels
             request.PostData.AddData("test=123&data=456");
 
             frame.LoadRequest(request);
-        }
-
-        internal void ShowDevtools()
-        {
-            webBrowser.ShowDevTools();
         }
     }
 }

@@ -110,7 +110,35 @@ namespace CefSharp.Wpf.Example
 
                 if(param == "OpenDevTools")
                 {
-                    browserViewModel.ShowDevtools();
+                    browserViewModel.WebBrowser.ShowDevTools();
+                }
+
+                if (param == "ZoomIn")
+                {
+                    var cmd = browserViewModel.WebBrowser.ZoomInCommand;
+                    cmd.Execute(null);
+                }
+
+                if (param == "ZoomOut")
+                {
+                    var cmd = browserViewModel.WebBrowser.ZoomOutCommand;
+                    cmd.Execute(null);
+                }
+
+                if (param == "ZoomReset")
+                {
+                    var cmd = browserViewModel.WebBrowser.ZoomResetCommand;
+                    cmd.Execute(null);
+                }
+
+                if (param == "ToggleSidebar")
+                {
+                    browserViewModel.ShowSidebar = !browserViewModel.ShowSidebar;
+                }
+
+                if (param == "ToggleDownloadInfo")
+                {
+                    browserViewModel.ShowDownloadInfo = !browserViewModel.ShowDownloadInfo;
                 }
 
                 //NOTE: Add as required

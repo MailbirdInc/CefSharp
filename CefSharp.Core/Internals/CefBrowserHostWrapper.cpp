@@ -169,6 +169,13 @@ void CefBrowserHostWrapper::CloseDevTools()
     _browserHost->CloseDevTools();
 }
 
+bool CefBrowserHostWrapper::HasDevTools::get()
+{
+    ThrowIfDisposed();
+
+    return _browserHost->HasDevTools();
+}
+
 void CefBrowserHostWrapper::AddWordToDictionary(String^ word)
 {
     ThrowIfDisposed();
@@ -294,6 +301,57 @@ void CefBrowserHostWrapper::Invalidate(PaintElementType type)
     _browserHost->Invalidate((CefBrowserHost::PaintElementType)type);
 }
 
+void CefBrowserHostWrapper::ImeSetComposition(String^ text, cli::array<CompositionUnderline>^ underlines, Nullable<Range> selectionRange)
+{
+    ThrowIfDisposed();
+
+    std::vector<CefCompositionUnderline> underlinesVector = std::vector<CefCompositionUnderline>();
+    CefRange range;
+
+    if (underlines != nullptr && underlines->Length > 0)
+    {
+        for each (CompositionUnderline underline in underlines)
+        {
+            auto c = CefCompositionUnderline();
+            c.range = CefRange(underline.Range.From, underline.Range.To);
+            c.color = underline.Color;
+            c.background_color = underline.BackgroundColor;
+            c.thick = (int)underline.Thick;
+            underlinesVector.push_back(c);
+        }
+    }
+
+    if (selectionRange.HasValue)
+    {
+        range = CefRange(selectionRange.Value.From, selectionRange.Value.To);
+    }
+
+    //Replacement Range is Mac OSX only
+    _browserHost->ImeSetComposition(StringUtils::ToNative(text), underlinesVector, CefRange(), range);
+}
+
+void CefBrowserHostWrapper::ImeCommitText(String^ text)
+{
+    ThrowIfDisposed();
+
+    //Range and cursor position are Mac OSX only
+    _browserHost->ImeCommitText(StringUtils::ToNative(text), CefRange(), NULL);
+}
+
+void CefBrowserHostWrapper::ImeFinishComposingText(bool keepSelection)
+{
+    ThrowIfDisposed();
+
+    _browserHost->ImeFinishComposingText(keepSelection);
+}
+
+void CefBrowserHostWrapper::ImeCancelComposition()
+{
+    ThrowIfDisposed();
+
+    _browserHost->ImeCancelComposition();
+}
+
 void CefBrowserHostWrapper::SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers)
 {
     ThrowIfDisposed();
@@ -340,6 +398,56 @@ void CefBrowserHostWrapper::GetNavigationEntries(INavigationEntryVisitor^ visito
     auto navEntryVisitor = new CefNavigationEntryVisitorAdapter(visitor);
 
     _browserHost->GetNavigationEntries(navEntryVisitor, currentOnly);
+}
+
+NavigationEntry CefBrowserHostWrapper::GetVisibleNavigationEntry()
+{
+    ThrowIfDisposed();
+
+    auto entry = _browserHost->GetVisibleNavigationEntry();
+
+    NavigationEntry navEntry;
+    Nullable<SslStatus> sslStatus;
+
+    //TODO: This code is duplicated in CefNavigationEntryVisitor
+    //TODO: NavigationEntry is a struct and so is SslStatus, this should
+    // be reviewed as it's likely not ideal.
+    if (entry->IsValid())
+    {
+        auto time = entry->GetCompletionTime();
+        DateTime completionTime = CefTimeUtils::ConvertCefTimeToDateTime(time.GetDoubleT());
+        auto ssl = entry->GetSSLStatus();
+        X509Certificate2^ sslCertificate;
+
+        if (ssl.get())
+        {
+            auto certificate = ssl->GetX509Certificate();
+            if (certificate.get())
+            {
+                auto derEncodedCertificate = certificate->GetDEREncoded();
+                auto byteCount = derEncodedCertificate->GetSize();
+                if (byteCount > 0)
+                {
+                    auto bytes = gcnew cli::array<Byte>(byteCount);
+                    pin_ptr<Byte> src = &bytes[0]; // pin pointer to first element in arr
+
+                    derEncodedCertificate->GetData(static_cast<void*>(src), byteCount, 0);
+
+                    sslCertificate = gcnew X509Certificate2(bytes);
+                }
+            }
+            sslStatus = SslStatus(ssl->IsSecureConnection(), (CertStatus)ssl->GetCertStatus(), (SslVersion)ssl->GetSSLVersion(), (SslContentStatus)ssl->GetContentStatus(), sslCertificate);
+        }
+
+        navEntry = NavigationEntry(true, completionTime, StringUtils::ToClr(entry->GetDisplayURL()), entry->GetHttpStatusCode(), StringUtils::ToClr(entry->GetOriginalURL()), StringUtils::ToClr(entry->GetTitle()), (TransitionType)entry->GetTransitionType(), StringUtils::ToClr(entry->GetURL()), entry->HasPostData(), true, sslStatus);
+    }
+    else
+    {
+        //Invalid nav entry
+        navEntry = NavigationEntry(true, DateTime::MinValue, nullptr, -1, nullptr, nullptr, (TransitionType)-1, nullptr, false, false, sslStatus);
+    }
+
+    return navEntry;
 }
 
 void CefBrowserHostWrapper::NotifyMoveOrResizeStarted()

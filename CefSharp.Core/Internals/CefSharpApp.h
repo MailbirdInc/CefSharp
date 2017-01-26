@@ -15,19 +15,24 @@ namespace CefSharp
         public CefBrowserProcessHandler
     {
         gcroot<CefSettings^> _cefSettings;
-        gcroot<Action^> _onContextInitialized;
+        gcroot<IBrowserProcessHandler^> _browserProcessHandler;
 
     public:
-        CefSharpApp(CefSettings^ cefSettings, Action^ onContextInitialized) :
+        CefSharpApp(CefSettings^ cefSettings, IBrowserProcessHandler^ browserProcessHandler) :
             _cefSettings(cefSettings),
-            _onContextInitialized(onContextInitialized)
+            _browserProcessHandler(browserProcessHandler)
         {
+            if (cefSettings->ExternalMessagePump && Object::ReferenceEquals(_browserProcessHandler, nullptr))
+            {
+                throw gcnew Exception("browserProcessHandler cannot be null when using cefSettings.ExternalMessagePump");
+            }
         }
 
         ~CefSharpApp()
         {
             _cefSettings = nullptr;
-            _onContextInitialized = nullptr;
+            delete _browserProcessHandler;
+            _browserProcessHandler = nullptr;
         }
 
         virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE
@@ -37,10 +42,15 @@ namespace CefSharp
 
         virtual void OnContextInitialized() OVERRIDE
         {
-            if (!Object::ReferenceEquals(_onContextInitialized, nullptr))
+            if (!Object::ReferenceEquals(_browserProcessHandler, nullptr))
             {
-                _onContextInitialized->Invoke();
+                _browserProcessHandler->OnContextInitialized();
             }
+        }
+
+        virtual void OnScheduleMessagePumpWork(int64 delay_ms)  OVERRIDE
+        {
+            _browserProcessHandler->OnScheduleMessagePumpWork(delay_ms);
         }
 
         virtual void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> commandLine) OVERRIDE
@@ -48,6 +58,9 @@ namespace CefSharp
             if (CefSharpSettings::WcfEnabled)
             {
                 commandLine->AppendArgument(StringUtils::ToNative(CefSharpArguments::WcfEnabledArgument));
+                //ChannelId was removed in https://bitbucket.org/chromiumembedded/cef/issues/1912/notreached-in-logchannelidandcookiestores
+                //We need to know the process Id to establish WCF communication
+                commandLine->AppendArgument(StringUtils::ToNative(CefSharpArguments::WcfHostProcessIdArgument + "=" + Process::GetCurrentProcess()->Id));
             }
 
             if (_cefSettings->_cefCustomSchemes->Count > 0)

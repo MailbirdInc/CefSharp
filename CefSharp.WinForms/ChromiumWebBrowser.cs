@@ -5,6 +5,7 @@
 using System;
 using System.Windows.Forms;
 using CefSharp.Internals;
+using CefSharp.ModelBinding;
 using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms
@@ -336,7 +337,8 @@ namespace CefSharp.WinForms
                 IsBrowserInitializedChanged = null;
             }
 
-            // Don't utilize any of the handlers anymore:
+            // Release reference to handlers, make sure this is done after we dispose managedCefBrowserAdapter
+            // otherwise the ILifeSpanHandler.DoClose will not be invoked.
             this.SetHandlersToNull();
 
             base.Dispose(disposing);
@@ -363,10 +365,10 @@ namespace CefSharp.WinForms
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of properties/methods, defaults to true</param>
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
         ///                                     called before the underlying CEF browser is created.</exception>
-        public void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
+        public void RegisterJsObject(string name, object objectToBind, BindingOptions options = null)
         {
             if (IsBrowserInitialized)
             {
@@ -377,7 +379,7 @@ namespace CefSharp.WinForms
             //Enable WCF if not already enabled
             CefSharpSettings.WcfEnabled = true;
 
-            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, camelCaseJavascriptNames);
+            managedCefBrowserAdapter.RegisterJsObject(name, objectToBind, options);
         }
 
         /// <summary>
@@ -386,19 +388,19 @@ namespace CefSharp.WinForms
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of methods, defaults to true</param>
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
         ///                                     called before the underlying CEF browser is created.</exception>
         /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
         /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
-        public void RegisterAsyncJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true)
+        public void RegisterAsyncJsObject(string name, object objectToBind, BindingOptions options = null)
         {
             if (IsBrowserInitialized)
             {
                 throw new Exception("Browser is already initialized. RegisterJsObject must be" +
                                     "called before the underlying CEF browser is created.");
             }
-            managedCefBrowserAdapter.RegisterAsyncJsObject(name, objectToBind, camelCaseJavascriptNames);
+            managedCefBrowserAdapter.RegisterAsyncJsObject(name, objectToBind, options);
         }
 
         /// <summary>
@@ -645,6 +647,33 @@ namespace CefSharp.WinForms
             this.ThrowExceptionIfBrowserNotInitialized();
 
             return browser;
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            //This code block is only called/required when CEF is running in the
+            //same message loop as the WinForms UI (CefSettings.MultiThreadedMessageLoop = false)
+            //Without this code, arrows and tab won't be processed
+            switch (keyData)
+            {
+                case Keys.Right:
+                case Keys.Left:
+                case Keys.Up:
+                case Keys.Down:
+                case Keys.Tab:
+                { 
+                    return true;
+                }
+                case Keys.Shift | Keys.Right:
+                case Keys.Shift | Keys.Left:
+                case Keys.Shift | Keys.Up:
+                case Keys.Shift | Keys.Down:
+                { 
+                    return true;
+                }
+            }
+
+            return base.IsInputKey(keyData);
         }
     }
 }

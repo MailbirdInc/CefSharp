@@ -4,6 +4,7 @@
 
 using System;
 using CefSharp.Example.Filters;
+using System.Security.Cryptography.X509Certificates;
 
 namespace CefSharp.Example
 {
@@ -129,6 +130,20 @@ namespace CefSharp.Example
             return false;
         }
 
+        bool IRequestHandler.OnSelectClientCertificate(IWebBrowser browserControl, IBrowser browser, bool isProxy, string host, int port, X509Certificate2Collection certificates, ISelectClientCertificateCallback callback)
+        {
+            //NOTE: If you do not wish to implement this method returning false is the default behaviour
+            // We also suggest you explicitly Dispose of the callback as it wraps an unmanaged resource.
+
+            return OnSelectClientCertificate(browserControl, browser, isProxy, host, port, certificates, callback);
+        }
+
+        protected virtual bool OnSelectClientCertificate(IWebBrowser browserControl, IBrowser browser, bool isProxy, string host, int port, X509Certificate2Collection certificates, ISelectClientCertificateCallback callback)
+        {
+            callback.Dispose();
+            return false;
+        }
+
         void IRequestHandler.OnRenderProcessTerminated(IWebBrowser browserControl, IBrowser browser, CefTerminationStatus status)
         {
             // TODO: Add your own code here for handling scenarios where the Render Process terminated for one reason or another.
@@ -156,12 +171,12 @@ namespace CefSharp.Example
             return false;
         }
 
-        void IRequestHandler.OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, ref string newUrl)
+        void IRequestHandler.OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, ref string newUrl)
         {
             //Example of how to redirect - need to check `newUrl` in the second pass
-            //if (string.Equals(frame.GetUrl(), "https://www.google.com/", StringComparison.OrdinalIgnoreCase) && !newUrl.Contains("github"))
+            //if (request.Url.StartsWith("https://www.google.com", StringComparison.OrdinalIgnoreCase) && !newUrl.Contains("github"))
             //{
-            //	newUrl = "https://github.com";
+            //    newUrl = "https://github.com";
             //}
         }
 

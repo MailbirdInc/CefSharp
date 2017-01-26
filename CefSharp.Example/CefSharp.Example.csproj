@@ -61,6 +61,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -76,6 +77,7 @@
     <Compile Include="FlashResourceHandler.cs" />
     <Compile Include="FlashResourceHandlerFactory.cs" />
     <Compile Include="Filters\PassThruResponseFilter.cs" />
+    <Compile Include="Handlers\BrowserProcessHandler.cs" />
     <Compile Include="InMemorySchemeAndResourceHandlerFactory.cs" />
     <Compile Include="ScriptedMethodsBoundObject.cs" />
     <Compile Include="ExceptionTestBoundObject.cs" />
@@ -85,6 +87,8 @@
     <Compile Include="Proxy\ProxyConfig.cs" />
     <Compile Include="RenderProcessMessageHandler.cs" />
     <Compile Include="ScriptedMethods.cs" />
+    <Compile Include="SimpleClass.cs" />
+    <Compile Include="SimpleSubClass.cs" />
     <Compile Include="SubBoundObject.cs" />
     <Compile Include="TempFileDialogHandler.cs" />
     <Compile Include="CefExample.cs" />

@@ -12,6 +12,7 @@ namespace CefSharp.Wpf.Example.Handlers
     {
         bool ILifeSpanHandler.OnBeforePopup(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings, ref bool noJavascriptAccess, out IWebBrowser newBrowser)
         {
+            //Set newBrowser to null unless your attempting to host the popup in a new instance of ChromiumWebBrowser
             newBrowser = null;
 
             return false;
@@ -57,7 +58,7 @@ namespace CefSharp.Wpf.Example.Handlers
             //	//functionality that requires a parent window may not function correctly.
             //	windowInfo.SetAsWindowless(handle, true);
 
-            //	popup.Closed += (o, e) => 
+            //	popup.Closed += (o, e) =>
             //	{
             //		var w = o as Window;
             //		if (w != null && w.Content is IWebBrowser)
@@ -76,17 +77,20 @@ namespace CefSharp.Wpf.Example.Handlers
         void ILifeSpanHandler.OnAfterCreated(IWebBrowser browserControl, IBrowser browser)
         {
             //NOTE: This is experimental
-            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+            //if(browser.IsPopup)
+            //{ 
+            //	var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
-            //chromiumWebBrowser.Dispatcher.Invoke(() =>
-            //{
-            //	var owner = Window.GetWindow(chromiumWebBrowser);
-
-            //	if (owner != null && owner.Content == browserControl)
+            //	chromiumWebBrowser.Dispatcher.Invoke(() =>
             //	{
-            //		owner.Show();
-            //	}
-            //});
+            //		var owner = Window.GetWindow(chromiumWebBrowser);
+
+            //		if (owner != null && owner.Content == browserControl)
+            //		{
+            //			owner.Show();
+            //		}
+            //	});
+            //}
         }
 
         bool ILifeSpanHandler.DoClose(IWebBrowser browserControl, IBrowser browser)
@@ -97,17 +101,20 @@ namespace CefSharp.Wpf.Example.Handlers
         void ILifeSpanHandler.OnBeforeClose(IWebBrowser browserControl, IBrowser browser)
         {
             //NOTE: This is experimental
-            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+            //if(!browser.IsDisposed && browser.IsPopup)
+            //{ 
+            //	var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
-            //chromiumWebBrowser.Dispatcher.Invoke(() =>
-            //{
-            //	var owner = Window.GetWindow(chromiumWebBrowser);
-
-            //	if (owner != null && owner.Content == browserControl)
+            //	chromiumWebBrowser.Dispatcher.Invoke(() =>
             //	{
-            //		owner.Close();
-            //	}
-            //});
+            //		var owner = Window.GetWindow(chromiumWebBrowser);
+
+            //		if (owner != null && owner.Content == browserControl)
+            //		{
+            //			owner.Close();
+            //		}
+            //	});
+            //}
         }
     }
 }

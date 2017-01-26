@@ -32,9 +32,12 @@
 #include "Messaging\Messages.h"
 #include "CefResponseFilterAdapter.h"
 #include "PopupFeatures.h"
+#include "CefCertificateCallbackWrapper.h"
+#include "CefSslInfoWrapper.h"
 
 using namespace CefSharp::Internals::Messaging;
 using namespace CefSharp::Internals::Serialization;
+using namespace System::Security::Cryptography::X509Certificates;
 
 namespace CefSharp
 {
@@ -205,9 +208,14 @@ namespace CefSharp
 
             if (handler != nullptr)
             {
-                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), isPopup);
+                //By this point the other IBrowser references have been disposed
+                //Rather than attempting to rework the rather complex closing logic
+                //It's easier to pass in a new wrapper and dispose it straight away
+                auto browserWrapper = gcnew CefSharpBrowserWrapper(browser);
 
                 handler->OnBeforeClose(_browserControl, browserWrapper);
+
+                delete browserWrapper;
             }
 
             if (isPopup)
@@ -403,20 +411,20 @@ namespace CefSharp
                 *is_keyboard_shortcut);
         }
 
-        void ClientAdapter::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame)
+        void ClientAdapter::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transitionType)
         {
             auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
             CefFrameWrapper frameWrapper(frame);
 
             if (!browser->IsPopup())
             {
-                _browserControl->OnFrameLoadStart(gcnew FrameLoadStartEventArgs(browserWrapper, %frameWrapper));
+                _browserControl->OnFrameLoadStart(gcnew FrameLoadStartEventArgs(browserWrapper, %frameWrapper, (CefSharp::TransitionType)transitionType));
             }
 
             auto handler = _browserControl->LoadHandler;
             if (handler != nullptr)
             {
-                handler->OnFrameLoadStart(_browserControl, gcnew FrameLoadStartEventArgs(browserWrapper, %frameWrapper));
+                handler->OnFrameLoadStart(_browserControl, gcnew FrameLoadStartEventArgs(browserWrapper, %frameWrapper, (CefSharp::TransitionType)transitionType));
             }
         }
 
@@ -503,8 +511,9 @@ namespace CefSharp
             // Still notify the user of the certificate error just don't provide a callback.
             auto requestCallback = callback == NULL ? nullptr : gcnew CefRequestCallbackWrapper(callback);
             auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+            auto sslInfoWrapper = gcnew CefSslInfoWrapper(ssl_info);
 
-            return handler->OnCertificateError(_browserControl, browserWrapper, (CefErrorCode)cert_error, StringUtils::ToClr(request_url), nullptr, requestCallback);
+            return handler->OnCertificateError(_browserControl, browserWrapper, (CefErrorCode)cert_error, StringUtils::ToClr(request_url), sslInfoWrapper, requestCallback);
         }
 
         bool ClientAdapter::OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& originUrl, int64 newSize, CefRefPtr<CefRequestCallback> callback)
@@ -573,7 +582,7 @@ namespace CefSharp
             }
         }
 
-        void ClientAdapter::OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefString& newUrl)
+        void ClientAdapter::OnResourceRedirect(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response, CefString& newUrl)
         {
             auto handler = _browserControl->RequestHandler;
 
@@ -583,8 +592,9 @@ namespace CefSharp
                 auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
                 CefFrameWrapper frameWrapper(frame);
                 CefRequestWrapper requestWrapper(request);
+                CefResponseWrapper responseWrapper(response);
 
-                handler->OnResourceRedirect(_browserControl, browserWrapper, %frameWrapper, %requestWrapper, managedNewUrl);
+                handler->OnResourceRedirect(_browserControl, browserWrapper, %frameWrapper, %requestWrapper, %responseWrapper, managedNewUrl);
 
                 newUrl = StringUtils::ToNative(managedNewUrl);
             }
@@ -729,6 +739,41 @@ namespace CefSharp
                 _browserControl, browserWrapper, frameWrapper, isProxy, 
                 StringUtils::ToClr(host), port, StringUtils::ToClr(realm), 
                 StringUtils::ToClr(scheme), callbackWrapper);
+        }
+
+        bool ClientAdapter::OnSelectClientCertificate(CefRefPtr<CefBrowser> browser, bool isProxy, const CefString& host,
+            int port, const CefRequestHandler::X509CertificateList& certificates, CefRefPtr<CefSelectClientCertificateCallback> callback) {
+            
+            auto handler = _browserControl->RequestHandler;
+
+            if (handler == nullptr)
+            {
+                return false;
+            }
+
+            auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+            auto callbackWrapper = gcnew CefCertificateCallbackWrapper(callback, certificates);
+
+            auto list = gcnew X509Certificate2Collection();
+
+            std::vector<CefRefPtr<CefX509Certificate> >::const_iterator it =
+                certificates.begin();
+            for (; it != certificates.end(); ++it) 
+            {
+                auto bytes((*it)->GetDEREncoded());
+                auto byteSize = bytes->GetSize();
+
+                auto bufferByte = gcnew cli::array<Byte>(byteSize);
+                pin_ptr<Byte> src = &bufferByte[0]; // pin pointer to first element in arr
+
+                bytes->GetData(static_cast<void*>(src), byteSize, 0);
+                auto cert = gcnew X509Certificate2(bufferByte);				
+                list->Add(cert);
+            }
+
+            return handler->OnSelectClientCertificate(
+                _browserControl, browserWrapper, isProxy,
+                StringUtils::ToClr(host), port, list, callbackWrapper);
         }
 
         void ClientAdapter::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -1126,7 +1171,7 @@ namespace CefSharp
             return handled;
         }
 
-        Task<JavascriptResponse^>^ ClientAdapter::EvaluateScriptAsync(int browserId, bool isBrowserPopup, int64 frameId, String^ script, Nullable<TimeSpan> timeout)
+        Task<JavascriptResponse^>^ ClientAdapter::EvaluateScriptAsync(int browserId, bool isBrowserPopup, int64 frameId, String^ script, String^ scriptUrl, int startLine, Nullable<TimeSpan> timeout)
         {
             auto browser = GetBrowserWrapper(browserId, isBrowserPopup);
 
@@ -1146,8 +1191,8 @@ namespace CefSharp
             SetInt64(argList, 0, frameId);
             SetInt64(argList, 1, idAndComplectionSource.Key);
             argList->SetString(2, StringUtils::ToNative(script));
-
-            
+            argList->SetString(3, StringUtils::ToNative(scriptUrl));
+            argList->SetInt(4, startLine);
 
             browserWrapper->SendProcessMessage(CefProcessId::PID_RENDERER, message);
 

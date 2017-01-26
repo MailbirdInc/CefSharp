@@ -10,6 +10,8 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using CefSharp.Example;
 using CefSharp.Wpf.Example.Handlers;
+using CefSharp.ModelBinding;
+using CefSharp.Wpf.Example.ViewModels;
 
 namespace CefSharp.Wpf.Example.Views
 {
@@ -23,7 +25,7 @@ namespace CefSharp.Wpf.Example.Views
             InitializeComponent();
 
             browser.RequestHandler = new RequestHandler();
-            browser.RegisterJsObject("bound", new BoundObject());
+            browser.RegisterJsObject("bound", new BoundObject(), BindingOptions.DefaultBinder);
             browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
             // Enable touch scrolling - once properly tested this will likely become the default
             //browser.IsManipulationEnabled = true;
@@ -31,7 +33,10 @@ namespace CefSharp.Wpf.Example.Views
             browser.LifeSpanHandler = new LifespanHandler();
             browser.MenuHandler = new MenuHandler();
             browser.GeolocationHandler = new GeolocationHandler();
-            browser.DownloadHandler = new DownloadHandler();
+            var downloadHandler = new DownloadHandler();
+            downloadHandler.OnBeforeDownloadFired += OnBeforeDownloadFired;
+            downloadHandler.OnDownloadUpdatedFired += OnDownloadUpdatedFired;
+            browser.DownloadHandler = downloadHandler;
             
             var dragHandler = new DragHandler();
             dragHandler.RegionsChanged += OnDragHandlerRegionsChanged;
@@ -39,10 +44,20 @@ namespace CefSharp.Wpf.Example.Views
             browser.DragHandler = dragHandler;
             //browser.ResourceHandlerFactory = new InMemorySchemeAndResourceHandlerFactory();
             //You can specify a custom RequestContext to share settings amount groups of ChromiumWebBrowsers
-            //Also this is now the only way to access OnBeforePluginLoad - need to implement IPluginHandler
-            //browser.RequestContext = new RequestContext(new PluginHandler());
-            
+            //Also this is now the only way to access OnBeforePluginLoad - need to implement IRequestContextHandler
+            //browser.RequestContext = new RequestContext(new RequestContextHandler());
+            //NOTE - This is very important for this example as the default page will not load otherwise
             //browser.RequestContext.RegisterSchemeHandlerFactory(CefSharpSchemeHandlerFactory.SchemeName, null, new CefSharpSchemeHandlerFactory());
+
+            //You can start setting preferences on a RequestContext that you created straight away, still needs to be called on the CEF UI thread.
+            //Cef.UIThreadTaskFactory.StartNew(delegate
+            //{
+            //    string errorMessage;
+            //    //Use this to check that settings preferences are working in your code
+                
+            //    var success = browser.RequestContext.SetPreference("webkit.webprefs.minimum_font_size", 24, out errorMessage);
+            //});             
+            
             browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
             
             browser.LoadError += (sender, args) =>
@@ -72,6 +87,26 @@ namespace CefSharp.Wpf.Example.Views
             };
 
             CefExample.RegisterTestResources(browser);
+        }
+
+        private void OnBeforeDownloadFired(object sender, DownloadItem e)
+        {
+            this.UpdateDownloadAction("OnBeforeDownload", e);
+        }
+
+        private void OnDownloadUpdatedFired(object sender, DownloadItem e)
+        {
+            this.UpdateDownloadAction("OnDownloadUpdated", e);
+        }
+
+        private void UpdateDownloadAction(string downloadAction, DownloadItem downloadItem)
+        {
+            this.Dispatcher.InvokeAsync(() =>
+            {
+                var viewModel = (BrowserTabViewModel)this.DataContext;
+                viewModel.LastDownloadAction = downloadAction;
+                viewModel.DownloadItem = downloadItem;
+            });
         }
 
         private void OnBrowserMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Security.Cryptography.X509Certificates;
 
 namespace CefSharp
 {
@@ -105,6 +106,20 @@ namespace CefSharp
         bool GetAuthCredentials(IWebBrowser browserControl, IBrowser browser, IFrame frame, bool isProxy, string host, int port, string realm, string scheme, IAuthCallback callback);
 
         /// <summary>
+        /// Called when the browser needs user to select Client Certificate for authentication requests (eg. PKI authentication).
+        /// </summary>
+        /// <param name="browserControl">The ChromiumWebBrowser control</param>
+        /// <param name="browser">the browser object</param>
+        /// <param name="isProxy">indicates whether the host is a proxy server</param>
+        /// <param name="host">hostname</param>
+        /// <param name="port">port number</param>
+        /// <param name="certificates">List of Client certificates for selection</param>
+        /// <param name="callback">Callback interface used for asynchronous continuation of client certificate selection for authentication requests.</param>
+        /// <returns>Return true to continue the request and call ISelectClientCertificateCallback.Select() with the selected certificate for authentication. 
+        /// Return false to use the default behavior where the browser selects the first certificate from the list. </returns>
+        bool OnSelectClientCertificate(IWebBrowser browserControl, IBrowser browser, bool isProxy, string host, int port, X509Certificate2Collection certificates, ISelectClientCertificateCallback callback);
+
+        /// <summary>
         /// Called when the render process terminates unexpectedly.
         /// </summary>
         /// <param name="browserControl">The ChromiumWebBrowser control</param>
@@ -135,8 +150,9 @@ namespace CefSharp
         /// <param name="browser">the browser object</param>
         /// <param name="frame">The frame that is being redirected.</param>
         /// <param name="request">the request object - cannot be modified in this callback</param>
+        /// <param name="response">the response object</param>
         /// <param name="newUrl">the new URL and can be changed if desired</param>
-        void OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, ref string newUrl);
+        void OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, ref string newUrl);
 
         /// <summary>
         /// Called on the UI thread to handle requests for URLs with an unknown protocol component. 

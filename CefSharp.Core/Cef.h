@@ -11,15 +11,16 @@
 #include <include/cef_version.h>
 #include <include/cef_origin_whitelist.h>
 #include <include/cef_web_plugin.h>
+#include <include/cef_crash_util.h>
 
 #include "Internals/CefSharpApp.h"
-#include "Internals/CookieManager.h"
 #include "Internals/PluginVisitor.h"
+#include "Internals/CefTaskScheduler.h"
+#include "Internals/CefGetGeolocationCallbackWrapper.h"
+#include "CookieManager.h"
 #include "CefSettings.h"
 #include "RequestContext.h"
 #include "SchemeHandlerFactoryWrapper.h"
-#include "Internals/CefTaskScheduler.h"
-#include "Internals/CefGetGeolocationCallbackWrapper.h"
 
 using namespace System::Collections::Generic; 
 using namespace System::Linq;
@@ -35,6 +36,8 @@ namespace CefSharp
 
         static bool _initialized = false;
         static HashSet<IDisposable^>^ _disposables;
+        static int _initializedThreadId;
+        static bool _multiThreadedMessageLoop = true;
 
         static Cef()
         {
@@ -43,12 +46,6 @@ namespace CefSharp
         }
 
     public:
-        /// <summary>
-        /// Called on the CEF UI thread immediately after the CEF context has been initialized.
-        /// You can now access the Global RequestContext through Cef.GetGlobalRequestContext() - this is the
-        /// first place you can set Preferences (e.g. proxy settings, spell check dictionaries).
-        /// </summary>
-        static property Action^ OnContextInitialized;
 
         static property TaskFactory^ UIThreadTaskFactory;
         static property TaskFactory^ IOThreadTaskFactory;
@@ -131,8 +128,11 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Initializes CefSharp with the default settings.
-        /// This function should be called on the main application thread to initialize the CEF browser process.
+        /// Initializes CefSharp with the default settings. 
+        /// This function can only be called once, subsiquent calls will result in an Exception.
+        /// It's important to note that Initialize and Shutdown <strong>MUST</strong> be called on your main
+        /// applicaiton thread (Typically the UI thead). If you call them on different
+        /// threads, your application will hang. See the documentation for Cef.Shutdown() for more details.
         /// </summary>
         /// <return>true if successful; otherwise, false.</return>
         static bool Initialize()
@@ -143,25 +143,27 @@ namespace CefSharp
 
         /// <summary>
         /// Initializes CefSharp with user-provided settings.
-        /// This function should be called on the main application thread to initialize the CEF browser process.
+        /// It's important to note that Initialize and Shutdown <strong>MUST</strong> be called on your main
+        /// applicaiton thread (Typically the UI thead). If you call them on different
+        /// threads, your application will hang. See the documentation for Cef.Shutdown() for more details.
         /// </summary>
         /// <param name="cefSettings">CefSharp configuration settings.</param>
         /// <return>true if successful; otherwise, false.</return>
         static bool Initialize(CefSettings^ cefSettings)
         {
-            return Initialize(cefSettings, true, false);
+            return Initialize(cefSettings, false, nullptr);
         }
 
         /// <summary>
         /// Initializes CefSharp with user-provided settings.
-        /// This function should be called on the main application thread to initialize the CEF browser process.
+        /// It's important to note that Initialize/Shutdown <strong>MUST</strong> be called on your main
+        /// applicaiton thread (Typically the UI thead). If you call them on different
+        /// threads, your application will hang. See the documentation for Cef.Shutdown() for more details.
         /// </summary>
         /// <param name="cefSettings">CefSharp configuration settings.</param>
-        /// <param name="shutdownOnProcessExit">When the Current AppDomain (relative to the thread called on)
-        /// Exits(ProcessExit event) then Shudown will be called.</param>
         /// <param name="performDependencyCheck">Check that all relevant dependencies avaliable, throws exception if any are missing</param>
         /// <return>true if successful; otherwise, false.</return>
-        static bool Initialize(CefSettings^ cefSettings, bool shutdownOnProcessExit, bool performDependencyCheck)
+        static bool Initialize(CefSettings^ cefSettings, bool performDependencyCheck, IBrowserProcessHandler^ browserProcessHandler)
         {
             if (IsInitialized)
             {
@@ -184,7 +186,7 @@ namespace CefSharp
             FileThreadTaskFactory = gcnew TaskFactory(gcnew CefTaskScheduler(TID_FILE));
 
             CefMainArgs main_args;
-            CefRefPtr<CefSharpApp> app(new CefSharpApp(cefSettings, OnContextInitialized));
+            CefRefPtr<CefSharpApp> app(new CefSharpApp(cefSettings, browserProcessHandler));
 
             auto success = CefInitialize(main_args, *(cefSettings->_cefSettings), app.get(), NULL);
 
@@ -198,16 +200,50 @@ namespace CefSharp
             }
 
             _initialized = success;
+            _multiThreadedMessageLoop = cefSettings->MultiThreadedMessageLoop;
+
+            _initializedThreadId = Thread::CurrentThread->ManagedThreadId;
 
             return success;
         }
 
-        /// <summary>Perform a single iteration of CEF message loop processing. This function is
-        /// used to integrate the CEF message loop into an existing application message
-        /// loop. Care must be taken to balance performance against excessive CPU usage.
+        /// <summary>
+        /// Run the CEF message loop. Use this function instead of an application-
+        /// provided message loop to get the best balance between performance and CPU
+        /// usage. This function should only be called on the main application thread and
+        /// only if Cef.Initialize() is called with a
+        /// CefSettings.MultiThreadedMessageLoop value of false. This function will
+        /// block until a quit message is received by the system.
+        /// </summary>
+        static void RunMessageLoop()
+        {
+            CefRunMessageLoop();
+        }
+
+        /// <summary>
+        /// Quit the CEF message loop that was started by calling Cef.RunMessageLoop().
         /// This function should only be called on the main application thread and only
-        /// if CefInitialize() is called with a CefSettings.multi_threaded_message_loop
-        /// value of false. This function will not block.</summary>
+        /// if Cef.RunMessageLoop() was used.
+        /// </summary>
+        static void QuitMessageLoop()
+        {
+            CefQuitMessageLoop();
+        }
+
+        /// <summary>
+        /// Perform a single iteration of CEF message loop processing.This function is
+        /// provided for cases where the CEF message loop must be integrated into an
+        /// existing application message loop. Use of this function is not recommended
+        /// for most users; use CefSettings.MultiThreadedMessageLoop if possible (the deault).
+        /// When using this function care must be taken to balance performance
+        /// against excessive CPU usage. It is recommended to enable the
+        /// CefSettings.ExternalMessagePump option when using
+        /// this function so that IBrowserProcessHandler.OnScheduleMessagePumpWork()
+        /// callbacks can facilitate the scheduling process. This function should only be
+        /// called on the main application thread and only if Cef.Initialize() is called
+        /// with a CefSettings.MultiThreadedMessageLoop value of false. This function
+        /// will not block.
+        /// </summary>
         static void DoMessageLoopWork()
         {
             CefDoMessageLoopWork();
@@ -337,30 +373,53 @@ namespace CefSharp
         /// <summary>
         /// Shuts down CefSharp and the underlying CEF infrastructure. This method is safe to call multiple times; it will only
         /// shut down CEF on the first call (all subsequent calls will be ignored).
-        /// This function should be called on the main application thread to shut down the CEF browser process before the application exits. 
+        /// This method should be called on the main application thread to shut down the CEF browser process before the application exits. 
+        /// If you are Using CefSharp.OffScreen then you must call this explicitly before your application exits or it will hang.
+        /// This method must be called on the same thread as Initialize. If you don't call Shutdown explicitly then CefSharp.Wpf and CefSharp.WinForms
+        /// versions will do their best to call Shutdown for you, if your application is having trouble closing then call thus explicitly.
         /// </summary>
         static void Shutdown()
         {
             if (IsInitialized)
-            { 
-                OnContextInitialized = nullptr;
-                
+            {
                 msclr::lock l(_sync);
 
-                UIThreadTaskFactory = nullptr;
-                IOThreadTaskFactory = nullptr;
-                FileThreadTaskFactory = nullptr;
-
-                for each(IDisposable^ diposable in Enumerable::ToList(_disposables))
+                if (IsInitialized)
                 {
-                    delete diposable;
-                }
-                
-                GC::Collect();
-                GC::WaitForPendingFinalizers();
+                    if (_initializedThreadId != Thread::CurrentThread->ManagedThreadId)
+                    {
+                        throw gcnew Exception("Shutdown must be called on the same thread that Initialize was called - typically your UI thread. CefSharp was initialized on ManagedThreadId: " + Thread::CurrentThread->ManagedThreadId);
+                    }
 
-                CefShutdown();
-                IsInitialized = false;
+                    UIThreadTaskFactory = nullptr;
+                    IOThreadTaskFactory = nullptr;
+                    FileThreadTaskFactory = nullptr;
+
+                    for each(IDisposable^ diposable in Enumerable::ToList(_disposables))
+                    {
+                        delete diposable;
+                    }
+                
+                    GC::Collect();
+                    GC::WaitForPendingFinalizers();
+
+                    if (!_multiThreadedMessageLoop)
+                    {
+                        // We need to run the message pump until it is idle. However we don't have
+                        // that information here so we run the message loop "for a while".
+                        // See https://github.com/cztomczak/cefpython/issues/245 for an excellent description
+                        for (int i = 0; i < 10; i++)
+                        {
+                            DoMessageLoopWork();
+
+                            // Sleep to allow the CEF proc to do work.
+                            Sleep(50);
+                        }
+                    }
+
+                    CefShutdown();
+                    IsInitialized = false;
+                }
             }
         }
 
@@ -452,6 +511,101 @@ namespace CefSharp
             }
 
             return nullptr;
+        }
+
+        /// <summary>
+        ///
+        /// Crash reporting is configured using an INI-style config file named
+        /// "crash_reporter.cfg". This file must be placed next to
+        /// the main application executable. File contents are as follows:
+        ///
+        ///  # Comments start with a hash character and must be on their own line.
+        ///
+        ///  [Config]
+        ///  ProductName=<Value of the "prod" crash key; defaults to "cef">
+        ///  ProductVersion=<Value of the "ver" crash key; defaults to the CEF version>
+        ///  AppName=<Windows only; App-specific folder name component for storing crash
+        ///           information; default to "CEF">
+        ///  ExternalHandler=<Windows only; Name of the external handler exe to use
+        ///                   instead of re-launching the main exe; default to empty>
+        ///  ServerURL=<crash server URL; default to empty>
+        ///  RateLimitEnabled=<True if uploads should be rate limited; default to true>
+        ///  MaxUploadsPerDay=<Max uploads per 24 hours, used if rate limit is enabled;
+        ///                    default to 5>
+        ///  MaxDatabaseSizeInMb=<Total crash report disk usage greater than this value
+        ///                       will cause older reports to be deleted; default to 20>
+        ///  MaxDatabaseAgeInDays=<Crash reports older than this value will be deleted;
+        ///                        default to 5>
+        ///
+        ///  [CrashKeys]
+        ///  my_key1=<small|medium|large>
+        ///  my_key2=<small|medium|large>
+        ///
+        /// Config section:
+        ///
+        /// If "ProductName" and/or "ProductVersion" are set then the specified values
+        /// will be included in the crash dump metadata. 
+        ///
+        /// If "AppName" is set on Windows then crash report information (metrics,
+        /// database and dumps) will be stored locally on disk under the
+        /// "C:\Users\[CurrentUser]\AppData\Local\[AppName]\User Data" folder. On other
+        /// platforms the CefSettings.user_data_path value will be used.
+        ///
+        /// If "ExternalHandler" is set on Windows then the specified exe will be
+        /// launched as the crashpad-handler instead of re-launching the main process
+        /// exe. The value can be an absolute path or a path relative to the main exe
+        /// directory. 
+        ///
+        /// If "ServerURL" is set then crashes will be uploaded as a multi-part POST
+        /// request to the specified URL. Otherwise, reports will only be stored locally
+        /// on disk.
+        ///
+        /// If "RateLimitEnabled" is set to true then crash report uploads will be rate
+        /// limited as follows:
+        ///  1. If "MaxUploadsPerDay" is set to a positive value then at most the
+        ///     specified number of crashes will be uploaded in each 24 hour period.
+        ///  2. If crash upload fails due to a network or server error then an
+        ///     incremental backoff delay up to a maximum of 24 hours will be applied for
+        ///     retries.
+        ///  3. If a backoff delay is applied and "MaxUploadsPerDay" is > 1 then the
+        ///     "MaxUploadsPerDay" value will be reduced to 1 until the client is
+        ///     restarted. This helps to avoid an upload flood when the network or
+        ///     server error is resolved.
+        ///
+        /// If "MaxDatabaseSizeInMb" is set to a positive value then crash report storage
+        /// on disk will be limited to that size in megabytes. For example, on Windows
+        /// each dump is about 600KB so a "MaxDatabaseSizeInMb" value of 20 equates to
+        /// about 34 crash reports stored on disk.
+        ///
+        /// If "MaxDatabaseAgeInDays" is set to a positive value then crash reports older
+        /// than the specified age in days will be deleted.
+        ///
+        /// CrashKeys section:
+        ///
+        /// Any number of crash keys can be specified for use by the application. Crash
+        /// key values will be truncated based on the specified size (small = 63 bytes,
+        /// medium = 252 bytes, large = 1008 bytes). The value of crash keys can be set
+        /// from any thread or process using the Cef.SetCrashKeyValue function. These
+        /// key/value pairs will be sent to the crash server along with the crash dump
+        /// file. Medium and large values will be chunked for submission. For example,
+        /// if your key is named "mykey" then the value will be broken into ordered
+        /// chunks and submitted using keys named "mykey-1", "mykey-2", etc.
+        /// </summary>
+        /// <return>Returns the global request context or null.</return>
+        static property bool CrashReportingEnabled
+        {
+            bool get()
+            {
+                return CefCrashReportingEnabled();
+            }
+        }
+
+        /// <summary>
+        /// Sets or clears a specific key-value pair from the crash metadata.
+        /// </summary>
+        static void SetCrashKeyValue(String^ key, String^ value)
+        {
+            CefSetCrashKeyValue(StringUtils::ToNative(key), StringUtils::ToNative(value));
         }
     };
 }

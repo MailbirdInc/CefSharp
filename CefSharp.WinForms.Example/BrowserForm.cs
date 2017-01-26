@@ -17,7 +17,9 @@ namespace CefSharp.WinForms.Example
         // Default to a small increment:
         private const double ZoomIncrement = 0.10;
 
-        public BrowserForm()
+        private bool multiThreadedMessageLoopEnabled;
+
+        public BrowserForm(bool multiThreadedMessageLoopEnabled)
         {
             InitializeComponent();
 
@@ -25,18 +27,25 @@ namespace CefSharp.WinForms.Example
             Text = "CefSharp.WinForms.Example - " + bitness;
             WindowState = FormWindowState.Maximized;
 
-            AddTab(CefExample.DefaultUrl);
+            Load += BrowserFormLoad;
 
             //Only perform layout when control has completly finished resizing
             ResizeBegin += (s, e) => SuspendLayout();
             ResizeEnd += (s, e) => ResumeLayout(true);
+
+            this.multiThreadedMessageLoopEnabled = multiThreadedMessageLoopEnabled;
+        }
+
+        private void BrowserFormLoad(object sender, EventArgs e)
+        {
+            AddTab(CefExample.DefaultUrl);
         }
 
         private void AddTab(string url, int? insertIndex = null)
         {
             browserTabControl.SuspendLayout();
 
-            var browser = new BrowserTabUserControl(AddTab, url)
+            var browser = new BrowserTabUserControl(AddTab, url, multiThreadedMessageLoopEnabled)
             {
                 Dock = DockStyle.Fill,
             };
@@ -226,8 +235,9 @@ namespace CefSharp.WinForms.Example
             {
                 control.Browser.ShowDevTools();
 
-                //Example below shows how to use a control to host DevTools
+                //EXPERIMENTAL Example below shows how to use a control to host DevTools
                 //(in this case it's added as a new TabPage)
+                // NOTE: Does not currently move/resize correctly
                 //var tabPage = new TabPage("DevTools")
                 //{
                 //    Dock = DockStyle.Fill

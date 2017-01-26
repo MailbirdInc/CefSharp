@@ -70,6 +70,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BindingOptions.cs" />
     <Compile Include="CefDirtyRect.cs" />
     <Compile Include="CefExtension.cs" />
     <Compile Include="CefFileDialogMode.cs" />
@@ -78,6 +79,8 @@
     <Compile Include="CefLibraryHandle.cs" />
     <Compile Include="CefMenuCommand.cs" />
     <Compile Include="CefPdfPrintMarginType.cs" />
+    <Compile Include="CertStatus.cs" />
+    <Compile Include="CompositionUnderline.cs" />
     <Compile Include="ContextMenuEditState.cs" />
     <Compile Include="ContextMenuMediaState.cs" />
     <Compile Include="ContextMenuMediaType.cs" />
@@ -86,6 +89,7 @@
     <Compile Include="DraggableRegion.cs" />
     <Compile Include="FilterStatus.cs" />
     <Compile Include="Geoposition.cs" />
+    <Compile Include="IBrowserProcessHandler.cs" />
     <Compile Include="IBrowserSettings.cs" />
     <Compile Include="IDomNode.cs" />
     <Compile Include="IFindHandler.cs" />
@@ -93,14 +97,34 @@
     <Compile Include="Internals\CefTimeUtils.cs" />
     <Compile Include="Internals\CommandLineArgsParser.cs" />
     <Compile Include="Internals\MethodParameter.cs" />
-    <Compile Include="IPluginHandler.cs" />
+    <Compile Include="IRequestContextHandler.cs" />
     <Compile Include="IPopupFeatures.cs" />
     <Compile Include="IRenderProcessMessageHandler.cs" />
     <Compile Include="IRequestContext.cs" />
     <Compile Include="IResolveCallback.cs" />
     <Compile Include="IResponseFilter.cs" />
     <Compile Include="IRunContextMenuCallback.cs" />
+    <Compile Include="ISelectClientCertificateCallback.cs" />
     <Compile Include="MenuItemType.cs" />
+    <Compile Include="ModelBinding\BindingContext.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\BindingMemberInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\DefaultBinder.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\DefaultFieldNameConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\IBinder.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\IFieldNameConverter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ModelBinding\ModelBindingExtensions.cs" />
     <Compile Include="NavigationEntry.cs" />
     <Compile Include="PdfPrintSettings.cs" />
     <Compile Include="ICookieManager.cs" />
@@ -186,6 +210,7 @@
     <Compile Include="PluginPolicy.cs" />
     <Compile Include="PostDataElementType.cs" />
     <Compile Include="PostDataExtensions.cs" />
+    <Compile Include="Range.cs" />
     <Compile Include="Rect.cs" />
     <Compile Include="ReferrerPolicy.cs" />
     <Compile Include="ResolveCallbackResult.cs" />
@@ -195,6 +220,9 @@
     <Compile Include="ResponseAction.cs" />
     <Compile Include="Internals\ScreenInfo.cs" />
     <Compile Include="SchemeHandler\FolderSchemeHandlerFactory.cs" />
+    <Compile Include="SslContentStatus.cs" />
+    <Compile Include="SslStatus.cs" />
+    <Compile Include="SslVersion.cs" />
     <Compile Include="TaskCompletionHandler.cs" />
     <Compile Include="TaskCookieVisitor.cs" />
     <Compile Include="TaskPrintToPdfCallback.cs" />

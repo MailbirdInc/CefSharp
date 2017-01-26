@@ -57,6 +57,15 @@ namespace CefSharp
         
             virtual void ShowDevTools(IWindowInfo^ windowInfo, int inspectElementAtX, int inspectElementAtY);
             virtual void CloseDevTools();
+            ///
+            // Returns true if this browser currently has an associated DevTools browser.
+            // Must be called on the browser process UI thread.
+            ///
+            /*--cef()--*/
+            virtual property bool HasDevTools
+            {
+                bool get();
+            }
 
             virtual void AddWordToDictionary(String^ word);
             virtual void ReplaceMisspelling(String^ word);
@@ -73,6 +82,11 @@ namespace CefSharp
 
             virtual void Invalidate(PaintElementType type);
 
+            virtual void ImeSetComposition(String^ text, cli::array<CompositionUnderline>^ underlines, Nullable<Range> selectionRange);
+            virtual void ImeCommitText(String^ text);
+            virtual void ImeFinishComposingText(bool keepSelection);
+            virtual void ImeCancelComposition();
+
             virtual void SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers);
 
             virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
@@ -86,6 +100,8 @@ namespace CefSharp
             virtual void WasHidden(bool hidden);
 
             virtual void GetNavigationEntries(INavigationEntryVisitor^ visitor, bool currentOnly);
+
+            virtual NavigationEntry GetVisibleNavigationEntry();
 
             virtual property int WindowlessFrameRate
             {

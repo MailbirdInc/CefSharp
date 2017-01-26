@@ -23,19 +23,23 @@ Stable binaries are released on NuGet, and contain everything you need  to embed
 
 * See the [CefSharp.Wpf.Example](https://github.com/cefsharp/CefSharp/tree/master/CefSharp.Wpf.Example) or [CefSharp.WinForms.Example](https://github.com/cefsharp/CefSharp/tree/master/CefSharp.WinForms.Example) projects for example web browsers built with CefSharp. They demo most of the available features.
 * See the [CefSharp.MinimalExample](https://github.com/cefsharp/CefSharp.MinimalExample/) project for a basic demo of using the CefSharp NuGet packages.
+* See the [General Usage Guide](https://github.com/cefsharp/CefSharp/wiki/General-Usage) in help getting started/dealing with common scenarios.
 * See the [Wiki](https://github.com/cefsharp/CefSharp/wiki) for work-in-progress documentation
 * See the [FAQ](https://github.com/cefsharp/CefSharp/wiki/Frequently-asked-questions) for help with common issues 
 * Upgrading from an earlier version of CefSharp? See the [ChangeLog](https://github.com/cefsharp/CefSharp/wiki/ChangeLog) for breaking changes and upgrade tips.
+* [CefSharp API](http://cefsharp.github.io/api/51.0.0/) generated from the souce code comments.
 
 ## Contact
 
-If you have a simple question please start by asking it on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cefsharp/CefSharp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge). Before opening an issue or submitting a `PR` please read [CONTRIBUTING](https://github.com/cefsharp/CefSharp/blob/master/CONTRIBUTING.md)
+If you have a simple question please start by asking it on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cefsharp/CefSharp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge). Please keep the `Issue Tracker` for **Bugs** only please! Before submitting a `PR` please read [CONTRIBUTING](https://github.com/cefsharp/CefSharp/blob/master/CONTRIBUTING.md)
 
-[Stackoverflow](http://stackoverflow.com/questions/tagged/cefsharp) as always is a useful resource. The [CefSharp Google Group](https://groups.google.com/forum/#!forum/cefsharp) is **no longer active**. It is however a useful resource for archived questions/answers.
+[Stackoverflow](http://stackoverflow.com/questions/tagged/cefsharp) as always is a useful resource, you can post your more complex issues here. The [CefSharp Google Group](https://groups.google.com/forum/#!forum/cefsharp) is **no longer active**. It is however a useful resource for archived questions/answers.
 
 ## Branches & Forks
 
-This is the `official` CefSharp fork, as maintained by the CefSharp community. You can also view [the entire network of public forks/branches](https://github.com/cefsharp/CefSharp/network).
+This is the `official` CefSharp fork, as maintained by the CefSharp community. You can also view [the entire network of public forks/branches](https://github.com/search?utf8=%E2%9C%93&q=cefsharp+fork%3Atrue&type=Repositories&ref=searchresults).
+
+*Note* Due to so many Forks - Github can't process them through the `Network Graphs` Section so, if you need to do a search use the following: `cefsharp fork:true` and it will be able to process all of the forks. 
 
 Development is done in the `master` branch. New features are preferably added in feature branches, if the changes are more than trivial. New `PR's` should be targeted against `master`.
 
@@ -56,11 +60,16 @@ Every commit on `master` produces a `Nuget` package. Use at your own risk! [CefS
 
 ### Release Branches
 
+With each release a new branch is created, for example the `53.0.1` release corrisponds to the `cefsharp/53` branch.
+If your new to `CefSharp` and are downloading the source to check it out, please use a **Release** branch
+
 | Branch | CEF Version | VC++ Version | .Net Version | Status |
 |--------|-------------|--------------|--------------|--------|
-| [master](https://github.com/cefsharp/CefSharp/) | 2704 | 2013 | 4.5.2 | Development |
-| [cefsharp/51](https://github.com/cefsharp/CefSharp/tree/cefsharp/51) | 2704 | 2013 | 4.5.2 | Pre-Release |
-| [cefsharp/49](https://github.com/cefsharp/CefSharp/tree/cefsharp/49) | 2623 | 2013 | 4.0   | **Release** |
+| [master](https://github.com/cefsharp/CefSharp/) | 2883 | 2013 | 4.5.2 | Development |
+| [cefsharp/55](https://github.com/cefsharp/CefSharp/tree/cefsharp/55) | 2883 | 2013 | 4.5.2 | **Pre-Release** |
+| [cefsharp/53](https://github.com/cefsharp/CefSharp/tree/cefsharp/53) | 2785 | 2013 | 4.5.2 | **Release** |
+| [cefsharp/51](https://github.com/cefsharp/CefSharp/tree/cefsharp/51) | 2704 | 2013 | 4.5.2 | Unsupported |
+| [cefsharp/49](https://github.com/cefsharp/CefSharp/tree/cefsharp/49) | 2623 | 2013 | 4.0   | Unsupported |
 | [cefsharp/47](https://github.com/cefsharp/CefSharp/tree/cefsharp/47) | 2526 | 2013 | 4.0   | Unsupported |
 | [cefsharp/45](https://github.com/cefsharp/CefSharp/tree/cefsharp/45) | 2454 | 2013 | 4.0   | Unsupported |
 | [cefsharp/43](https://github.com/cefsharp/CefSharp/tree/cefsharp/43) | 2357 | 2012 | 4.0   | Unsupported |
@@ -68,10 +77,17 @@ Every commit on `master` produces a `Nuget` package. Use at your own risk! [CefS
 | [cefsharp/39](https://github.com/cefsharp/CefSharp/tree/cefsharp/39) | 2171 | 2012 | 4.0   | Unsupported |
 | [cefsharp/37](https://github.com/cefsharp/CefSharp/tree/cefsharp/37) | 2062 | 2013 | 4.0   | Unsupported |
 
+## Financial Support
+
+Creating regular releases of CefSharp is a time intensive process and so to support further development we ask if can contribute financially to the next release?
+
+[![Bountysource](https://api.bountysource.com/badge/issue?issue_id=40201096)](https://www.bountysource.com/issues/40201096-feature-request-release-55-0-0?utm_source=40201096&utm_medium=shield&utm_campaign=ISSUE_BADGE)
+
 ## Links
 
 - [CefGlue](https://bitbucket.org/xilium/xilium.cefglue/): An alternative .NET CEF wrapper built using P/Invoke.
 - [ChromiumFx](https://bitbucket.org/chromiumfx/chromiumfx) : Another P/Invoke .Net CEF wrapper
 - [CEF Forum](http://magpcss.org/ceforum/) : The official CEF Forum
-- [CEF API Docs] (http://magpcss.org/ceforum/apidocs3/index-all.html) : Well worth a read if your implementing a new feature
+- [CEF API Docs] (http://magpcss.org/ceforum/apidocs3/index-all.html) : Well worth a read if you are implementing a new feature
+- [HtmlView] (https://github.com/MISoftware/HtmlView) : Visual Studio extension bringing CefSharp for showing HTML pages inside VS.
 

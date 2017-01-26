@@ -53,6 +53,7 @@
     <NuGetPackageImportStamp>6741ef50</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>e08d0872</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>39af8b73</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>7a75bfb3</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -97,6 +98,9 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>CefSharp.Wpf.Example.Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="GalaSoft.MvvmLight">
       <HintPath>..\packages\MvvmLightLibs.5.1.1.0\lib\net45\GalaSoft.MvvmLight.dll</HintPath>
@@ -124,19 +128,21 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
+    <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </ApplicationDefinition>
+    </Page>
     <Compile Include="Controls\CefSharpCommands.cs" />
     <Compile Include="Controls\NonReloadingTabControl.cs" />
     <Compile Include="Handlers\DragHandler.cs" />
     <Compile Include="Handlers\GeolocationHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
     <Compile Include="Handlers\LifespanHandler.cs" />
-    <Compile Include="Handlers\PluginHandler.cs" />
+    <Compile Include="Handlers\RequestContextHandler.cs" />
+    <Compile Include="Handlers\WpfBrowserProcessHandler.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="SimpleMainWindow.xaml.cs">
       <DependentUpon>SimpleMainWindow.xaml</DependentUpon>
     </Compile>
@@ -181,6 +187,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="app.manifest" />
+    <None Include="crash_reporter.cfg" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -220,4 +227,8 @@
   <Import Project="..\CefSharp.Native.props" />
   <Import Project="..\..\..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets" Condition="Exists('..\..\..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets')" />
   <Import Project="..\..\..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets" Condition="Exists('..\..\..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets')" />
+  <Import Project="$(SolutionDir)\CefSharp.props" />
+  <Import Project="$(SolutionDir)\CefSharp.Native.props" />
+  <Import Project="..\packages\cef.redist.x64.3.2883.1545\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2883.1545\build\cef.redist.x64.targets')" />
+  <Import Project="..\packages\cef.redist.x86.3.2883.1545\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2883.1545\build\cef.redist.x86.targets')" />
 </Project>
