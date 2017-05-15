@@ -1,8 +1,9 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using CefSharp.ModelBinding;
 
 namespace CefSharp
 {
@@ -84,19 +85,19 @@ namespace CefSharp
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of properties/methods, defaults to true</param>
-        void RegisterJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true);
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
+        void RegisterJsObject(string name, object objectToBind, BindingOptions options = null);
 
         /// <summary>
         /// <para>Asynchronously registers a Javascript object in this specific browser instance.</para>
-        /// <para>Only methods of the object will be availabe.</para>
+        /// <para>Only methods of the object will be available.</para>
         /// </summary>
         /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
         /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="camelCaseJavascriptNames">camel case the javascript names of methods, defaults to true</param>
+        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
         /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
-        void RegisterAsyncJsObject(string name, object objectToBind, bool camelCaseJavascriptNames = true);
+        void RegisterAsyncJsObject(string name, object objectToBind, BindingOptions options = null);
 
         /// <summary>
         /// Implement <see cref="IDialogHandler" /> and assign to handle dialog events.
@@ -236,7 +237,14 @@ namespace CefSharp
         string TooltipText { get; }
 
         /// <summary>
-        /// Attempts to give focus to the IWpfWebBrowser control.
+        /// A flag that indicates if you can execute javascript in the main frame.
+        /// Flag is set to true in IRenderProcessMessageHandler.OnContextCreated.
+        /// and false in IRenderProcessMessageHandler.OnContextReleased
+        /// </summary>
+        bool CanExecuteJavascriptInMainFrame { get; }
+
+        /// <summary>
+        /// Attempts to give focus to the IWebBrowser control.
         /// </summary>
         /// <returns><c>true</c> if keyboard focus and logical focus were set to this element; <c>false</c> if only logical focus
         /// was set to this element, or if the call to this method did not force the focus to change.</returns>

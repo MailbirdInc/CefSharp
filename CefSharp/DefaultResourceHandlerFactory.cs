@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -40,7 +40,7 @@ namespace CefSharp
             Uri uri;
             if (Uri.TryCreate(url, UriKind.Absolute, out uri))
             {
-                Handlers.AddOrUpdate(uri.ToString(), handler, (k, v) => handler);
+                Handlers.AddOrUpdate(uri.AbsoluteUri, handler, (k, v) => handler);
                 return true;
             }
             return false;

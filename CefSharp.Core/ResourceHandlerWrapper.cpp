@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -18,9 +18,9 @@ namespace CefSharp
     bool ResourceHandlerWrapper::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
     {
         auto callbackWrapper = gcnew CefCallbackWrapper(callback);
-        CefRequestWrapper requestWrapper(request);
+        _request = gcnew CefRequestWrapper(request);
 
-        return _handler->ProcessRequest(%requestWrapper, callbackWrapper);
+        return _handler->ProcessRequest(_request, callbackWrapper);
     }
 
     void ResourceHandlerWrapper::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)

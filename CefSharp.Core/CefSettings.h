@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -93,6 +93,22 @@ namespace CefSharp
             bool get() { return _cefSettings->command_line_args_disabled == 1; }
             void set(bool value) { _cefSettings->command_line_args_disabled = value; }
         }
+
+        /// <summary>
+        /// Set to true to control browser process main (UI) thread message pump
+        /// scheduling via the IBrowserProcessHandler.OnScheduleMessagePumpWork
+        /// callback. This option is recommended for use in combination with the
+        /// Cef.DoMessageLoopWork() function in cases where the CEF message loop must be
+        /// integrated into an existing application message loop (see additional
+        /// comments and warnings on Cef.DoMessageLoopWork). Enabling this option is not
+        /// recommended for most users; leave this option disabled and use either
+        /// MultiThreadedMessageLoop (the default) if possible.
+        /// </summary>
+        property bool ExternalMessagePump
+        {
+            bool get() { return _cefSettings->external_message_pump == 1; }
+            void set(bool value) { _cefSettings->external_message_pump = value; }
+        }		
 
         /// <summary>
         //// Set to true to have the browser process message loop run in a separate
@@ -374,23 +390,36 @@ namespace CefSharp
         }
 
         /// <summary>
+        /// Set command line argument to disable GPU Acceleration, this will disable WebGL.
+        /// </summary>
+        void DisableGpuAcceleration()
+        {
+            if (!_cefCommandLineArgs->ContainsKey("disable-gpu"))
+            {
+                _cefCommandLineArgs->Add("disable-gpu", "1");
+            }
+        }
+
+        /// <summary>
         /// Set command line arguments for best OSR (Offscreen and WPF) Rendering performance
         /// This will disable WebGL, look at the source to determine which flags best suite
         /// your requirements.
         /// </summary>
         void SetOffScreenRenderingBestPerformanceArgs()
         {
-            // If the PDF extension is enabled then cc Surfaces must be disabled for
-            // PDFs to render correctly.
-            // See https://bitbucket.org/chromiumembedded/cef/issues/1689 for details.
-            _cefCommandLineArgs->Add("disable-surfaces", "1");
-
             // Use software rendering and compositing (disable GPU) for increased FPS
             // and decreased CPU usage. This will also disable WebGL so remove these
             // switches if you need that capability.
             // See https://bitbucket.org/chromiumembedded/cef/issues/1257 for details.
-            _cefCommandLineArgs->Add("disable-gpu", "1");
-            _cefCommandLineArgs->Add("disable-gpu-compositing", "1");
+            if (!_cefCommandLineArgs->ContainsKey("disable-gpu"))
+            {
+                _cefCommandLineArgs->Add("disable-gpu", "1");
+            }
+
+            if (!_cefCommandLineArgs->ContainsKey("disable-gpu-compositing"))
+            {
+                _cefCommandLineArgs->Add("disable-gpu-compositing", "1");
+            }
 
             // Synchronize the frame rate between all processes. This results in
             // decreased CPU usage by avoiding the generation of extra frames that
@@ -399,16 +428,10 @@ namespace CefSharp
             // dynamically using CefBrowserHost::SetWindowlessFrameRate. In cefclient
             // it can be set via the command-line using `--off-screen-frame-rate=XX`.
             // See https://bitbucket.org/chromiumembedded/cef/issues/1368 for details.
-            _cefCommandLineArgs->Add("enable-begin-frame-scheduling", "1");
-        }
-
-        /// <summary>
-        /// Disable Surfaces so internal PDF viewer works for OSR
-        /// https://bitbucket.org/chromiumembedded/cef/issues/1689
-        /// </summary>
-        void EnableInternalPdfViewerOffScreen()
-        {
-            _cefCommandLineArgs->Add("disable-surfaces", "1");
+            if (!_cefCommandLineArgs->ContainsKey("enable-begin-frame-scheduling"))
+            {
+                _cefCommandLineArgs->Add("enable-begin-frame-scheduling", "1");
+            }
         }
     };
 }

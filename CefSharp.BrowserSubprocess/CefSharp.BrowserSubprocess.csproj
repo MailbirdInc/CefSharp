@@ -80,6 +80,9 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -114,6 +117,13 @@
       ) else (
       "$(VS120COMNTOOLS)..\..\VC\bin\amd64\editbin" /TSAWARE $(TargetPath)
       )</PostBuildEvent>
+    <PostBuildEvent>if $(PlatformName) == x86 (
+  "$(DevEnvDir)..\..\VC\bin\editbin" /largeaddressaware /TSAWARE "$(TargetPath)"
+  call "$(DevEnvDir)..\Tools\vsvars32.bat"
+  sn -R "$(TargetPath)" "$(ProjectDir)..\CefSharp.snk"
+) else (
+  "$(DevEnvDir)..\..\VC\bin\amd64\editbin" /TSAWARE "$(TargetPath)"
+)</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

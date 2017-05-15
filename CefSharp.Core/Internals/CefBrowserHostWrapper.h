@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -41,22 +41,30 @@ namespace CefSharp
         public:
             virtual void StartDownload(String^ url);
             virtual void Print();
-            virtual Task<bool>^ PrintToPdfAsync(String^ path, PdfPrintSettings^ settings);
             virtual void PrintToPdf(String^ path, PdfPrintSettings^ settings, IPrintToPdfCallback^ callback);
             virtual void SetZoomLevel(double zoomLevel);
             virtual Task<double>^ GetZoomLevelAsync();
             virtual IntPtr GetWindowHandle();
             virtual void CloseBrowser(bool forceClose);
 
-            virtual void DragTargetDragEnter(IDragData^ dragData, MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
-            virtual void DragTargetDragOver(MouseEvent^ mouseEvent, DragOperationsMask allowedOperations);
-            virtual void DragTargetDragDrop(MouseEvent^ mouseEvent);
+            virtual void DragTargetDragEnter(IDragData^ dragData, MouseEvent mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragOver(MouseEvent mouseEvent, DragOperationsMask allowedOperations);
+            virtual void DragTargetDragDrop(MouseEvent mouseEvent);
             virtual void DragSourceEndedAt(int x, int y, DragOperationsMask op);
             virtual void DragTargetDragLeave();
             virtual void DragSourceSystemDragEnded();
         
             virtual void ShowDevTools(IWindowInfo^ windowInfo, int inspectElementAtX, int inspectElementAtY);
             virtual void CloseDevTools();
+            ///
+            // Returns true if this browser currently has an associated DevTools browser.
+            // Must be called on the browser process UI thread.
+            ///
+            /*--cef()--*/
+            virtual property bool HasDevTools
+            {
+                bool get();
+            }
 
             virtual void AddWordToDictionary(String^ word);
             virtual void ReplaceMisspelling(String^ word);
@@ -69,13 +77,18 @@ namespace CefSharp
             virtual void SendKeyEvent(KeyEvent keyEvent);
             virtual void SendKeyEvent(int message, int wParam, int lParam);
 
-            virtual void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY, CefEventFlags modifiers);
+            virtual void SendMouseWheelEvent(MouseEvent mouseEvent, int deltaX, int deltaY);
 
             virtual void Invalidate(PaintElementType type);
 
-            virtual void SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers);
+            virtual void ImeSetComposition(String^ text, cli::array<CompositionUnderline>^ underlines, Nullable<Range> selectionRange);
+            virtual void ImeCommitText(String^ text);
+            virtual void ImeFinishComposingText(bool keepSelection);
+            virtual void ImeCancelComposition();
 
-            virtual void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
+            virtual void SendMouseClickEvent(MouseEvent mouseEvent, MouseButtonType mouseButtonType, bool mouseUp, int clickCount);
+
+            virtual void SendMouseMoveEvent(MouseEvent mouseEvent, bool mouseLeave);
 
             virtual void NotifyMoveOrResizeStarted();
 
@@ -86,6 +99,8 @@ namespace CefSharp
             virtual void WasHidden(bool hidden);
 
             virtual void GetNavigationEntries(INavigationEntryVisitor^ visitor, bool currentOnly);
+
+            virtual NavigationEntry^ GetVisibleNavigationEntry();
 
             virtual property int WindowlessFrameRate
             {
@@ -114,7 +129,7 @@ namespace CefSharp
             }
 
             // Misc. private functions:
-            CefMouseEvent GetCefMouseEvent(MouseEvent^ mouseEvent);
+            CefMouseEvent GetCefMouseEvent(MouseEvent mouseEvent);
             int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam);
 
             // Private keyboard functions:

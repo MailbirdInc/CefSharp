@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -212,16 +212,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Controls whether the caret position will be drawn. Also configurable using
-        /// the "enable-caret-browsing" command-line switch.
-        /// </summary>
-        virtual property CefState CaretBrowsing
-        {
-            CefState get() { return (CefState)_browserSettings->caret_browsing; }
-            void set(CefState value) { _browserSettings->caret_browsing = (cef_state_t)value; }
-        }
-
-        /// <summary>
         /// Controls whether any plugins will be loaded. Also configurable using the
         /// "disable-plugins" command-line switch.
         /// </summary>
@@ -349,7 +339,7 @@ namespace CefSharp
         /// <summary>
         /// Opaque background color used for the browser before a document is loaded
         /// and when no document color is specified. By default the background color
-        /// will be the same as CefSettings.background_color. Only the RGB compontents
+        /// will be the same as CefSettings.BackgroundColor. Only the RGB compontents
         /// of the specified value will be used. The alpha component must greater than
         /// 0 to enable use of the background color but will be otherwise ignored.
         /// </summary>

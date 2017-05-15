@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -11,7 +11,7 @@ namespace CefSharp.WinForms.Example.Handlers
     {
         bool ILifeSpanHandler.OnBeforePopup(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings, ref bool noJavascriptAccess, out IWebBrowser newBrowser)
         {
-            //Default behaviour
+            //Set newBrowser to null unless your attempting to host the popup in a new instance of ChromiumWebBrowser
             newBrowser = null;
 
             return false; //Return true to cancel the popup creation
@@ -112,17 +112,27 @@ namespace CefSharp.WinForms.Example.Handlers
 
         void ILifeSpanHandler.OnAfterCreated(IWebBrowser browserControl, IBrowser browser)
         {
-            
+
         }
 
         bool ILifeSpanHandler.DoClose(IWebBrowser browserControl, IBrowser browser)
         {
-            return false;
+            //We need to allow popups to close
+            //If the browser has been disposed then we'll just let the default behaviour take place
+            if(browser.IsDisposed || browser.IsPopup)
+            {
+                return false;
+            }
+
+            //The default CEF behaviour (return false) will send a OS close notification (e.g. WM_CLOSE).
+            //See the doc for this method for full details.
+            //return true here to handle closing yourself (no WM_CLOSE will be sent).
+            return true;
         }
 
         public void OnBeforeClose(IWebBrowser browserControl, IBrowser browser)
         {
-            
+
         }
     }
 }

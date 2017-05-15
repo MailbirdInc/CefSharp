@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using CefSharp.Example.Handlers;
 using CefSharp.Example.Properties;
 using CefSharp.Example.Proxy;
 using CefSharp.Internals;
@@ -15,13 +16,17 @@ namespace CefSharp.Example
 {
     public static class CefExample
     {
-        public const string DefaultUrl = "custom://cefsharp/home.html";
-        public const string BindingTestUrl = "custom://cefsharp/BindingTest.html";
-        public const string PluginsTestUrl = "custom://cefsharp/plugins.html";
-        public const string PopupTestUrl = "custom://cefsharp/PopupTest.html";
-        public const string BasicSchemeTestUrl = "custom://cefsharp/SchemeTest.html";
-        public const string ResponseFilterTestUrl = "custom://cefsharp/ResponseFilterTest.html";
-        public const string DraggableRegionTestUrl = "custom://cefsharp/DraggableRegionTest.html";
+        public const string BaseUrl = "custom://cefsharp";
+        public const string DefaultUrl = BaseUrl + "/home.html";
+        public const string BindingTestUrl = BaseUrl + "/BindingTest.html";
+        public const string PluginsTestUrl = BaseUrl + "/plugins.html";
+        public const string PopupTestUrl = BaseUrl + "/PopupTest.html";
+        public const string TooltipTestUrl = BaseUrl + "/TooltipTest.html";
+        public const string BasicSchemeTestUrl = BaseUrl + "/SchemeTest.html";
+        public const string ResponseFilterTestUrl = BaseUrl + "/ResponseFilterTest.html";
+        public const string DraggableRegionTestUrl = BaseUrl + "/DraggableRegionTest.html";
+        public const string CssAnimationTestUrl = BaseUrl + "/CssAnimationTest.html";
+        public const string CdmSupportTestUrl = BaseUrl + "/CdmSupportTest.html";
         public const string TestResourceUrl = "http://test/resource/load";
         public const string RenderProcessCrashedUrl = "http://processcrashed";
         public const string TestUnicodeResourceUrl = "http://test/resource/loadUnicode";
@@ -31,12 +36,16 @@ namespace CefSharp.Example
         private static readonly bool DebuggingSubProcess = Debugger.IsAttached;
         private static string PluginInformation = "";
 
-        public static void Init(bool osr, bool multiThreadedMessageLoop)
+        public static void Init(bool osr, bool multiThreadedMessageLoop, IBrowserProcessHandler browserProcessHandler)
         {
             // Set Google API keys, used for Geolocation requests sans GPS.  See http://www.chromium.org/developers/how-tos/api-keys
             // Environment.SetEnvironmentVariable("GOOGLE_API_KEY", "");
             // Environment.SetEnvironmentVariable("GOOGLE_DEFAULT_CLIENT_ID", "");
             // Environment.SetEnvironmentVariable("GOOGLE_DEFAULT_CLIENT_SECRET", "");
+
+            // Widevine CDM registration - pass in directory where Widevine CDM binaries and manifest.json are located.
+            // For more information on support for DRM content with Widevine see: https://github.com/cefsharp/CefSharp/issues/1934
+            //Cef.RegisterWidevineCdm(@".\WidevineCdm");
 
             //Chromium Command Line args
             //http://peter.sh/experiments/chromium-command-line-switches/
@@ -86,23 +95,15 @@ namespace CefSharp.Example
             //settings.CefCommandLineArgs.Add("disable-direct-write", "1");
 
             settings.MultiThreadedMessageLoop = multiThreadedMessageLoop;
+            settings.ExternalMessagePump = !multiThreadedMessageLoop;
 
             // Off Screen rendering (WPF/Offscreen)
             if(osr)
             {
                 settings.WindowlessRenderingEnabled = true;
-                // Disable Surfaces so internal PDF viewer works for OSR
-                // https://bitbucket.org/chromiumembedded/cef/issues/1689
-                //settings.CefCommandLineArgs.Add("disable-surfaces", "1");
-                settings.EnableInternalPdfViewerOffScreen();
 
-                var osVersion = Environment.OSVersion;
-                //Disable GPU for Windows 7
-                if(osVersion.Version.Major == 6 && osVersion.Version.Minor == 1)
-                {
-                    // Disable GPU in WPF and Offscreen examples until #1634 has been resolved
-                    settings.CefCommandLineArgs.Add("disable-gpu", "1");
-                }
+                //Disable Direct Composition to test https://github.com/cefsharp/CefSharp/issues/1634
+                //settings.CefCommandLineArgs.Add("disable-direct-composition", "1");
                 
                 // DevTools doesn't seem to be working when this is enabled
                 // http://magpcss.org/ceforum/viewtopic.php?f=6&t=14095
@@ -141,14 +142,25 @@ namespace CefSharp.Example
             settings.RegisterScheme(new CefCustomScheme
             {
                 SchemeName = CefSharpSchemeHandlerFactory.SchemeName,
-                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory()
+                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
+                IsSecure = true //treated with the same security rules as those applied to "https" URLs
                 //SchemeHandlerFactory = new InMemorySchemeAndResourceHandlerFactory()
             });
 
             settings.RegisterScheme(new CefCustomScheme
             {
                 SchemeName = CefSharpSchemeHandlerFactory.SchemeNameTest,
-                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory()
+                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
+                IsSecure = true //treated with the same security rules as those applied to "https" URLs
+            });
+
+            //You can use the http/https schemes - best to register for a specific domain
+            settings.RegisterScheme(new CefCustomScheme
+            {
+                SchemeName = "https",
+                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
+                DomainName = "cefsharp.com",
+                IsSecure = true //treated with the same security rules as those applied to "https" URLs
             });
 
             settings.RegisterScheme(new CefCustomScheme
@@ -164,27 +176,12 @@ namespace CefSharp.Example
 
             settings.FocusedNodeChangedEnabled = true;
 
-            //The Request Context has been initialized, you can now set preferences, like proxy server settings
-            Cef.OnContextInitialized = delegate
-            {
-                var cookieManager = Cef.GetGlobalCookieManager();
-                cookieManager.SetStoragePath("cookies", true);
-                cookieManager.SetSupportedSchemes("custom");
-
-                //Dispose of context when finished - preferable not to keep a reference if possible.
-                using (var context = Cef.GetGlobalRequestContext())
-                {
-                    string errorMessage;
-                    //You can set most preferences using a `.` notation rather than having to create a complex set of dictionaries.
-                    //The default is true, you can change to false to disable
-                    context.SetPreference("webkit.webprefs.plugins_enabled", true, out errorMessage);
-                }
-            };
-
-            if (!Cef.Initialize(settings, shutdownOnProcessExit: true, performDependencyCheck: !DebuggingSubProcess))
+            if (!Cef.Initialize(settings, performDependencyCheck: !DebuggingSubProcess, browserProcessHandler: browserProcessHandler))
             {
                 throw new Exception("Unable to Initialize Cef");
             }
+
+            Cef.AddCrossOriginWhitelistEntry(BaseUrl, "https", "cefsharp.com", false);
         }
 
         public static async void RegisterTestResources(IWebBrowser browser)

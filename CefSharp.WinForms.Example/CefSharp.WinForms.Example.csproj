@@ -29,6 +29,7 @@
     <NuGetPackageImportStamp>a48a9aa5</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>b35484a6</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>11b15e2e</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>e7eeed5d</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -64,6 +65,7 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -92,6 +94,7 @@
     <Compile Include="Handlers\KeyboardHandler.cs" />
     <Compile Include="Handlers\LifeSpanHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
+    <Compile Include="Handlers\WinFormsBrowserProcessHandler.cs" />
     <Compile Include="Handlers\WinFormsRequestHandler.cs" />
     <Compile Include="InputBox.cs">
       <SubType>Form</SubType>
@@ -151,6 +154,8 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="app.manifest" />
+    <None Include="crash_reporter.cfg" />
+    <None Include="packages.config" />
     <None Include="Resources\nav_left_green.png" />
   </ItemGroup>
   <ItemGroup>
@@ -205,4 +210,6 @@
   <Import Project="..\packages\cef.redist.x86.3.2704.1418\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2704.1418\build\cef.redist.x86.targets')" />
   <Import Project="..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets')" />
   <Import Project="..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets')" />
+  <Import Project="..\packages\cef.redist.x64.3.2987.1601\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2987.1601\build\cef.redist.x64.targets')" />
+  <Import Project="..\packages\cef.redist.x86.3.2987.1601\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2987.1601\build\cef.redist.x86.targets')" />
 </Project>

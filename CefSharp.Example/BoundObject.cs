@@ -1,10 +1,13 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CefSharp.ModelBinding;
 
 namespace CefSharp.Example
 {
@@ -62,6 +65,38 @@ namespace CefSharp.Example
                     await javascriptCallback.ExecuteAsync(response);
                 }
             });
+        }
+
+        public string TestCallbackFromObject(SimpleClass simpleClass)
+        {
+            if (simpleClass == null)
+            {
+                return "TestCallbackFromObject dictionary param is null";
+            }
+
+            IJavascriptCallback javascriptCallback = simpleClass.Callback;
+
+            if(javascriptCallback == null)
+            {
+                return "callback property not found or property is not a function";
+            }
+
+            const int taskDelay = 1500;
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(taskDelay);
+
+                if (javascriptCallback != null)
+                {
+                    using (javascriptCallback)
+                    {
+                        await javascriptCallback.ExecuteAsync("message from C# " + simpleClass.TestString + " - " + simpleClass.SubClasses[0].PropertyOne);
+                    }
+                }
+            });
+
+            return "waiting for callback execution...";
         }
 
         public int EchoMyProperty()

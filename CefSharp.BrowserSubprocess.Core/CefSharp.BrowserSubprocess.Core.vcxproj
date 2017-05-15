@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\..\packages\cef.sdk.3.2704.1432\build\cef.sdk.props" Condition="Exists('..\..\..\packages\cef.sdk.3.2704.1432\build\cef.sdk.props')" />
+  <Import Project="..\..\..\packages\cef.sdk.3.2987.1601\build\cef.sdk.props" Condition="Exists('..\..\..\packages\cef.sdk.3.2987.1601\build\cef.sdk.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -69,7 +69,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <NuGetPackageImportStamp>552d3f64</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>39d6b860</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -173,6 +173,7 @@
     <ClInclude Include="Async\JavascriptAsyncMethodWrapper.h" />
     <ClInclude Include="Async\JavascriptAsyncObjectWrapper.h" />
     <ClInclude Include="CefAppUnmanagedWrapper.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="WcfEnabledSubProcess.h" />
     <ClInclude Include="SubProcess.h" />
     <ClInclude Include="CefBrowserWrapper.h" />
@@ -223,6 +224,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
