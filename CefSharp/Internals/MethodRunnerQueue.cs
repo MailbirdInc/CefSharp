@@ -50,21 +50,24 @@ namespace CefSharp.Internals
                 return;
             }
 
-            lock (lockObject)
+            Task.Run(() => // Added to avoid deadlock between the UI running this method and waiting at stopped.WaitOne() below while task.RunSynchronously() waits in ConsumeTasks() causing the reset event to never set
             {
-                if (running)
+                lock (lockObject)
                 {
-                    cancellationTokenSource.Cancel();
-                    stopped.WaitOne();
-                    //clear the queue
-                    while (queue.Count > 0)
+                    if (running)
                     {
-                        queue.Take();
+                        cancellationTokenSource.Cancel();
+                        stopped.WaitOne();
+                        //clear the queue
+                        while (queue.Count > 0)
+                        {
+                            queue.Take();
+                        }
+                        cancellationTokenSource = null;
+                        running = false;
                     }
-                    cancellationTokenSource = null;
-                    running = false;
                 }
-            }
+            });
         }
 
         public void Enqueue(MethodInvocation methodInvocation)
