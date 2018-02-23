@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -40,9 +40,6 @@ namespace CefSharp
 
             //Automatically discovered and load a system-wide installation of Pepper Flash.
             _cefCommandLineArgs->Add("enable-system-flash", "1");
-
-            //Temp workaround for https://github.com/cefsharp/CefSharp/issues/1203
-            _cefCommandLineArgs->Add("process-per-tab", "1");
 
             _focusedNodeChangedEnabled = false;
         }

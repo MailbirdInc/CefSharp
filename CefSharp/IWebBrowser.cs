@@ -1,9 +1,8 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using CefSharp.ModelBinding;
 
 namespace CefSharp
 {
@@ -98,6 +97,11 @@ namespace CefSharp
         /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
         /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
         void RegisterAsyncJsObject(string name, object objectToBind, BindingOptions options = null);
+
+        /// <summary>
+        /// The javascript object repository, one repository per ChromiumWebBrowser instance.
+        /// </summary>
+        IJavascriptObjectRepository JavascriptObjectRepository { get; }
 
         /// <summary>
         /// Implement <see cref="IDialogHandler" /> and assign to handle dialog events.
@@ -237,7 +241,22 @@ namespace CefSharp
         string TooltipText { get; }
 
         /// <summary>
-        /// Attempts to give focus to the IWpfWebBrowser control.
+        /// A flag that indicates if you can execute javascript in the main frame.
+        /// Flag is set to true in IRenderProcessMessageHandler.OnContextCreated.
+        /// and false in IRenderProcessMessageHandler.OnContextReleased
+        /// </summary>
+        bool CanExecuteJavascriptInMainFrame { get; }
+
+        /// <summary>
+        /// Gets the custom request context assigned to this browser instance
+        /// If no instance was assigned this will be null and the global
+        /// request context will have been used for this browser. 
+        /// You can access the global request context through Cef.GetGlobalRequestContext()
+        /// </summary>
+        IRequestContext RequestContext { get; }
+
+        /// <summary>
+        /// Attempts to give focus to the IWebBrowser control.
         /// </summary>
         /// <returns><c>true</c> if keyboard focus and logical focus were set to this element; <c>false</c> if only logical focus
         /// was set to this element, or if the call to this method did not force the focus to change.</returns>

@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
+// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -9,8 +9,6 @@
 #include "include/cef_cookie.h"
 #include "internals\CefCompletionCallbackAdapter.h"
 
-using namespace System::Threading::Tasks;
-
 namespace CefSharp
 {
 	public ref class CookieManager : public ICookieManager
@@ -19,6 +17,23 @@ namespace CefSharp
 		MCefRefPtr<CefCookieManager> _cookieManager;
 
 		void ThrowIfDisposed();
+
+	internal:
+		CookieManager(const CefRefPtr<CefCookieManager> &cookieManager)
+			:_cookieManager(cookieManager.get())
+		{
+
+		}
+
+		operator CefRefPtr<CefCookieManager>()
+		{
+			if (this == nullptr)
+			{
+				return NULL;
+			}
+			return _cookieManager.get();
+		}
+
 	public:
 		///
 		// Creates a new cookie manager. If |path| is empty data will be stored in
@@ -37,12 +52,6 @@ namespace CefSharp
 			_cookieManager = CefCookieManager::CreateManager(StringUtils::ToNative(path), persistSessionCookies, wrapper);
 		}
 
-		CookieManager(const CefRefPtr<CefCookieManager> &cookieManager)
-			:_cookieManager(cookieManager.get())
-		{
-
-		}
-
 		!CookieManager()
 		{
 			this->_cookieManager = nullptr;
@@ -53,23 +62,20 @@ namespace CefSharp
 			this->!CookieManager();
 		}
 
-		virtual Task<bool>^ DeleteCookiesAsync(String^ url, String^ name);
-		virtual Task<bool>^ SetCookieAsync(String^ url, Cookie^ cookie);
-		virtual bool SetStoragePath(String^ path, bool persistSessionSookies);
-		virtual void SetSupportedSchemes(... cli::array<String^>^ schemes);
-		virtual Task<List<Cookie^>^>^ VisitAllCookiesAsync();
+		virtual bool DeleteCookies(String^ url, String^ name, IDeleteCookiesCallback^ callback);
+		virtual bool SetCookie(String^ url, Cookie^ cookie, ISetCookieCallback^ callback);
+		virtual bool SetStoragePath(String^ path, bool persistSessionSookies, ICompletionCallback^ callback);
+		virtual void SetSupportedSchemes(cli::array<String^>^ schemes, ICompletionCallback^ callback);
 		virtual bool VisitAllCookies(ICookieVisitor^ visitor);
-		virtual Task<List<Cookie^>^>^ VisitUrlCookiesAsync(String^ url, bool includeHttpOnly);
 		virtual bool VisitUrlCookies(String^ url, bool includeHttpOnly, ICookieVisitor^ visitor);
-		virtual Task<bool>^ FlushStoreAsync();
+		virtual bool FlushStore(ICompletionCallback^ callback);
 
-		operator CefRefPtr<CefCookieManager>()
+		virtual property bool IsDisposed
 		{
-			if (this == nullptr)
+			bool get()
 			{
-				return NULL;
+				return !_cookieManager.get();
 			}
-			return _cookieManager.get();
 		}
 	};
 }

@@ -1,9 +1,11 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
 using System.Threading.Tasks;
+
+using Size = CefSharp.Structs.Size;
 
 namespace CefSharp
 {
@@ -61,7 +63,7 @@ namespace CefSharp
         void DragTargetDragDrop(MouseEvent mouseEvent);
 
         /// <summary>
-        /// Call this method when the drag operation started by a <see cref="IRenderWebBrowser.StartDragging"/> call has ended either in a drop or by being cancelled.
+        /// Call this method when the drag operation started by a <see cref="CefSharp.Internals.IRenderWebBrowser.StartDragging"/> call has ended either in a drop or by being cancelled.
         /// If the web view is both the drag source and the drag target then all DragTarget* methods should be called before DragSource* methods.
         /// This method is only used when window rendering is disabled. 
         /// </summary>
@@ -77,7 +79,7 @@ namespace CefSharp
         void DragTargetDragLeave();
         
         /// <summary>
-        /// Call this method when the drag operation started by a <see cref="IRenderWebBrowser.StartDragging"/> call has completed.
+        /// Call this method when the drag operation started by a <see cref="CefSharp.Internals.IRenderWebBrowser.StartDragging"/> call has completed.
         /// This method may be called immediately without first calling DragSourceEndedAt to cancel a drag operation.
         /// If the web view is both the drag source and the drag target then all DragTarget* methods should be called before DragSource* mthods.
         /// This method is only used when window rendering is disabled. 
@@ -147,9 +149,9 @@ namespace CefSharp
         /// text into the composition node.
         /// This method is only used when window rendering is disabled. (WPF and OffScreen) 
         /// </summary>
-        /// </summary>
         /// <param name="text">text that will be committed</param>
         void ImeCommitText(string text);
+
         /// <summary>
         /// Completes the existing composition by applying the current composition node
         /// contents. See comments on ImeSetComposition for usage.
@@ -188,16 +190,6 @@ namespace CefSharp
         /// Print the current browser contents. 
         /// </summary>
         void Print();
-
-        /// <summary>
-        /// Asynchronously prints the current browser contents to the Pdf file specified.
-        /// The caller is responsible for deleting the file when done.
-        /// </summary>
-        /// <param name="path">Output file location.</param>
-        /// <param name="settings">Print Settings.</param>
-        /// <returns>A task that represents the asynchronous print operation.
-        /// The result is true on success or false on failure to generate the Pdf.</returns>
-        Task<bool> PrintToPdfAsync(string path, PdfPrintSettings settings = null);
 
         /// <summary>
         /// Asynchronously prints the current browser contents to the Pdf file specified.
@@ -247,23 +239,44 @@ namespace CefSharp
         /// <summary>
         /// Send a mouse click event to the browser.
         /// </summary>
-        /// <param name="x">x coordinate - relative to upper-left corner of view</param>
-        /// <param name="y">y coordinate - relative to upper-left corner of view</param>
+        /// <param name="mouseEvent">mouse event - x, y and modifiers</param>
         /// <param name="mouseButtonType">Mouse ButtonType</param>
         /// <param name="mouseUp">mouse up</param>
         /// <param name="clickCount">click count</param>
-        /// <param name="modifiers">click modifiers e.g. Ctrl</param>
-        void SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers);
+        void SendMouseClickEvent(MouseEvent mouseEvent, MouseButtonType mouseButtonType, bool mouseUp, int clickCount);
 
         /// <summary>
         /// Send a mouse wheel event to the browser.
         /// </summary>
-        /// <param name="x">X-Axis coordinate relative to the upper-left corner of the view.</param>
-        /// <param name="y">Y-Axis coordinate relative to the upper-left corner of the view.</param>
+        /// <param name="mouseEvent">mouse event - x, y and modifiers</param>
         /// <param name="deltaX">Movement delta for X direction.</param>
         /// <param name="deltaY">movement delta for Y direction.</param>
-        /// /// <param name="modifiers">click modifiers e.g. Ctrl</param>
-        void SendMouseWheelEvent(int x, int y, int deltaX, int deltaY, CefEventFlags modifiers);
+        void SendMouseWheelEvent(MouseEvent mouseEvent, int deltaX, int deltaY);
+
+        /// <summary>
+        /// Set accessibility state for all frames.  If accessibilityState is Default then accessibility will be disabled by default
+        /// and the state may be further controlled with the "force-renderer-accessibility" and "disable-renderer-accessibility"
+        /// command-line switches. If accessibilityState is STATE_ENABLED then accessibility will be enabled.
+        /// If accessibilityState is STATE_DISABLED then accessibility will be completely disabled. For windowed browsers
+        /// accessibility will be enabled in Complete mode (which corresponds to kAccessibilityModeComplete in Chromium).
+        /// In this mode all platform accessibility objects will be created and managed by Chromium's internal implementation.
+        /// The client needs only to detect the screen reader and call this method appropriately. For example, on Windows the
+        /// client can handle WM_GETOBJECT with OBJID_CLIENT to detect accessibility readers. For windowless browsers accessibility
+        /// will be enabled in TreeOnly mode (which corresponds to kAccessibilityModeWebContentsOnly in Chromium). In this mode
+        /// renderer accessibility is enabled, the full tree is computed, and events are passed to IAccessibiltyHandler,
+        /// but platform accessibility objects are not created. The client may implement platform accessibility objects using
+        /// IAccessibiltyHandler callbacks if desired. 
+        /// </summary>
+        /// <param name="accessibilityState">may be default, enabled or disabled.</param>
+        void SetAccessibilityState(CefState accessibilityState);
+
+        /// <summary>
+        /// Enable notifications of auto resize via IDisplayHandler.OnAutoResize. Notifications are disabled by default.
+        /// </summary>
+        /// <param name="enabled">enable auto resize</param>
+        /// <param name="minSize">minimum size</param>
+        /// <param name="maxSize">maximum size</param>
+        void SetAutoResizeEnabled(bool enabled, Size minSize, Size maxSize);
 
         /// <summary>
         /// Set whether the browser is focused. (Used for Normal Rendering e.g. WinForms)
@@ -301,13 +314,13 @@ namespace CefSharp
         void StopFinding(bool clearSelection);
 
         /// <summary>
-        /// Send a mouse move event to the browser
+        /// Send a mouse move event to the browser, coordinates, 
         /// </summary>
         /// <param name="x">x coordinate - relative to upper-left corner of view</param>
         /// <param name="y">y coordinate - relative to upper-left corner of view</param>
         /// <param name="mouseLeave">mouse leave</param>
         /// <param name="modifiers">click modifiers .e.g Ctrl</param>
-        void SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers);
+        void SendMouseMoveEvent(MouseEvent mouseEvent, bool mouseLeave);
 
         /// <summary>
         /// Notify the browser that it has been hidden or shown.

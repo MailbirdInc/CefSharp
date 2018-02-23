@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\cef.redist.x86.3.3282.1731\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.3.3282.1731\build\cef.redist.x86.props')" />
+  <Import Project="..\packages\cef.redist.x64.3.3282.1731\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.3.3282.1731\build\cef.redist.x64.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -54,6 +56,7 @@
     <NuGetPackageImportStamp>e08d0872</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>39af8b73</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>7a75bfb3</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>75fe660a</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -135,7 +138,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="Controls\CefSharpCommands.cs" />
+    <Compile Include="Controls\ChromiumWebBrowserWithScreenshotSupport.cs" />
     <Compile Include="Controls\NonReloadingTabControl.cs" />
+    <Compile Include="Handlers\DisplayHandler.cs" />
     <Compile Include="Handlers\DragHandler.cs" />
     <Compile Include="Handlers\GeolocationHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
@@ -229,6 +234,4 @@
   <Import Project="..\..\..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets" Condition="Exists('..\..\..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets')" />
   <Import Project="$(SolutionDir)\CefSharp.props" />
   <Import Project="$(SolutionDir)\CefSharp.Native.props" />
-  <Import Project="..\packages\cef.redist.x64.3.2883.1545\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2883.1545\build\cef.redist.x64.targets')" />
-  <Import Project="..\packages\cef.redist.x86.3.2883.1545\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2883.1545\build\cef.redist.x86.targets')" />
 </Project>

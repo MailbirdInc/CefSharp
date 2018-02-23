@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -9,7 +9,7 @@ namespace CefSharp
     /// <summary>
     /// Class used to represent a download item.
     /// </summary>
-    public class DownloadItem
+    public sealed class DownloadItem
     {
         /// <summary>
         /// Returns true if this object is valid. Do not call any other methods if this function returns false.

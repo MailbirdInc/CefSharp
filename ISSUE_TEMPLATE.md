@@ -17,12 +17,13 @@ We ask that you put in a reasonable amount of effort in searching through the re
 Still have a question to ask or unsure where to go next? Start with the Gitter Chat room : https://gitter.im/cefsharp/CefSharp
 
 --
-###Bug Report
+### Bug Report
 Delete this line and everything above, and then fill in the details below.
 
 - **What version of the product are you using?**
-    - What version are you using? Nuget? CI Nuget? build from a branch? If so which branch?
-e.g. 53.0.1
+    - What version are you using? Nuget? CI Nuget? build from a branch? If so which branch? Please include the exact version number you are using (no ambiguous statements like `Latest from Nuget`)
+e.g. 57.0.0 or 63.0.0-pre01
+    - Please only create an issue if you can reproduce the problem with the latest version. (If you are using the latest stable release please check to see if there is a newer `-pre` release and test with that also).
 
 - **What architecture x86 or x64?**
 
@@ -49,3 +50,4 @@ e.g. 53.0.1
     - To compare with WPF run cefclient --multi-threaded-message-loop --off-screen-rendering-enabled
     - To compare with WinForms run cefclient --multi-threaded-message-loop
     - If you can reproduce the problem with `cefclient` then you'll need to report the bug on https://bitbucket.org/chromiumembedded/cef/overview there is no point opening an issue here. (Make sure you search before opening an issue)
+    - Please include the version you tested with e.g. `cef_binary_3.3029.1611.g44e39a8_windows64_client.tar.bz2`

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -44,7 +44,7 @@ namespace CefSharp.WinForms.Example
             {
                 browser.KeyboardHandler = new KeyboardHandler();
             }
-            browser.LifeSpanHandler = new LifeSpanHandler();
+            //browser.LifeSpanHandler = new LifeSpanHandler();
             browser.LoadingStateChanged += OnBrowserLoadingStateChanged;
             browser.ConsoleMessage += OnBrowserConsoleMessage;
             browser.TitleChanged += OnBrowserTitleChanged;
@@ -52,8 +52,21 @@ namespace CefSharp.WinForms.Example
             browser.StatusMessage += OnBrowserStatusMessage;
             browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
             browser.LoadError += OnLoadError;
-            browser.RegisterJsObject("bound", new BoundObject());
-            browser.RegisterAsyncJsObject("boundAsync", new AsyncBoundObject());
+
+            browser.JavascriptObjectRepository.Register("bound", new BoundObject(), isAsync: false, options: BindingOptions.DefaultBinder);
+            browser.JavascriptObjectRepository.Register("boundAsync", new AsyncBoundObject(), isAsync: true, options: BindingOptions.DefaultBinder);
+
+            //If you call CefSharp.BindObjectAsync in javascript and pass in the name of an object which is not yet
+            //bound, then ResolveObject will be called, you can then register it
+            browser.JavascriptObjectRepository.ResolveObject += (sender, e) =>
+            {
+                var repo = e.ObjectRepository;
+                if (e.ObjectName == "boundAsync2")
+                {
+                    repo.Register("boundAsync2", new AsyncBoundObject(), isAsync: true, options: BindingOptions.DefaultBinder);
+                }
+            };
+
             browser.RenderProcessMessageHandler = new RenderProcessMessageHandler();
             browser.DisplayHandler = new DisplayHandler();
             //browser.MouseDown += OnBrowserMouseClick;
@@ -65,7 +78,7 @@ namespace CefSharp.WinForms.Example
             eventObject.EventArrived += OnJavascriptEventArrived;
             // Use the default of camelCaseJavascriptNames
             // .Net methods starting with a capitol will be translated to starting with a lower case letter when called from js
-            browser.RegisterJsObject("boundEvent", eventObject, BindingOptions.DefaultBinder);
+            browser.JavascriptObjectRepository.Register("boundEvent", eventObject, isAsync:false, options: BindingOptions.DefaultBinder);
 
             CefExample.RegisterTestResources(browser);
 
@@ -126,7 +139,7 @@ namespace CefSharp.WinForms.Example
             SetCanGoBack(args.CanGoBack);
             SetCanGoForward(args.CanGoForward);
 
-            this.InvokeOnUiThreadIfRequired(() => SetIsLoading(!args.CanReload));
+            this.InvokeOnUiThreadIfRequired(() => SetIsLoading(args.IsLoading));
         }
 
         private void OnBrowserTitleChanged(object sender, TitleChangedEventArgs args)

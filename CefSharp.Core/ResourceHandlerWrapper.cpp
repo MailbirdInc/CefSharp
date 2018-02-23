@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -18,9 +18,9 @@ namespace CefSharp
     bool ResourceHandlerWrapper::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
     {
         auto callbackWrapper = gcnew CefCallbackWrapper(callback);
-        CefRequestWrapper requestWrapper(request);
+        _request = gcnew CefRequestWrapper(request);
 
-        return _handler->ProcessRequest(%requestWrapper, callbackWrapper);
+        return _handler->ProcessRequest(_request, callbackWrapper);
     }
 
     void ResourceHandlerWrapper::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
@@ -79,37 +79,11 @@ namespace CefSharp
 
             if (cefCookie.has_expires)
             {
-                cookie->Expires = DateTime(
-                    cefCookie.expires.year,
-                    cefCookie.expires.month,
-                    cefCookie.expires.day_of_month,
-                    cefCookie.expires.hour,
-                    cefCookie.expires.minute,
-                    cefCookie.expires.second,
-                    cefCookie.expires.millisecond
-                    );
+                cookie->Expires = DateTimeUtils::FromCefTime(CefTime(cefCookie.expires).GetDoubleT());
             }
-
-            //TODO: There is a method in TypeUtils that's in BrowserSubProcess that convers CefTime, need to make it accessible.
-            cookie->Creation = DateTime(
-                cefCookie.creation.year,
-                cefCookie.creation.month,
-                cefCookie.creation.day_of_month,
-                cefCookie.creation.hour,
-                cefCookie.creation.minute,
-                cefCookie.creation.second,
-                cefCookie.creation.millisecond
-                );
-
-            cookie->LastAccess = DateTime(
-                cefCookie.last_access.year,
-                cefCookie.last_access.month,
-                cefCookie.last_access.day_of_month,
-                cefCookie.last_access.hour,
-                cefCookie.last_access.minute,
-                cefCookie.last_access.second,
-                cefCookie.last_access.millisecond
-                );
+            
+            cookie->Creation = DateTimeUtils::FromCefTime(CefTime(cefCookie.creation).GetDoubleT());
+            cookie->LastAccess = DateTimeUtils::FromCefTime(CefTime(cefCookie.last_access).GetDoubleT());
         }
 
         return cookie;

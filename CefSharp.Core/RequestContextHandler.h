@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,8 +6,9 @@
 
 #include "Stdafx.h"
 
-#include "Internals\TypeConversion.h"
 #include "CookieManager.h"
+#include "Internals\ReportUnhandledExceptions.h"
+#include "Internals\TypeConversion.h"
 
 namespace CefSharp
 {
@@ -40,11 +41,22 @@ namespace CefSharp
                 return NULL;
             }
 
-            return (CookieManager^)cookieManager;
+            //Cookie manager can only be our managed wrapper
+            if (cookieManager->GetType() == CookieManager::typeid)
+            {
+                return (CookieManager^)cookieManager;
+            }
+
+            //Report the exception on the thread pool so it can be caught in AppDomain::UnhandledException
+            auto msg = gcnew String(L"ICookieManager must be of type " + CookieManager::typeid + ". CEF does not support custom implementation");
+            ReportUnhandledExceptions::Report(msg, gcnew NotSupportedException(msg));
+
+            return NULL;
         }
 
         virtual bool OnBeforePluginLoad(const CefString& mime_type,
             const CefString& plugin_url,
+            bool is_main_frame,
             const CefString& top_origin_url,
             CefRefPtr<CefWebPluginInfo> plugin_info,
             CefRequestContextHandler::PluginPolicy* plugin_policy) OVERRIDE
@@ -56,6 +68,7 @@ namespace CefSharp
 
                 auto result = _requestContextHandler->OnBeforePluginLoad(StringUtils::ToClr(mime_type),
                                                                 StringUtils::ToClr(plugin_url),
+                                                                is_main_frame,
                                                                 StringUtils::ToClr(top_origin_url),
                                                                 pluginInfo,
                                                                 pluginPolicy);

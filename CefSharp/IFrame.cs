@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -149,7 +149,7 @@ namespace CefSharp
         string Name { get; }
 
         /// <summary>
-        /// Returns the globally unique identifier for this frame.
+        /// Returns the globally unique identifier for this frame or &lt; 0 if the underlying frame does not yet exist.
         /// </summary>
         Int64 Identifier { get;  }
 
