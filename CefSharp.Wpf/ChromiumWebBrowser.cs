@@ -766,20 +766,20 @@ namespace CefSharp.Wpf
             BitmapFactory.CreateOrUpdateBitmap(isPopup, buffer, dirtyRect, width, height, img);
         }
 
-        private BitmapSource CreateBitmap(WpfBitmapInfo wpfBitmapInfo)
-        {
-            try
-            {
-                GC.Collect(1);
-                return wpfBitmapInfo.CreateBitmap();
-            }
-            catch (COMException) {}
-            catch (OutOfMemoryException) {}
+        //private BitmapSource CreateBitmap(WpfBitmapInfo wpfBitmapInfo)
+        //{
+        //    try
+        //    {
+        //        GC.Collect(1);
+        //        return wpfBitmapInfo.CreateBitmap();
+        //    }
+        //    catch (COMException) {}
+        //    catch (OutOfMemoryException) {}
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            return wpfBitmapInfo.CreateBitmap();
-        }
+        //    GC.Collect();
+        //    GC.WaitForPendingFinalizers();
+        //    return wpfBitmapInfo.CreateBitmap();
+        //}
 
         /// <summary>
         /// Sets the popup size and position.
@@ -1645,7 +1645,7 @@ namespace CefSharp.Wpf
 
         private void UpdateBrowserScreenLocation()
         {
-            if (source != null)
+            if (source != null && IsVisible)
             {
                 browserScreenLocation = PointToScreen(new Point());
             }
@@ -1677,12 +1677,11 @@ namespace CefSharp.Wpf
             var webBrowserInternal = this as IWebBrowserInternal;
             if (!webBrowserInternal.HasParent)
             {
-                if (dpiMultiplier.HasValue)
-                
-                {
-                    matrix.M11 = dpiMultiplier.Value.Width;
-                    matrix.M22 = dpiMultiplier.Value.Height;
-                }
+                //if (dpiMultiplier.HasValue)
+                //{
+                //    matrix.M11 = dpiMultiplier.Value.Width;
+                //    matrix.M22 = dpiMultiplier.Value.Height;
+                //}
                 
                 managedCefBrowserAdapter.CreateOffscreenBrowser(source == null ? IntPtr.Zero : source.Handle, BrowserSettings, (RequestContext)RequestContext, Address);
 
@@ -1762,11 +1761,11 @@ namespace CefSharp.Wpf
             {
                 browser.GetHost().WasResized();
 
-                if (wasHidden && matrix.M11 > 1.0) // Hack until #1571 is solved
-                {
-                    browser.GetHost().WasHidden(true);
-                    browser.GetHost().WasHidden(false);
-                }
+                //if (wasHidden && matrix.M11 > 1.0) // Hack until #1571 is solved
+                //{
+                //    browser.GetHost().WasHidden(true);
+                //    browser.GetHost().WasHidden(false);
+                //}
             }
         }
 
