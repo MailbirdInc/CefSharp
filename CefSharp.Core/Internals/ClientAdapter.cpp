@@ -1109,7 +1109,7 @@ namespace CefSharp
             CefDragDataWrapper dragDataWrapper(dragData);
             auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
 
-            return handler->OnDragEnter(_browserControl, browserWrapper, %dragDataWrapper, (CefSharp::DragOperationsMask)mask);
+            return handler->OnDragEnter(_browserControl, browserWrapper, %dragDataWrapper, (CefSharp::Enums::DragOperationsMask)mask);
         }
 
         void ClientAdapter::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, const std::vector<CefDraggableRegion>& regions)
@@ -1217,14 +1217,19 @@ namespace CefSharp
                 {
                     auto objectRepository = _browserAdapter->JavascriptObjectRepository;
 
-                    auto objectNames = argList->GetList(0);
-                    auto names = gcnew List<String^>(objectNames->GetSize());
-                    for (auto i = 0; i < objectNames->GetSize(); i++)
+                    auto boundObjects = argList->GetList(0);
+                    auto objs = gcnew List<Tuple<String^, bool, bool>^>(boundObjects->GetSize());
+                    for (auto i = 0; i < boundObjects->GetSize(); i++)
                     {
-                        names->Add(StringUtils::ToClr(objectNames->GetString(i)));
+                        auto obj = boundObjects->GetDictionary(i);
+                        auto name = obj->GetString("Name");
+                        auto alreadyBound = obj->GetBool("AlreadyBound");
+                        auto isCached = obj->GetBool("IsCached");                        
+
+                        objs->Add(Tuple::Create(StringUtils::ToClr(name), alreadyBound, isCached));
                     }
                     
-                    objectRepository->ObjectsBound(names);
+                    objectRepository->ObjectsBound(objs);
                 }
 
                 handled = true;
