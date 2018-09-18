@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -57,7 +57,7 @@ namespace CefSharp.Example
 
         public JsSerializableStruct[] ReturnStructArray(string name)
         {
-            return new[] 
+            return new[]
             {
                 new JsSerializableStruct { Value = name + "Item1" },
                 new JsSerializableStruct { Value = name + "Item2" }
@@ -73,17 +73,17 @@ namespace CefSharp.Example
             };
         }
 
-        public string[] EchoArray(string[] arg) 
+        public string[] EchoArray(string[] arg)
         {
             return arg;
         }
 
-        public int[] EchoValueTypeArray(int[] arg) 
+        public int[] EchoValueTypeArray(int[] arg)
         {
             return arg;
         }
 
-        public int[][] EchoMultidimensionalArray(int[][] arg) 
+        public int[][] EchoMultidimensionalArray(int[][] arg)
         {
             return arg;
         }
@@ -92,12 +92,32 @@ namespace CefSharp.Example
         {
             var builder = new StringBuilder();
 
-            foreach(var browser in objects)
+            foreach (var browser in objects)
             {
                 builder.Append("Browser(Name:" + browser.Name + ";Engine:" + browser.Engine.Name + ");");
             }
 
             return builder.ToString();
+        }
+
+        public List<string> MethodReturnsList()
+        {
+            return new List<string>()
+            {
+                "Element 0 - First",
+                "Element 1",
+                "Element 2 - Last",
+            };
+        }
+
+        public List<List<string>> MethodReturnsListOfLists()
+        {
+            return new List<List<string>>()
+            {
+                new List<string>() {"Element 0, 0", "Element 0, 1" },
+                new List<string>() {"Element 1, 0", "Element 1, 1" },
+                new List<string>() {"Element 2, 0", "Element 2, 1" },
+            };
         }
 
         public Dictionary<string, int> MethodReturnsDictionary1()

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2017 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -40,9 +40,9 @@ namespace CefSharp.Example.RequestEventHandler
         public event EventHandler<GetResourceResponseFilterEventArgs> GetResourceResponseFilterEvent;
         public event EventHandler<OnResourceLoadCompleteEventArgs> OnResourceLoadCompleteEvent;
 
-        bool IRequestHandler.OnBeforeBrowse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, bool isRedirect)
+        bool IRequestHandler.OnBeforeBrowse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, bool userGesture, bool isRedirect)
         {
-            var args = new OnBeforeBrowseEventArgs(browserControl, browser, frame, request, isRedirect);
+            var args = new OnBeforeBrowseEventArgs(browserControl, browser, frame, request, userGesture, isRedirect);
 
             OnBeforeBrowseEvent?.Invoke(this, args);
 

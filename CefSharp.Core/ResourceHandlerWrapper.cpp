@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -8,7 +8,6 @@
 #include "Internals/CefResponseWrapper.h"
 #include "Internals/CefCallbackWrapper.h"
 #include "ResourceHandlerWrapper.h"
-#include "Internals/TypeConversion.h"
 
 using namespace System::Runtime::InteropServices;
 using namespace System::IO;

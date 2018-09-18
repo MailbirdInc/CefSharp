@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -58,9 +58,11 @@ namespace CefSharp.Handler
         /// <param name="browser">the browser object</param>
         /// <param name="frame">The frame the request is coming from</param>
         /// <param name="request">the request object - cannot be modified in this callback</param>
+        /// <param name="userGesture">The value will be true if the browser navigated via explicit user gesture
+        /// (e.g. clicking a link) or false if it navigated automatically (e.g. via the DomContentLoaded event).</param>
         /// <param name="isRedirect">has the request been redirected</param>
         /// <returns>Return true to cancel the navigation or false to allow the navigation to proceed.</returns>
-        public virtual bool OnBeforeBrowse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, bool isRedirect)
+        public virtual bool OnBeforeBrowse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, bool userGesture, bool isRedirect)
         {
             return false;
         }
@@ -88,7 +90,7 @@ namespace CefSharp.Handler
         /// Called to handle requests for URLs with an invalid SSL certificate.
         /// Return true and call <see cref="IRequestCallback.Continue"/> either
         /// in this method or at a later time to continue or cancel the request.  
-        /// If <see cref="CefSettings.IgnoreCertificateErrors"/> is set all invalid certificates
+        /// If CefSettings.IgnoreCertificateErrors is set all invalid certificates
         /// will be accepted without calling this method.
         /// </summary>
         /// <param name="browserControl">the ChromiumWebBrowser control</param>

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 using CefSharp.Enums;
 using CefSharp.Internals;
 using CefSharp.Structs;
-
-using Size = System.Drawing.Size;
 using Point = System.Drawing.Point;
+using Size = System.Drawing.Size;
 
 namespace CefSharp.OffScreen
 {
@@ -85,11 +84,6 @@ namespace CefSharp.OffScreen
         /// <remarks>In the WPF control, this property is implemented as a Dependency Property and fully supports data
         /// binding.</remarks>
         public bool CanGoForward { get; private set; }
-        /// <summary>
-        /// Gets the browser settings.
-        /// </summary>
-        /// <value>The browser settings.</value>
-        public BrowserSettings BrowserSettings { get; private set; }
         /// <summary>
         /// Gets the request context.
         /// </summary>
@@ -170,6 +164,12 @@ namespace CefSharp.OffScreen
         /// </summary>
         /// <value>The find handler.</value>
         public IFindHandler FindHandler { get; set; }
+
+        /// <summary>
+        /// Implement <see cref="IAccessibilityHandler" /> to handle events related to accessibility.
+        /// </summary>
+        /// <value>The accessibility handler.</value>
+        public IAccessibilityHandler AccessibilityHandler { get; set; }
 
         /// <summary>
         /// Event handler that will get called when the resource load for a navigation fails or is canceled.
@@ -268,7 +268,8 @@ namespace CefSharp.OffScreen
         public bool CanExecuteJavascriptInMainFrame { get; private set; }
 
         /// <summary>
-        /// Create a new OffScreen Chromium Browser
+        /// Create a new OffScreen Chromium Browser. If you use <see cref="CefSharpSettings.LegacyJavascriptBindingEnabled"/> = true then you must
+        /// set <paramref name="automaticallyCreateBrowser"/> to false and call <see cref="CreateBrowser"/> after the objects are registered.
         /// </summary>
         /// <param name="address">Initial address (url) to load</param>
         /// <param name="browserSettings">The browser settings to use. If null, the default settings are used.</param>
@@ -278,13 +279,17 @@ namespace CefSharp.OffScreen
         public ChromiumWebBrowser(string address = "", BrowserSettings browserSettings = null,
             RequestContext requestContext = null, bool automaticallyCreateBrowser = true)
         {
-            if (!Cef.IsInitialized && !Cef.Initialize())
+            if (!Cef.IsInitialized)
             {
-                throw new InvalidOperationException("Cef::Initialize() failed");
+                var settings = new CefSettings();
+
+                if (!Cef.Initialize(settings))
+                {
+                    throw new InvalidOperationException("Cef::Initialize() failed");
+                }
             }
 
             ResourceHandlerFactory = new DefaultResourceHandlerFactory();
-            BrowserSettings = browserSettings ?? new BrowserSettings();
             RequestContext = requestContext;
 
             Cef.AddDisposable(this);
@@ -294,7 +299,7 @@ namespace CefSharp.OffScreen
 
             if (automaticallyCreateBrowser)
             {
-                CreateBrowser(IntPtr.Zero);
+                CreateBrowser(IntPtr.Zero, browserSettings);
             }
 
             RenderHandler = new DefaultRenderHandler(this);
@@ -333,7 +338,7 @@ namespace CefSharp.OffScreen
             LoadingStateChanged = null;
             Paint = null;
             StatusMessage = null;
-            TitleChanged = null;            
+            TitleChanged = null;
 
             Cef.RemoveDisposable(this);
 
@@ -341,12 +346,6 @@ namespace CefSharp.OffScreen
             {
                 browser = null;
                 IsBrowserInitialized = false;
-
-                if (BrowserSettings != null)
-                {
-                    BrowserSettings.Dispose();
-                    BrowserSettings = null;
-                }
 
                 if (managedCefBrowserAdapter != null)
                 {
@@ -368,9 +367,9 @@ namespace CefSharp.OffScreen
         /// Create the underlying browser. The instance address, browser settings and request context will be used.
         /// </summary>
         /// <param name="windowHandle">Window handle if any, IntPtr.Zero is the default</param>
+        /// <param name="browserSettings">Browser initialization settings</param>
         /// <exception cref="System.Exception">An instance of the underlying offscreen browser has already been created, this method can only be called once.</exception>
-
-        public void CreateBrowser(IntPtr windowHandle)
+        public void CreateBrowser(IntPtr windowHandle, BrowserSettings browserSettings = null)
         {
             if (browserCreated)
             {
@@ -379,7 +378,16 @@ namespace CefSharp.OffScreen
 
             browserCreated = true;
 
-            managedCefBrowserAdapter.CreateOffscreenBrowser(windowHandle, BrowserSettings, (RequestContext)RequestContext, Address);
+            if (browserSettings == null)
+            {
+                browserSettings = new BrowserSettings();
+            }
+
+            //Dispose of browser settings after we've created the browser
+            using (browserSettings)
+            {
+                managedCefBrowserAdapter.CreateOffscreenBrowser(windowHandle, browserSettings, (RequestContext)RequestContext, Address);
+            }
         }
 
         /// <summary>
@@ -417,14 +425,14 @@ namespace CefSharp.OffScreen
         /// <returns>Bitmap.</returns>
         public Bitmap ScreenshotOrNull(PopupBlending blend = PopupBlending.Main)
         {
-            if(RenderHandler == null)
+            if (RenderHandler == null)
             {
                 throw new NullReferenceException("RenderHandler cannot be null. Use DefaultRenderHandler unless implementing your own");
             }
 
             var renderHandler = RenderHandler as DefaultRenderHandler;
 
-            if(renderHandler == null)
+            if (renderHandler == null)
             {
                 throw new Exception("ScreenshotOrNull and ScreenshotAsync can only be used in combination with the DefaultRenderHandler");
             }
@@ -467,7 +475,7 @@ namespace CefSharp.OffScreen
         /// The bitmap size is determined by the Size property set earlier.
         /// </summary>
         /// <param name="ignoreExistingScreenshot">Ignore existing bitmap (if any) and return the next avaliable bitmap</param>
-        /// /// <param name="blend">Choose which bitmap to retrieve, choose <see cref="PopupBlending.Blend"/> for a merged bitmap.</param>
+        /// <param name="blend">Choose which bitmap to retrieve, choose <see cref="PopupBlending.Blend"/> for a merged bitmap.</param>
         /// <returns>Task&lt;Bitmap&gt;.</returns>
         public Task<Bitmap> ScreenshotAsync(bool ignoreExistingScreenshot = false, PopupBlending blend = PopupBlending.Main)
         {
@@ -485,7 +493,7 @@ namespace CefSharp.OffScreen
                     // Chromium has rendered.  Tell the task about it.
                     Paint -= paint;
 
-                    completionSource.TrySetResultAsync(ScreenshotOrNull());
+                    completionSource.TrySetResultAsync(ScreenshotOrNull(blend));
                 };
 
                 Paint += paint;
@@ -637,7 +645,7 @@ namespace CefSharp.OffScreen
         /// Gets the view rect (width, height)
         /// </summary>
         /// <returns>ViewRect.</returns>
-        ViewRect? IRenderWebBrowser.GetViewRect()
+        Rect? IRenderWebBrowser.GetViewRect()
         {
             return GetViewRect();
         }
@@ -646,7 +654,7 @@ namespace CefSharp.OffScreen
         /// Gets the view rect (width, height)
         /// </summary>
         /// <returns>ViewRect.</returns>
-        protected virtual ViewRect? GetViewRect()
+        protected virtual Rect? GetViewRect()
         {
             return RenderHandler?.GetViewRect();
         }
@@ -700,7 +708,7 @@ namespace CefSharp.OffScreen
                 handled = args.Handled;
             }
 
-            if(!handled)
+            if (!handled)
             {
                 OnPaint(type, dirtyRect, buffer, width, height);
             }

@@ -1,12 +1,12 @@
-﻿// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright © 2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Windows.Controls;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using GalaSoft.MvvmLight.Command;
 
 namespace CefSharp.Wpf.Example.Handlers
@@ -59,7 +59,8 @@ namespace CefSharp.Wpf.Example.Handlers
 
         bool IContextMenuHandler.RunContextMenu(IWebBrowser browserControl, IBrowser browser, IFrame frame, IContextMenuParams parameters, IMenuModel model, IRunContextMenuCallback callback)
         {
-            //NOTE: Return false to use the build in Context menu - in WPF this requires you integrate into your existing message loop, read the General Usage Guide for more details
+            //NOTE: Return false to use the built in Context menu - in WPF this requires you integrate into your existing message loop, read the General Usage Guide for more details
+            //https://github.com/cefsharp/CefSharp/wiki/General-Usage#multithreadedmessageloop
             //return false;
 
             var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
@@ -92,7 +93,7 @@ namespace CefSharp.Wpf.Example.Handlers
 
                 foreach (var item in menuItems)
                 {
-                    if(item.Item2 == CefMenuCommand.NotFound && string.IsNullOrWhiteSpace(item.Item1))
+                    if (item.Item2 == CefMenuCommand.NotFound && string.IsNullOrWhiteSpace(item.Item1))
                     {
                         menu.Items.Add(new Separator());
                         continue;
@@ -105,7 +106,8 @@ namespace CefSharp.Wpf.Example.Handlers
                         Command = new RelayCommand(() =>
                         {
                             //BUG: CEF currently not executing callbacks correctly so we manually map the commands below
-                            //the following line worked in previous versions, it doesn't now, so custom EXAMPLE below
+                            //see https://github.com/cefsharp/CefSharp/issues/1767
+                            //The following line worked in previous versions, it doesn't now, so custom EXAMPLE below
                             //callback.Continue(item.Item2, CefEventFlags.None);
 
                             //NOTE: Note all menu item options below have been tested, you can work out the rest
@@ -208,7 +210,7 @@ namespace CefSharp.Wpf.Example.Handlers
 
         private static IEnumerable<Tuple<string, CefMenuCommand, bool>> GetMenuItems(IMenuModel model)
         {
-            for(var i = 0; i < model.Count; i++)
+            for (var i = 0; i < model.Count; i++)
             {
                 var header = model.GetLabelAt(i);
                 var commandId = model.GetCommandIdAt(i);

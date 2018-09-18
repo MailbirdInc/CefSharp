@@ -1,5 +1,4 @@
-
-// Copyright © 2010-2017 The CefSharp Authors. All rights reserved.
+// Copyright Â© 2018 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -90,10 +89,10 @@ namespace CefSharp
                             else
                             {
                                 retval = CefV8Value::CreateBool(false);
-                            }							
+                            }
                         }
                         //TODO: Better name for this function
-                        else if (name == kDeleteBoundObject || name == kDeleteBoundObject)
+                        else if (name == kDeleteBoundObject || name == kDeleteBoundObjectCamelCase)
                         {
                             if (arguments.size() == 0 || arguments.size() > 1)
                             {
@@ -113,10 +112,15 @@ namespace CefSharp
                         }
                         else if (name == kBindObjectAsync || name == kBindObjectAsyncCamelCase)
                         {
-                            auto promiseCreator = global->GetValue(CefAppUnmanagedWrapper::kPromiseCreatorFunction);
-
+                            CefRefPtr<CefV8Value> promiseData;
+                            CefRefPtr<CefV8Exception> promiseException;
                             //this will create a promise and give us the reject/resolve functions {p: Promise, res: resolve(), rej: reject()}
-                            auto promiseData = promiseCreator->ExecuteFunctionWithContext(context, nullptr, CefV8ValueList());
+                            if (!context->Eval(CefAppUnmanagedWrapper::kPromiseCreatorScript, CefString(), 0, promiseData, promiseException))
+                            {
+                                exception = promiseException->GetMessage();
+
+                                return true;
+                            }
 
                             //return the promose
                             retval = promiseData->GetValue("p");
@@ -146,7 +150,7 @@ namespace CefSharp
                                 //If first argument is an object, we'll see if it contains config values
                                 if (arguments[0]->IsObject())
                                 {
-                                    //TODO: Add camelcase variation
+                                    //TODO: Look at adding some sort of javascript mapping layer to reduce the code duplication
                                     if (arguments[0]->HasValue("NotifyIfAlreadyBound"))
                                     {
                                         auto notify = arguments[0]->GetValue("NotifyIfAlreadyBound");
@@ -165,6 +169,24 @@ namespace CefSharp
                                         }
                                     }
 
+                                    if (arguments[0]->HasValue("notifyIfAlreadyBound"))
+                                    {
+                                        auto notify = arguments[0]->GetValue("notifyIfAlreadyBound");
+                                        if (notify->IsBool())
+                                        {
+                                            notifyIfAlreadyBound = notify->GetBoolValue();
+                                        }
+                                    }
+
+                                    if (arguments[0]->HasValue("ignoreCache"))
+                                    {
+                                        auto ignore = arguments[0]->GetValue("ignoreCache");
+                                        if (ignore->IsBool())
+                                        {
+                                            ignoreCache = ignore->GetBoolValue();
+                                        }
+                                    }
+
                                     //If we have a config object then we remove that from the count
                                     objectCount = objectCount - 1;
                                 }
@@ -173,7 +195,7 @@ namespace CefSharp
                                 for (auto i = 0; i < arguments.size(); i++)
                                 {
                                     //Validate arg as being a string
-                                    if(arguments[i]->IsString())
+                                    if (arguments[i]->IsString())
                                     {
                                         auto objectName = arguments[i]->GetStringValue();
                                         auto managedObjectName = StringUtils::ToClr(objectName);
@@ -226,8 +248,6 @@ namespace CefSharp
                                         }
                                         else
                                         {
-                                            //TODO: JSB This code is almost exactly duplicated in CefAppUnmangedWrapper
-                                            //Need to extract into a common method
                                             auto rootObjectWrappers = _browserWrapper->JavascriptRootObjectWrappers;
 
                                             JavascriptRootObjectWrapper^ rootObject;
@@ -236,7 +256,7 @@ namespace CefSharp
                                                 rootObject = gcnew JavascriptRootObjectWrapper(browser->GetIdentifier(), _browserWrapper->BrowserProcess);
                                                 rootObjectWrappers->TryAdd(frame->GetIdentifier(), rootObject);
                                             }
-                                        
+
                                             //Cached objects only contains a list of objects not already bound
                                             rootObject->Bind(cachedObjects, context->GetGlobal());
 
@@ -248,35 +268,10 @@ namespace CefSharp
                                             response->SetValue("Message", CefV8Value::CreateString("OK"), CefV8Value::PropertyAttribute::V8_PROPERTY_ATTRIBUTE_READONLY);
                                             callback->Success(response);
 
-                                            //TODO: This is duplicated
-                                            //Send message notifying Browser Process of which objects were bound
-                                            //We do this after the objects have been created in the V8Context to gurantee
-                                            //they are accessible.
-                                            auto msg = CefProcessMessage::Create(kJavascriptObjectsBoundInJavascript);
-                                            auto args = msg->GetArgumentList();
-
-                                            auto boundObjects = CefListValue::Create();
-
-                                            for (auto i = 0; i < objectNamesWithBoundStatus->Count; i++)
-                                            {
-                                                auto dict = CefDictionaryValue::Create();
-
-                                                auto name = objectNamesWithBoundStatus[i]->Item1;
-                                                auto alreadyBound = objectNamesWithBoundStatus[i]->Item2;
-                                                auto isCached = objectNamesWithBoundStatus[i]->Item3;
-                                                dict->SetString("Name", StringUtils::ToNative(name));
-                                                dict->SetBool("IsCached", isCached);
-                                                dict->SetBool("AlreadyBound", alreadyBound);
-
-                                                boundObjects->SetDictionary(i, dict);
-                                            }
-
-                                            args->SetList(0, boundObjects);
-
-                                            browser->SendProcessMessage(CefProcessId::PID_BROWSER, msg);
+                                            NotifyObjectBound(browser, objectNamesWithBoundStatus);
                                         }
                                     }
-                                    
+
                                 }
                                 else
                                 {
@@ -311,32 +306,7 @@ namespace CefSharp
 
                                 if (notifyIfAlreadyBound)
                                 {
-                                    //TODO: This is duplicated
-                                    //Send message notifying Browser Process of which objects were bound
-                                    //We do this after the objects have been created in the V8Context to gurantee
-                                    //they are accessible.
-                                    auto msg = CefProcessMessage::Create(kJavascriptObjectsBoundInJavascript);
-                                    auto args = msg->GetArgumentList();
-
-                                    auto boundObjects = CefListValue::Create();
-
-                                    for (auto i = 0; i < objectNamesWithBoundStatus->Count; i++)
-                                    {
-                                        auto dict = CefDictionaryValue::Create();
-
-                                        auto name = objectNamesWithBoundStatus[i]->Item1;
-                                        auto alreadyBound = objectNamesWithBoundStatus[i]->Item2;
-                                        auto isCached = objectNamesWithBoundStatus[i]->Item3;
-                                        dict->SetString("Name", StringUtils::ToNative(name));
-                                        dict->SetBool("IsCached", isCached);
-                                        dict->SetBool("AlreadyBound", alreadyBound);
-
-                                        boundObjects->SetDictionary(i, dict);
-                                    }
-
-                                    args->SetList(0, boundObjects);
-
-                                    browser->SendProcessMessage(CefProcessId::PID_BROWSER, msg);
+                                    NotifyObjectBound(browser, objectNamesWithBoundStatus);
                                 }
                             }
                         }
@@ -355,9 +325,40 @@ namespace CefSharp
             {
                 exception = "Unable to get current context";
             }
-            
+
 
             return true;
+        }
+
+    private:
+        void NotifyObjectBound(const CefRefPtr<CefBrowser> browser, List<Tuple<String^, bool, bool>^>^ objectNamesWithBoundStatus)
+        {
+            //Send message notifying Browser Process of which objects were bound
+            //We do this after the objects have been created in the V8Context to gurantee
+            //they are accessible.
+            auto msg = CefProcessMessage::Create(kJavascriptObjectsBoundInJavascript);
+            auto args = msg->GetArgumentList();
+
+            auto boundObjects = CefListValue::Create();
+            auto index = 0;
+
+            for each(auto obj in objectNamesWithBoundStatus)
+            {
+                auto dict = CefDictionaryValue::Create();
+
+                auto name = obj->Item1;
+                auto alreadyBound = obj->Item2;
+                auto isCached = obj->Item3;
+                dict->SetString("Name", StringUtils::ToNative(name));
+                dict->SetBool("IsCached", isCached);
+                dict->SetBool("AlreadyBound", alreadyBound);
+
+                boundObjects->SetDictionary(index++, dict);
+            }
+
+            args->SetList(0, boundObjects);
+
+            browser->SendProcessMessage(CefProcessId::PID_BROWSER, msg);
         }
 
 
