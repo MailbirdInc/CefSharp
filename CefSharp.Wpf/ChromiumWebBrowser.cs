@@ -1171,7 +1171,7 @@ namespace CefSharp.Wpf
             DependencyProperty.Register("IsBrowserInitialized", typeof(bool), typeof(ChromiumWebBrowser), new PropertyMetadata(false, OnIsBrowserInitializedChanged));
 
         /// <summary>
-        /// Event handler that will get called when the browser has finished initializing
+        /// Event called after the underlying CEF browser instance has been created. 
         /// </summary>
         public event DependencyPropertyChangedEventHandler IsBrowserInitializedChanged;
 
@@ -2133,8 +2133,10 @@ namespace CefSharp.Wpf
                 {
                     browser.GetHost().SendMouseClickEvent((int)point.X, (int)point.Y, MouseButtonType.Left, mouseUp: true, clickCount: 1, modifiers: modifiers);
                 }
-
-                browser.GetHost().SendMouseMoveEvent((int)point.X, (int)point.Y, true, modifiers);
+                else
+                {
+                    browser.GetHost().SendMouseMoveEvent((int)point.X, (int)point.Y, true, modifiers);
+                }
 
                 ((IWebBrowserInternal)this).SetTooltipText(null);
             }
