@@ -186,7 +186,6 @@
 
                 <cefSharp:ChromiumWebBrowser x:Name="browser"
                                   Opacity="{Binding ElementName=opacitySlider, Path=Value}"
-                                  Address="{Binding Address, Mode=TwoWay}"
                                   Title="{Binding Title, Mode=OneWayToSource}"
                                   AllowDrop="True"
                                   WebBrowser="{Binding WebBrowser, Mode=OneWayToSource}"
