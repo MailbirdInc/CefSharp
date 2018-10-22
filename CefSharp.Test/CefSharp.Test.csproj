@@ -21,7 +21,6 @@
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>c8ab7c2e</NuGetPackageImportStamp>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>29bdd29e</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -143,13 +142,6 @@
   <Import Project="..\CefSharp.Native.props" />
   <Import Project="..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets')" />
   <Import Project="..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets')" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
-  </Target>
   <Import Project="..\CefSharp.props" />
   <Import Project="..\CefSharp.Native.props" />
   <Import Project="..\packages\cef.redist.x64.3.2526.1347\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2526.1347\build\cef.redist.x64.targets')" />
