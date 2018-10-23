@@ -68,6 +68,15 @@ namespace CefSharp
         ~ManagedCefBrowserAdapter()
         {
             _isDisposed = true;
+
+            // Stop the method runner before releasing browser adapter and browser wrapper (#2529)
+            if (_methodRunnerQueue != nullptr)
+            {
+                _methodRunnerQueue->MethodInvocationComplete -= gcnew EventHandler<MethodInvocationCompleteArgs^>(this, &ManagedCefBrowserAdapter::MethodInvocationComplete);
+                _methodRunnerQueue->Stop();
+                _methodRunnerQueue = nullptr;
+            }
+
             // Release the MCefRefPtr<ClientAdapter> reference
             // before calling _browserWrapper->CloseBrowser(true)
             this->!ManagedCefBrowserAdapter();
@@ -76,16 +85,9 @@ namespace CefSharp
             {
                 _browserWrapper->CloseBrowser(true);
 
-				delete _browserWrapper;
-				_browserWrapper = nullptr;
-			}
-
-			if (_methodRunnerQueue != nullptr)
-			{
-				_methodRunnerQueue->MethodInvocationComplete -= gcnew EventHandler<MethodInvocationCompleteArgs^>(this, &ManagedCefBrowserAdapter::MethodInvocationComplete);
-				_methodRunnerQueue->Stop();
-				_methodRunnerQueue = nullptr;
-			}
+                delete _browserWrapper;
+                _browserWrapper = nullptr;
+            }
 
             if (CefSharpSettings::WcfEnabled && _browserProcessServiceHost != nullptr)
             {
