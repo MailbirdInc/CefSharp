@@ -26,7 +26,6 @@
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>51c44d6c</NuGetPackageImportStamp>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>3e3a1bb0</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>a477a1f8</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>a48a9aa5</NuGetPackageImportStamp>
@@ -203,13 +202,6 @@
   <Import Project="..\packages\cef.redist.x86.3.2272.30\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2272.30\build\cef.redist.x86.targets')" />
   <Import Project="..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets')" />
   <Import Project="..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets')" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
-  </Target>
   <Import Project="..\packages\cef.redist.x64.3.2623.1395\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2623.1395\build\cef.redist.x64.targets')" />
   <Import Project="..\packages\cef.redist.x86.3.2623.1395\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2623.1395\build\cef.redist.x86.targets')" />
   <Import Project="..\packages\cef.redist.x64.3.2623.1396\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2623.1396\build\cef.redist.x64.targets')" />
