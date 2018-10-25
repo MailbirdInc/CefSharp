@@ -15,8 +15,6 @@ namespace CefSharp.Wpf.Rendering
     /// <seealso cref="CefSharp.Wpf.Rendering.WpfBitmapInfo" />
     public class WritableBitmapInfo : WpfBitmapInfo
     {
-        int _currentWidth, _currentHeight;
-
         /// <summary>
         /// The pixel format
         /// </summary>
@@ -82,16 +80,16 @@ namespace CefSharp.Wpf.Rendering
         /// </summary>
         public override void Invalidate()
         {
-            if (BackBufferHandle == IntPtr.Zero || _currentWidth == 0 || _currentHeight == 0 || DirtyRect.Width == 0 || DirtyRect.Height == 0)
+            if (BackBufferHandle == IntPtr.Zero || Width == 0 || Height == 0 || DirtyRect.Width == 0 || DirtyRect.Height == 0)
             {
                 return;
             }
 
-            var stride = _currentWidth * BytesPerPixel;
-            var sourceBufferSize = stride * _currentHeight;
+            var stride = Width * BytesPerPixel;
+            var sourceBufferSize = stride * Height;
 
             // Update the dirty region
-            var sourceRect = new Int32Rect(DirtyRect.X, DirtyRect.Y, Math.Min(DirtyRect.Width, _currentWidth), Math.Min(DirtyRect.Height, _currentHeight));
+            var sourceRect = new Int32Rect(DirtyRect.X, DirtyRect.Y, DirtyRect.Width, DirtyRect.Height);
             Bitmap.WritePixels(sourceRect, BackBufferHandle, sourceBufferSize, stride, DirtyRect.X, DirtyRect.Y);
         }
 
@@ -101,10 +99,7 @@ namespace CefSharp.Wpf.Rendering
         /// <returns>BitmapSource.</returns>
         public override BitmapSource CreateBitmap()
         {
-            _currentWidth = Width;
-            _currentHeight = Height;
-
-            Bitmap = new WriteableBitmap(_currentWidth, _currentHeight, DpiX, DpiY, PixelFormat, null);
+            Bitmap = new WriteableBitmap(Width, Height, DpiX, DpiY, PixelFormat, null);
 
             return Bitmap;
         }
