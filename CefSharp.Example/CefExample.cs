@@ -135,7 +135,7 @@ namespace CefSharp.Example
             if (DebuggingSubProcess)
             {
                 var architecture = Environment.Is64BitProcess ? "x64" : "x86";
-                settings.BrowserSubprocessPath = "CefSharp.BrowserSubprocess.exe";
+                settings.BrowserSubprocessPath = "..\\..\\..\\..\\CefSharp.BrowserSubprocess\\bin\\" + architecture + "\\Debug\\CefSharp.BrowserSubprocess.exe";
             }
 
             settings.RegisterScheme(new CefCustomScheme
@@ -154,7 +154,7 @@ namespace CefSharp.Example
             settings.RegisterScheme(new CefCustomScheme
             {
                 SchemeName = "localfolder",
-                SchemeHandlerFactory = new FolderSchemeHandlerFactory(rootFolder: @"Resources",
+                SchemeHandlerFactory = new FolderSchemeHandlerFactory(rootFolder: @"..\..\..\..\CefSharp.Example\Resources",
                                                                     schemeName: "localfolder", //Optional param no schemename checking if null
                                                                     hostName: "cefsharp", //Optional param no hostname checking if null
                                                                     defaultPage: "home.html") //Optional param will default to index.html
