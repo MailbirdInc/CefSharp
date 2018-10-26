@@ -218,4 +218,7 @@
     <Import Project="..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2704.1432\build\cef.redist.x64.targets')" />
     <Import Project="..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2704.1432\build\cef.redist.x86.targets')" />
   </ImportGroup>
+  <PropertyGroup>
+    <PostBuildEvent>xcopy /Y /I /E "$(SolutionDir)CefSharp.Example\Resources\*.*" "$(TargetDir)Resources"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
