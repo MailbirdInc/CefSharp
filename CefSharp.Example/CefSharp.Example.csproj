@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Callback\RunFileDialogCallback.cs" />
+    <Compile Include="Handlers\AudioHandler.cs" />
     <Compile Include="Handlers\ExtensionHandler.cs" />
     <Compile Include="JavascriptBinding\AsyncBoundObject.cs" />
     <Compile Include="JavascriptBinding\BoundObject.cs" />
@@ -152,6 +153,7 @@
     <None Include="Resources\assets\js\shBrushJScript.js" />
     <Content Include="Resources\assets\js\shCore.js" />
     <Content Include="Resources\BindingTestSingle.html" />
+    <Content Include="Resources\DragDropCursorsTest.html" />
     <Content Include="Resources\LegacyBindingTest.html" />
     <Content Include="Resources\CdmSupportTest.html" />
     <Content Include="Resources\CssAnimation.html" />

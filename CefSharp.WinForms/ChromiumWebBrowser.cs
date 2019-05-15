@@ -221,7 +221,11 @@ namespace CefSharp.WinForms
         /// <value>The find handler.</value>
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never), DefaultValue(null)]
         public IFindHandler FindHandler { get; set; }
-
+        /// <summary>
+        /// Implement <see cref="IAudioHandler" /> to handle audio events.
+        /// </summary>
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never), DefaultValue(null)]
+        public IAudioHandler AudioHandler { get; set; }
         /// <summary>
         /// The <see cref="IFocusHandler" /> for this ChromiumWebBrowser.
         /// </summary>
@@ -485,20 +489,6 @@ namespace CefSharp.WinForms
             {
                 IsBrowserInitialized = false;
 
-                browser = null;
-
-                if (parentFormMessageInterceptor != null)
-                {
-                    parentFormMessageInterceptor.Dispose();
-                    parentFormMessageInterceptor = null;
-                }
-                
-                if (managedCefBrowserAdapter != null)
-                {
-                    managedCefBrowserAdapter.Dispose();
-                    managedCefBrowserAdapter = null;
-                }
-
                 // Don't maintain a reference to event listeners anylonger:
                 AddressChanged = null;
                 ConsoleMessage = null;
@@ -510,9 +500,27 @@ namespace CefSharp.WinForms
                 StatusMessage = null;
                 TitleChanged = null;
 
-                // Release reference to handlers, make sure this is done after we dispose managedCefBrowserAdapter
-                // otherwise the ILifeSpanHandler.DoClose will not be invoked.
-                this.SetHandlersToNull();
+                // Release reference to handlers, except LifeSpanHandler which is done after Disposing
+                // ManagedCefBrowserAdapter otherwise the ILifeSpanHandler.DoClose will not be invoked.
+                this.SetHandlersToNullExceptLifeSpan();
+
+                browser = null;
+
+                if (parentFormMessageInterceptor != null)
+                {
+                    parentFormMessageInterceptor.Dispose();
+                    parentFormMessageInterceptor = null;
+                }
+
+                if (managedCefBrowserAdapter != null)
+                {
+                    managedCefBrowserAdapter.Dispose();
+                    managedCefBrowserAdapter = null;
+                }
+
+                // LifeSpanHandler is set to null after managedCefBrowserAdapter.Dispose so ILifeSpanHandler.DoClose
+                // is called.
+                LifeSpanHandler = null;
             }
 
             Cef.RemoveDisposable(this);
@@ -538,92 +546,16 @@ namespace CefSharp.WinForms
         }
 
         /// <summary>
-        /// Registers a Javascript object in this specific browser instance.
-        /// </summary>
-        /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
-        /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
-        /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
-        ///                                     called before the underlying CEF browser is created.</exception>
-        public void RegisterJsObject(string name, object objectToBind, BindingOptions options = null)
-        {
-            if (!CefSharpSettings.LegacyJavascriptBindingEnabled)
-            {
-                throw new Exception(@"CefSharpSettings.LegacyJavascriptBindingEnabled is currently false,
-                                    for legacy binding you must set CefSharpSettings.LegacyJavascriptBindingEnabled = true
-                                    before registering your first object see https://github.com/cefsharp/CefSharp/issues/2246
-                                    for details on the new binding options. If you perform cross-site navigations bound objects will
-                                    no longer be registered and you will have to migrate to the new method.");
-            }
-
-            if (IsBrowserInitialized)
-            {
-                throw new Exception("Browser is already initialized. RegisterJsObject must be " +
-                                    "called before the underlying CEF browser is created.");
-            }
-
-            InitializeFieldsAndCefIfRequired();
-
-            //Enable WCF if not already enabled
-            CefSharpSettings.WcfEnabled = true;
-
-            var objectRepository = managedCefBrowserAdapter.JavascriptObjectRepository;
-
-            if (objectRepository == null)
-            {
-                throw new Exception("Object Repository Null, Browser has likely been Disposed.");
-            }
-
-            objectRepository.Register(name, objectToBind, false, options);
-        }
-
-        /// <summary>
-        /// <para>Asynchronously registers a Javascript object in this specific browser instance.</para>
-        /// <para>Only methods of the object will be availabe.</para>
-        /// </summary>
-        /// <param name="name">The name of the object. (e.g. "foo", if you want the object to be accessible as window.foo).</param>
-        /// <param name="objectToBind">The object to be made accessible to Javascript.</param>
-        /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
-        /// <exception cref="System.Exception">Browser is already initialized. RegisterJsObject must be +
-        ///                                     called before the underlying CEF browser is created.</exception>
-        /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
-        /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
-        public void RegisterAsyncJsObject(string name, object objectToBind, BindingOptions options = null)
-        {
-            if (!CefSharpSettings.LegacyJavascriptBindingEnabled)
-            {
-                throw new Exception(@"CefSharpSettings.LegacyJavascriptBindingEnabled is currently false,
-                                    for legacy binding you must set CefSharpSettings.LegacyJavascriptBindingEnabled = true
-                                    before registering your first object see https://github.com/cefsharp/CefSharp/issues/2246
-                                    for details on the new binding options. If you perform cross-site navigations bound objects will
-                                    no longer be registered and you will have to migrate to the new method.");
-            }
-
-            if (IsBrowserInitialized)
-            {
-                throw new Exception("Browser is already initialized. RegisterJsObject must be " +
-                                    "called before the underlying CEF browser is created.");
-            }
-
-            InitializeFieldsAndCefIfRequired();
-
-            var objectRepository = managedCefBrowserAdapter.JavascriptObjectRepository;
-
-            if (objectRepository == null)
-            {
-                throw new Exception("Object Repository Null, Browser has likely been Disposed.");
-            }
-
-            objectRepository.Register(name, objectToBind, true, options);
-        }
-
-        /// <summary>
         /// The javascript object repository, one repository per ChromiumWebBrowser instance.
         /// </summary>
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public IJavascriptObjectRepository JavascriptObjectRepository
         {
-            get { return managedCefBrowserAdapter == null ? null : managedCefBrowserAdapter.JavascriptObjectRepository; }
+            get
+            {
+                InitializeFieldsAndCefIfRequired();
+                return managedCefBrowserAdapter == null ? null : managedCefBrowserAdapter.JavascriptObjectRepository;
+            }
         }
 
         /// <summary>

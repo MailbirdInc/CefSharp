@@ -32,7 +32,8 @@ namespace CefSharp
             public CefDialogHandler,
             public CefDragHandler,
             public CefDownloadHandler,
-            public CefFindHandler
+            public CefFindHandler,
+            public CefAudioHandler
         {
         private:
             gcroot<IWebBrowserInternal^> _browserControl;
@@ -100,6 +101,17 @@ namespace CefSharp
             virtual DECL CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE { return this; }
             virtual DECL CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
             virtual DECL CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
+            virtual DECL CefRefPtr<CefAudioHandler> GetAudioHandler() OVERRIDE
+            {
+                //Audio Mirroring in CEF is only enabled when we a handler is returned
+                //We return NULL if no handler is specified for performance reasons
+                if (_browserControl->AudioHandler == nullptr)
+                {
+                    return NULL;
+                }
+
+                return this;
+            }
             virtual DECL bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
 
@@ -148,6 +160,7 @@ namespace CefSharp
             virtual DECL void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) OVERRIDE;
             virtual DECL void OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& iconUrls) OVERRIDE;
             virtual DECL void OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen) OVERRIDE;
+            virtual DECL void OnLoadingProgressChange(CefRefPtr<CefBrowser> browser, double progress) OVERRIDE;
             virtual DECL bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) OVERRIDE;
             virtual DECL bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString& message, const CefString& source, int line) OVERRIDE;
             virtual DECL void OnStatusMessage(CefRefPtr<CefBrowser> browser, const CefString& message) OVERRIDE;
@@ -194,7 +207,12 @@ namespace CefSharp
                 CefRefPtr<CefDownloadItemCallback> callback) OVERRIDE;
 
             //CefFindHandler
-            virtual DECL void OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect, int activeMatchOrdinal, bool finalUpdate);
+            virtual DECL void OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect, int activeMatchOrdinal, bool finalUpdate) OVERRIDE;
+
+            //CefAudioHandler
+            virtual DECL void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout, int sample_rate, int frames_per_buffer) OVERRIDE;
+            virtual DECL void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64 pts) OVERRIDE;
+            virtual DECL void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) OVERRIDE;
 
             //sends out an eval script request to the render process
             Task<JavascriptResponse^>^ EvaluateScriptAsync(int browserId, bool isBrowserPopup, int64 frameId, String^ script, String^ scriptUrl, int startLine, Nullable<TimeSpan> timeout);
