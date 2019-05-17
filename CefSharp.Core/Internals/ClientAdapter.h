@@ -47,8 +47,8 @@ namespace CefSharp
             //contains in-progress eval script tasks
             gcroot<PendingTaskRepository<JavascriptResponse^>^> _pendingTaskRepository;
             //contains js callback factories for each browser
-			
-			void ThrowUnknownPopupBrowser(String^ context)
+
+            void ThrowUnknownPopupBrowser(String^ context)
             {
                 throw gcnew ApplicationException(String::Format("{0} couldn't find IBrowser entry! Please contact CefSharp development.", context));
             }
