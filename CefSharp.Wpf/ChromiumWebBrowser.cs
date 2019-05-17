@@ -478,7 +478,7 @@ namespace CefSharp.Wpf
             }
         }
 
-        DispatcherTimer _resizeTimer;
+        DispatcherTimer resizeTimer;
 
         /// </summary>
         /// <exception cref="System.InvalidOperationException">Cef::Initialize() failed</exception>
@@ -566,8 +566,8 @@ namespace CefSharp.Wpf
 
             managedCefBrowserAdapter = new ManagedCefBrowserAdapter(this, true);
 
-            _resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
-            _resizeTimer.Tick += ResizeTimer_Tick;
+            resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
+            resizeTimer.Tick += ResizeTimer_Tick;
             
             ResourceHandlerFactory = new DefaultResourceHandlerFactory();
             browserSettings = new BrowserSettings(frameworkCreated: true);
@@ -610,7 +610,7 @@ namespace CefSharp.Wpf
                 return;
             }
 
-                _resizeTimer.Stop();
+                resizeTimer.Stop();
             if (DesignMode)
 
             {
@@ -696,9 +696,9 @@ namespace CefSharp.Wpf
                     tooltipTimer = null;
                 }
 
-                    if (_resizeTimer != null)
+                    if (resizeTimer != null)
                     {
-                        _resizeTimer.Tick -= ResizeTimer_Tick;
+                        resizeTimer.Tick -= ResizeTimer_Tick;
                     }
 
                 if (CleanupElement != null)
@@ -1873,10 +1873,10 @@ namespace CefSharp.Wpf
 
             if (browserCreated)
             {
-                if (!_resizeTimer.IsEnabled)
-                    _resizeTimer.Start();
+                if (!resizeTimer.IsEnabled)
+                    resizeTimer.Start();
 
-                _resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
+                resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
             }
             else
                 ResizeTimer_Tick(this, null);  // This will create the browser
@@ -1884,7 +1884,7 @@ namespace CefSharp.Wpf
 
         void ResizeTimer_Tick(object sender, EventArgs e)
         {
-            _resizeTimer.Stop();
+            resizeTimer.Stop();
             
             if (managedCefBrowserAdapter == null) // Browser has been disposed
                 return;
