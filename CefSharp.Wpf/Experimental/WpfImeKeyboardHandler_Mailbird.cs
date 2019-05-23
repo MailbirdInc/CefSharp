@@ -16,10 +16,19 @@ using Rect = CefSharp.Structs.Rect;
 namespace CefSharp.Wpf.Experimental
 {
     /// <summary>
+    /// Added this to avoid specifying a class in <see cref="ChromiumWebBrowser"/> that would result in only one of the classes working. This way we can easily test the changes in a new CEF version.
+    /// We can remove this when we remove our own special version of the IME handler.
+    /// </summary>
+    internal interface IWpfImeKeyboardHandler
+    {
+        void ChangeCompositionRange(Range selectionRange, Rect[] characterBounds);
+    }
+
+    /// <summary>
     /// This has the changes from https://github.com/cefsharp/CefSharp/pull/2782 but with more Mailbird appropriate comments.
     /// When we update to a new CEF version we should test that their new version works and can then remove this file.
     /// </summary>
-    public class WpfImeKeyboardHandler_Mailbird : WpfKeyboardHandler
+    public class WpfImeKeyboardHandler_Mailbird : WpfKeyboardHandler, IWpfImeKeyboardHandler
     {
         private int languageCodeId;
         private bool systemCaret;

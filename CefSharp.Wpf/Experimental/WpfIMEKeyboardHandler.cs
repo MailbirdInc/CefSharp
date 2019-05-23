@@ -15,7 +15,7 @@ using Rect = CefSharp.Structs.Rect;
 
 namespace CefSharp.Wpf.Experimental
 {
-    public class WpfImeKeyboardHandler : WpfKeyboardHandler
+    public class WpfImeKeyboardHandler : WpfKeyboardHandler, IWpfImeKeyboardHandler
     {
         private int languageCodeId;
         private bool systemCaret;
