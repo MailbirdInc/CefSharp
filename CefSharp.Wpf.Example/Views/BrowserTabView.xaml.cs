@@ -2,12 +2,14 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using CefSharp.Example;
 using CefSharp.Example.Handlers;
 using CefSharp.Example.JavascriptBinding;
@@ -25,6 +27,8 @@ namespace CefSharp.Wpf.Example.Views
         public BrowserTabView()
         {
             InitializeComponent();
+
+            PreviewMouseWheel += WebControl_PreviewMouseWheel;
 
             //browser.BrowserSettings.BackgroundColor = Cef.ColorSetARGB(0, 255, 255, 255);
 
@@ -153,6 +157,91 @@ namespace CefSharp.Wpf.Example.Views
 
             CefExample.RegisterTestResources(browser);
         }
+
+        private void WebControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+
+                if (e.Delta > 0)
+                    ZoomIn(2);
+                else if (e.Delta < 0)
+                    ZoomOut(2);
+            }
+        }
+
+        #region Zoom Test
+
+        public class DPIHelper
+        {
+            private static PointF? ScreenDPI = null;
+            private static int PrevZoomValue = 0;
+            private static int GeneralZoomValue = 100;
+
+            public static float GetGeneralScaleFactor()
+            {
+                return (float)GeneralZoomValue / 100;
+            }
+
+            public static PointF GetDPIMultiplier()
+            {
+                if (ScreenDPI == null || PrevZoomValue != GeneralZoomValue)
+                {
+                    // Obtain the window handle for WPF application
+                    var mainWindowPtr = new WindowInteropHelper(System.Windows.Application.Current.MainWindow).Handle;
+
+                    // Get System Dpi
+                    var desktop = System.Drawing.Graphics.FromHwnd(mainWindowPtr);
+                    var dpiXMultiplier = desktop.DpiX / 96 * GetGeneralScaleFactor();
+                    var dpiYMultiplier = desktop.DpiY / 96 * GetGeneralScaleFactor();
+
+                    ScreenDPI = new PointF(dpiXMultiplier, dpiYMultiplier);
+                    PrevZoomValue = GeneralZoomValue;
+                }
+
+                return ScreenDPI.Value;
+            }
+
+            public static bool IsDPI96()
+            {
+                var mainWindowPtr = new WindowInteropHelper(System.Windows.Application.Current.MainWindow).Handle;
+                var desktopDPI = System.Drawing.Graphics.FromHwnd(mainWindowPtr);
+                return (desktopDPI.DpiX == 96 && desktopDPI.DpiY == 96);
+            }
+        }
+
+        private int SavedZoomLevel
+        {
+            get => savedZoomLevel;
+            set
+            {
+                savedZoomLevel = value;
+
+                var zoomLevel = (int)Math.Round(SavedZoomLevel * DPIHelper.GetGeneralScaleFactor());
+                browser.ZoomLevel = Math.Log(zoomLevel / 100.0) / Math.Log(1.2);
+            }
+        }
+        private int savedZoomLevel;
+
+        public const int MAX_ZOOM = 380;
+        public const int MIN_ZOOM = 40;
+
+        private void ZoomIn(int delta = 20)
+        {
+            if (SavedZoomLevel < MAX_ZOOM)
+                SavedZoomLevel += delta;
+            SavedZoomLevel = Math.Min(MAX_ZOOM, SavedZoomLevel);
+        }
+
+        private void ZoomOut(int delta = 20)
+        {
+            if (SavedZoomLevel > MIN_ZOOM)
+                SavedZoomLevel -= delta;
+            SavedZoomLevel = Math.Max(MIN_ZOOM, SavedZoomLevel);
+        }
+
+        #endregion
 
         private void OnBeforeDownloadFired(object sender, DownloadItem e)
         {
