@@ -4,6 +4,8 @@
   <Import Project="..\packages\cef.redist.x64.73.1.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.73.1.13\build\cef.redist.x64.props')" />
   <Import Project="..\packages\cef.redist.x86.74.1.13\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.74.1.13\build\cef.redist.x86.props')" />
   <Import Project="..\packages\cef.redist.x64.74.1.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.74.1.13\build\cef.redist.x64.props')" />
+  <Import Project="..\packages\cef.redist.x86.75.0.13\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.75.0.13\build\cef.redist.x86.props')" />
+  <Import Project="..\packages\cef.redist.x64.75.0.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.75.0.13\build\cef.redist.x64.props')" />
   <Import Project="..\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>

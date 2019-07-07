@@ -25,7 +25,7 @@ namespace CefSharp
             OnRegisterCustomSchemes(registrar);
         }
 
-        protected void OnRegisterCustomSchemes(ISchemeRegistrar registrar)
+        protected virtual void OnRegisterCustomSchemes(ISchemeRegistrar registrar)
         {
             foreach (var scheme in Schemes)
             {
@@ -35,7 +35,7 @@ namespace CefSharp
                     continue;
                 }
 
-                var success = registrar.AddCustomScheme(scheme.SchemeName, scheme.IsStandard, scheme.IsLocal, scheme.IsDisplayIsolated, scheme.IsSecure, scheme.IsCorsEnabled, scheme.IsCSPBypassing);
+                var success = registrar.AddCustomScheme(scheme.SchemeName, scheme.Options);
 
                 if (!success)
                 {

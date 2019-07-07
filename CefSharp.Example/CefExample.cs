@@ -13,11 +13,15 @@ namespace CefSharp.Example
 {
     public static class CefExample
     {
-        public const string BaseUrl = "custom://cefsharp";
+        //TODO: Revert after https://bitbucket.org/chromiumembedded/cef/issues/2685/networkservice-custom-scheme-unable-to
+        //has been fixed.
+        public const string BaseUrl = "https://cefsharp.example";
         public const string DefaultUrl = BaseUrl + "/home.html";
         public const string BindingTestUrl = BaseUrl + "/BindingTest.html";
         public const string BindingTestSingleUrl = BaseUrl + "/BindingTestSingle.html";
+        public const string BindingTestsAsyncTaskUrl = BaseUrl + "/BindingTestsAsyncTask.html";
         public const string LegacyBindingTestUrl = BaseUrl + "/LegacyBindingTest.html";
+        public const string PostMessageTestUrl = BaseUrl + "/PostMessageTest.html";
         public const string PluginsTestUrl = BaseUrl + "/plugins.html";
         public const string PopupTestUrl = BaseUrl + "/PopupTest.html";
         public const string TooltipTestUrl = BaseUrl + "/TooltipTest.html";
@@ -52,7 +56,7 @@ namespace CefSharp.Example
             //NOTE: Not all relevant in relation to `CefSharp`, use for reference purposes only.
             //CEF specific command line args
             //https://bitbucket.org/chromiumembedded/cef/src/master/libcef/common/cef_switches.cc?fileviewer=file-view-default
-            
+
             settings.RemoteDebuggingPort = 8088;
             //The location where cache data will be stored on disk. If empty an in-memory cache will be used for some features and a temporary disk cache for others.
             //HTML5 databases such as localStorage will only persist across sessions if a cache path is specified. 
@@ -105,6 +109,11 @@ namespace CefSharp.Example
             //settings.CefCommandLineArgs.Add("force-renderer-accessibility", "1");
             //settings.CefCommandLineArgs.Add("disable-renderer-accessibility", "1");
 
+            //Disable Network Service in WPF
+            //settings.CefCommandLineArgs.Add("disable-features", "NetworkService,VizDisplayCompositor");
+
+            //Disable Network Service in WinForms
+            //settings.CefCommandLineArgs.Add("disable-features", "NetworkService");
 
             //Enables Uncaught exception handler
             settings.UncaughtExceptionStackSize = 10;
@@ -153,8 +162,14 @@ namespace CefSharp.Example
             {
                 SchemeName = CefSharpSchemeHandlerFactory.SchemeName,
                 SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
-                IsSecure = true //treated with the same security rules as those applied to "https" URLs
-                //SchemeHandlerFactory = new InMemorySchemeAndResourceHandlerFactory()
+                IsSecure = true, //treated with the same security rules as those applied to "https" URLs
+            });
+
+            settings.RegisterScheme(new CefCustomScheme
+            {
+                SchemeName = "https",
+                SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
+                DomainName = "cefsharp.example"
             });
 
             settings.RegisterScheme(new CefCustomScheme
@@ -187,12 +202,13 @@ namespace CefSharp.Example
             //This must be set before Cef.Initialized is called
             CefSharpSettings.FocusedNodeChangedEnabled = true;
 
-            //Experimental option where bound async methods are queued on TaskScheduler.Default.
+            //Async Javascript Binding - methods are queued on TaskScheduler.Default.
+            //Set this to true to when you have methods that return Task<T>
             //CefSharpSettings.ConcurrentTaskExecution = true;
 
-            //Legacy Binding Behaviour doesn't work for cross-site navigation (navigating to a different domain)
+            //Legacy Binding Behaviour - Same as Javascript Binding in version 57 and below
             //See issue https://github.com/cefsharp/CefSharp/issues/1203 for details
-            //CefSharpSettings.LegacyJavascriptBindingEnabled = true;
+            CefSharpSettings.LegacyJavascriptBindingEnabled = true;
 
             //Exit the subprocess if the parent process happens to close
             //This is optional at the moment
@@ -214,7 +230,7 @@ namespace CefSharp.Example
 
         public static async void RegisterTestResources(IWebBrowser browser)
         {
-            var handler = browser.ResourceHandlerFactory as DefaultResourceHandlerFactory;
+            var handler = browser.ResourceRequestHandlerFactory as ResourceRequestHandlerFactory;
             if (handler != null)
             {
                 const string renderProcessCrashedBody = "<html><body><h1>Render Process Crashed</h1><p>Your seeing this message as the render process has crashed</p></body></html>";

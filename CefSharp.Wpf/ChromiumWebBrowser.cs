@@ -257,10 +257,10 @@ namespace CefSharp.Wpf
         /// <value>The drag handler.</value>
         public IDragHandler DragHandler { get; set; }
         /// <summary>
-        /// Implement <see cref="IResourceHandlerFactory" /> and control the loading of resources
+        /// Implement <see cref="IResourceRequestHandlerFactory" /> and control the loading of resources
         /// </summary>
         /// <value>The resource handler factory.</value>
-        public IResourceHandlerFactory ResourceHandlerFactory { get; set; }
+        public IResourceRequestHandlerFactory ResourceRequestHandlerFactory { get; set; }
         /// <summary>
         /// Implement <see cref="IRenderHandler"/> and control how the control is rendered
         /// </summary>
@@ -359,6 +359,11 @@ namespace CefSharp.Wpf
         /// It's important to note this event is fired on a CEF UI thread, which by default is not the same as your application UI thread
         /// </summary>
         public event EventHandler<VirtualKeyboardRequestedEventArgs> VirtualKeyboardRequested;
+
+        /// <summary>
+        /// Event handler that will get called when the message that originates from CefSharp.PostMessage
+        /// </summary>
+        public event EventHandler<JavascriptMessageReceivedEventArgs> JavascriptMessageReceived;
 
         /// <summary>
         /// Navigates to the previous page in the browser history. Will automatically be enabled/disabled depending on the
@@ -568,8 +573,6 @@ namespace CefSharp.Wpf
 
             resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
             resizeTimer.Tick += ResizeTimer_Tick;
-            
-            ResourceHandlerFactory = new DefaultResourceHandlerFactory();
             browserSettings = new BrowserSettings(frameworkCreated: true);
             RenderHandler = new InteropBitmapRenderHandler();
 
@@ -651,6 +654,7 @@ namespace CefSharp.Wpf
                 StatusMessage = null;
                 TitleChanged = null;
                 VirtualKeyboardRequested = null;
+                JavascriptMessageReceived = null;
 
                 // Release reference to handlers, except LifeSpanHandler which is done after Disposing
                 // ManagedCefBrowserAdapter otherwise the ILifeSpanHandler.DoClose will not be invoked.
@@ -1133,6 +1137,11 @@ namespace CefSharp.Wpf
         void IWebBrowserInternal.SetCanExecuteJavascriptOnMainFrame(bool canExecute)
         {
             CanExecuteJavascriptInMainFrame = canExecute;
+        }
+
+        void IWebBrowserInternal.SetJavascriptMessageReceived(JavascriptMessageReceivedEventArgs args)
+        {
+            JavascriptMessageReceived?.Invoke(this, args);
         }
 
         /// <summary>

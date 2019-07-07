@@ -169,10 +169,10 @@ namespace CefSharp.OffScreen
         /// <value>The drag handler.</value>
         public IDragHandler DragHandler { get; set; }
         /// <summary>
-        /// Implement <see cref="IResourceHandlerFactory" /> and control the loading of resources
+        /// Implement <see cref="IResourceRequestHandlerFactory" /> and control the loading of resources
         /// </summary>
         /// <value>The resource handler factory.</value>
-        public IResourceHandlerFactory ResourceHandlerFactory { get; set; }
+        public IResourceRequestHandlerFactory ResourceRequestHandlerFactory { get; set; }
         /// <summary>
         /// Implement <see cref="IRenderProcessMessageHandler" /> and assign to handle messages from the render process.
         /// </summary>
@@ -279,6 +279,11 @@ namespace CefSharp.OffScreen
         public event EventHandler<OnPaintEventArgs> Paint;
 
         /// <summary>
+        /// Event handler that will get called when the message that originates from CefSharp.PostMessage
+        /// </summary>
+        public event EventHandler<JavascriptMessageReceivedEventArgs> JavascriptMessageReceived;
+
+        /// <summary>
         /// A flag that indicates if you can execute javascript in the main frame.
         /// Flag is set to true in IRenderProcessMessageHandler.OnContextCreated.
         /// and false in IRenderProcessMessageHandler.OnContextReleased
@@ -295,7 +300,7 @@ namespace CefSharp.OffScreen
         /// <param name="automaticallyCreateBrowser">automatically create the underlying Browser</param>
         /// <exception cref="System.InvalidOperationException">Cef::Initialize() failed</exception>
         public ChromiumWebBrowser(string address = "", BrowserSettings browserSettings = null,
-            RequestContext requestContext = null, bool automaticallyCreateBrowser = true)
+            IRequestContext requestContext = null, bool automaticallyCreateBrowser = true)
         {
             if (!Cef.IsInitialized)
             {
@@ -307,7 +312,6 @@ namespace CefSharp.OffScreen
                 }
             }
 
-            ResourceHandlerFactory = new DefaultResourceHandlerFactory();
             RequestContext = requestContext;
 
             Cef.AddDisposable(this);
@@ -368,6 +372,7 @@ namespace CefSharp.OffScreen
                 Paint = null;
                 StatusMessage = null;
                 TitleChanged = null;
+                JavascriptMessageReceived = null;
 
                 // Release reference to handlers, except LifeSpanHandler which is done after Disposing
                 // ManagedCefBrowserAdapter otherwise the ILifeSpanHandler.DoClose will not be invoked.
@@ -863,6 +868,11 @@ namespace CefSharp.OffScreen
         void IWebBrowserInternal.SetCanExecuteJavascriptOnMainFrame(bool canExecute)
         {
             CanExecuteJavascriptInMainFrame = canExecute;
+        }
+
+        void IWebBrowserInternal.SetJavascriptMessageReceived(JavascriptMessageReceivedEventArgs args)
+        {
+            JavascriptMessageReceived?.Invoke(this, args);
         }
 
         /// <summary>
