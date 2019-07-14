@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -20,7 +20,7 @@ namespace CefSharp
             MCefRefPtr<CefRequest> _wrappedRequest;
             IPostData^ _postData;
         internal:
-            CefRequestWrapper(CefRefPtr<CefRequest> &cefRequest) : 
+            CefRequestWrapper(CefRefPtr<CefRequest> &cefRequest) :
                 _wrappedRequest(cefRequest), _postData(nullptr)
             {
             }
@@ -40,6 +40,7 @@ namespace CefSharp
             }
 
         public:
+            virtual property UrlRequestFlags Flags { UrlRequestFlags get(); void set(UrlRequestFlags flags); }
             virtual property String^ Url { String^ get(); void set(String^ url); }
             virtual property String^ Method { String^ get(); void set(String^ method); }
             virtual property UInt64 Identifier { UInt64 get(); }
@@ -52,6 +53,9 @@ namespace CefSharp
             virtual property IPostData^ PostData { IPostData^ get(); }
             virtual property bool IsReadOnly { bool get(); }
             virtual void InitializePostData();
+
+            virtual String^ GetHeaderByName(String^ name);
+            virtual void SetHeaderByName(String^ name, String^ value, bool overwrite);
 
             operator CefRefPtr<CefRequest>()
             {

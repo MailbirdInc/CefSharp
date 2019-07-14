@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -16,16 +16,8 @@ namespace CefSharp
     {
     private:
         gcroot<IResourceHandler^> _handler;
-
-        Cookie^ GetCookie(const CefCookie& cookie);
-
+        gcroot<IRequest^> _request;
     public:
-
-        /// <summary>
-        /// Constructor that accepts IBrowser, IFrame, IRequest in order to be the CefSharp
-        /// lifetime management container  (i.e. calling .Dispose at the correct time) on 
-        /// managed objects that contain MCefRefPtrs.
-        /// </summary>
         ResourceHandlerWrapper(IResourceHandler^ handler)
             : _handler(handler)
         {
@@ -35,14 +27,20 @@ namespace CefSharp
         {
             delete _handler;
             _handler = nullptr;
+
+            delete _request;
+            _request = nullptr;
         }
 
-        virtual bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) OVERRIDE;
+        virtual bool Open(CefRefPtr<CefRequest> request, bool& handle_request, CefRefPtr<CefCallback> callback) OVERRIDE;
         virtual void GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl) OVERRIDE;
-        virtual bool ReadResponse(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback) OVERRIDE;
-        virtual bool CanGetCookie(const CefCookie& cookie) OVERRIDE;
-        virtual bool CanSetCookie(const CefCookie& cookie) OVERRIDE;
+        virtual bool Skip(int64 bytesToSkip, int64& bytesSkipped, CefRefPtr<CefResourceSkipCallback> callback) OVERRIDE;
+        virtual bool Read(void* dataOut, int bytesToRead, int& bytesRead, CefRefPtr<CefResourceReadCallback> callback) OVERRIDE;
         virtual void Cancel() OVERRIDE;
+
+        //Depricated
+        virtual bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) OVERRIDE;
+        virtual bool ReadResponse(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefCallback> callback) OVERRIDE;
 
         IMPLEMENT_REFCOUNTING(ResourceHandlerWrapper);
     };

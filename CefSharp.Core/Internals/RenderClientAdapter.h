@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2012 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -8,26 +8,25 @@
 #include <msclr/lock.h>
 
 #include "ClientAdapter.h"
+#include "CefValueWrapper.h"
 
 using namespace msclr;
+using namespace CefSharp::Structs;
 
 namespace CefSharp
 {
     namespace Internals
     {
         private class RenderClientAdapter : public ClientAdapter,
-            public CefRenderHandler
+            public CefRenderHandler,
+            public CefAccessibilityHandler
         {
         private:
-            gcroot<IWebBrowserInternal^> _webBrowserInternal;
             gcroot<IRenderWebBrowser^> _renderWebBrowser;
-            gcroot<BitmapInfo^> _mainBitmapInfo;
-            gcroot<BitmapInfo^> _popupBitmapInfo;
 
         public:
-            RenderClientAdapter(IWebBrowserInternal^ webBrowserInternal, IBrowserAdapter^ browserAdapter):
-                ClientAdapter(webBrowserInternal, browserAdapter),
-                _webBrowserInternal(webBrowserInternal)
+            RenderClientAdapter(IWebBrowserInternal^ webBrowserInternal, IBrowserAdapter^ browserAdapter) :
+                ClientAdapter(webBrowserInternal, browserAdapter)
             {
                 _renderWebBrowser = dynamic_cast<IRenderWebBrowser^>(webBrowserInternal);
             }
@@ -35,27 +34,13 @@ namespace CefSharp
             ~RenderClientAdapter()
             {
                 _renderWebBrowser = nullptr;
-                _webBrowserInternal = nullptr;
-
-                ReleaseBitmapHandlers(_mainBitmapInfo);
-
-                delete _mainBitmapInfo;
-                _mainBitmapInfo = nullptr;
-
-                ReleaseBitmapHandlers(_popupBitmapInfo);
-
-                delete _popupBitmapInfo;
-                _popupBitmapInfo = nullptr;
-            }
-
-            void CreateBitmapInfo()  
-            {  
-                _mainBitmapInfo = _renderWebBrowser->CreateBitmapInfo(false);  
-                _popupBitmapInfo = _renderWebBrowser->CreateBitmapInfo(true);  
             }
 
             // CefClient
-            virtual DECL CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE{ return this; };
+            virtual DECL CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; };
+
+            // CefRenderHandler
+            virtual DECL CefRefPtr<CefAccessibilityHandler> GetAccessibilityHandler() OVERRIDE { return this; }
 
             // CefRenderHandler
             virtual DECL bool GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info) OVERRIDE
@@ -67,31 +52,81 @@ namespace CefSharp
 
                 auto screenInfo = _renderWebBrowser->GetScreenInfo();
 
-                if (screen_info.device_scale_factor == screenInfo.ScaleFactor)
+                //NOTE:  If ScreenInfo is returned as null,  the screen_info available and rect structs would remain default (0,0,0,0).  If so, the underlying CEF library would use 
+                // GetViewRect to populate values in the window.screen object (javascript).
+                //https://bitbucket.org/chromiumembedded/cef/src/47e6d4bf84444eb6cb4d4509231a8c9ee878a584/include/cef_render_handler.h?at=2357#cef_render_handler.h-90
+                if (screenInfo.HasValue == false)
                 {
                     return false;
                 }
 
-                //NOTE: We're relying on a call to GetViewRect to populate the view rectangle
-                //https://bitbucket.org/chromiumembedded/cef/src/47e6d4bf84444eb6cb4d4509231a8c9ee878a584/include/cef_render_handler.h?at=2357#cef_render_handler.h-90
-                screen_info.device_scale_factor = screenInfo.ScaleFactor;
+                screen_info.device_scale_factor = screenInfo.Value.DeviceScaleFactor;
+                screen_info.depth = screenInfo.Value.Depth;
+                screen_info.depth_per_component = screenInfo.Value.DepthPerComponent;
+                screen_info.is_monochrome = screenInfo.Value.IsMonochrome ? 1 : 0;
+
+                //NOTE: If rect values remain (0,0,0,0) then the underlying CEF library will use 
+                // GetViewRect to populate values in the window.screen object (javascript).
+                auto rect = screenInfo.Value.Rect;
+
+                if (rect.HasValue)
+                {
+                    screen_info.rect.width = rect.Value.Width;
+                    screen_info.rect.height = rect.Value.Height;
+                    screen_info.rect.x = rect.Value.X;
+                    screen_info.rect.y = rect.Value.Y;
+                }
+
+                auto availableRect = screenInfo.Value.Rect;
+
+                if (availableRect.HasValue)
+                {
+                    screen_info.available_rect.width = availableRect.Value.Width;
+                    screen_info.available_rect.height = availableRect.Value.Height;
+                    screen_info.available_rect.x = availableRect.Value.X;
+                    screen_info.available_rect.y = availableRect.Value.Y;
+                }
+
                 return true;
             }
 
             // CefRenderHandler
-            virtual DECL bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE
+            virtual DECL void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE
             {
                 if ((IRenderWebBrowser^)_renderWebBrowser == nullptr)
                 {
-                    return false;
+                    //CEF doesn't like a 0 width or 0 height, cefclient
+                    //defaults these to 1, so we'll do the same
+                    rect = CefRect(0, 0, 1, 1);
                 }
+                else
+                {
+                    auto viewRect = _renderWebBrowser->GetViewRect();
 
-                auto viewRect = _renderWebBrowser->GetViewRect();
+                    rect = CefRect(viewRect.X, viewRect.Y, viewRect.Width, viewRect.Height);
 
-                rect = CefRect(0, 0, viewRect.Width, viewRect.Height);
+                    //Cefclient defaults these to 1 instead of 0, we'll do the same
+                    if (rect.height == 0)
+                    {
+                        rect.height = 1;
+                    }
 
-                return true;
+                    if (rect.width == 0)
+                    {
+                        rect.width = 1;
+                    }
+                }
             };
+
+            ///
+            // Called to retrieve the translation from view coordinates to actual screen
+            // coordinates. Return true if the screen coordinates were provided.
+            ///
+            /*--cef()--*/
+            virtual DECL bool GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY) OVERRIDE
+            {
+                return _renderWebBrowser->GetScreenPoint(viewX, viewY, screenX, screenY);
+            }
 
             ///
             // Called when the browser wants to show or hide the popup widget. The popup
@@ -100,7 +135,7 @@ namespace CefSharp
             /*--cef()--*/
             virtual DECL void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) OVERRIDE
             {
-                _renderWebBrowser->SetPopupIsOpen(show);
+                _renderWebBrowser->OnPopupShow(show);
             };
 
             ///
@@ -110,106 +145,106 @@ namespace CefSharp
             /*--cef()--*/
             virtual DECL void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) OVERRIDE
             {
-                _renderWebBrowser->SetPopupSizeAndPosition(rect.width, rect.height, rect.x, rect.y);
+                _renderWebBrowser->OnPopupSize(Rect(rect.x, rect.y, rect.width, rect.height));
             };
+
+            virtual DECL void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, void* shared_handle) OVERRIDE
+            {
+                CefRect r = dirtyRects.front();
+                _renderWebBrowser->OnAcceleratedPaint((CefSharp::PaintElementType)type, CefSharp::Structs::Rect(r.x, r.y, r.width, r.height), IntPtr((void *)shared_handle));
+            }
 
             virtual DECL void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects,
                 const void* buffer, int width, int height) OVERRIDE
             {
-                auto bitmapInfo = type == PET_VIEW ? _mainBitmapInfo : _popupBitmapInfo;
-
-                lock l(bitmapInfo->BitmapLock);
-
-                if(bitmapInfo->DirtyRectSupport)
-                {
-                    //NOTE: According to https://bitbucket.org/chromiumembedded/cef/commits/1ddb0ba41d7052eaad50b8d9de959f3b5e05ff21?at=master
-                    // There is only one rect now that's a union of all dirty regions. API Still passes in a vector
-
-                    CefRect r = dirtyRects.front();
-                    bitmapInfo->DirtyRect = CefDirtyRect(r.x, r.y, r.width, r.height);
-                }
-
-                auto backBufferHandle = (HANDLE)bitmapInfo->BackBufferHandle;
-
-                if (backBufferHandle == NULL || bitmapInfo->Width != width || bitmapInfo->Height != height)
-                {
-                    int pixels = width * height;
-                    int numberOfBytes = pixels * bitmapInfo->BytesPerPixel;
-                    auto fileMappingHandle = (HANDLE)bitmapInfo->FileMappingHandle;
-
-                    //Clear the reference to Bitmap so a new one is created by InvokeRenderAsync
-                    bitmapInfo->ClearBitmap();
-
-                    //Release the current handles (if not null)
-                    ReleaseBitmapHandlers(bitmapInfo);
-
-                    // Create new fileMappingHandle
-                    fileMappingHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, numberOfBytes, NULL);
-                    if (fileMappingHandle == NULL)
-                    {
-                        // TODO: Consider doing something more sensible here, since the browser will be very badly broken if this
-                        // TODO: method call fails.
-                        return;
-                    }
-
-                    backBufferHandle = MapViewOfFile(fileMappingHandle, FILE_MAP_ALL_ACCESS, 0, 0, numberOfBytes);
-                    if (backBufferHandle == NULL)
-                    {
-                        // TODO: Consider doing something more sensible here, since the browser will be very badly broken if this
-                        // TODO: method call fails.
-                        return;
-                    }
-
-                    bitmapInfo->FileMappingHandle = (IntPtr)fileMappingHandle;
-                    bitmapInfo->BackBufferHandle = (IntPtr)backBufferHandle;
-                    bitmapInfo->Width = width;
-                    bitmapInfo->Height = height;
-                    bitmapInfo->NumberOfBytes = numberOfBytes;
-                }               
-
-                CopyMemory(backBufferHandle, (void*)buffer, bitmapInfo->NumberOfBytes);
-
-                _renderWebBrowser->InvokeRenderAsync(bitmapInfo);
+                CefRect r = dirtyRects.front();
+                _renderWebBrowser->OnPaint((CefSharp::PaintElementType)type, CefSharp::Structs::Rect(r.x, r.y, r.width, r.height), IntPtr((void *)buffer), width, height);
             };
 
             virtual DECL void OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, CursorType type,
                 const CefCursorInfo& custom_cursor_info) OVERRIDE
             {
-                _renderWebBrowser->SetCursor((IntPtr)cursor, (CefSharp::CefCursorType)type);
+                CursorInfo customCursorInfo;
+
+                //Only create the struct when we actually have a custom cursor
+                if (type == CursorType::CT_CUSTOM)
+                {
+                    Point hotspot = Point(custom_cursor_info.hotspot.x, custom_cursor_info.hotspot.y);
+                    Size size = Size(custom_cursor_info.size.width, custom_cursor_info.size.height);
+                    customCursorInfo = CursorInfo(IntPtr((void *)custom_cursor_info.buffer), hotspot, custom_cursor_info.image_scale_factor, size);
+                }
+
+                _renderWebBrowser->OnCursorChange((IntPtr)cursor, (CefSharp::Enums::CursorType)type, customCursorInfo);
             };
 
             virtual DECL bool StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> dragData,
-                CefRenderHandler::DragOperationsMask allowedOps, int x, int y)
+                CefRenderHandler::DragOperationsMask allowedOps, int x, int y) OVERRIDE
             {
                 CefDragDataWrapper dragDataWrapper(dragData);
-                return _renderWebBrowser->StartDragging(%dragDataWrapper, (CefSharp::DragOperationsMask)allowedOps, x, y);
+                return _renderWebBrowser->StartDragging(%dragDataWrapper, (CefSharp::Enums::DragOperationsMask)allowedOps, x, y);
             }
 
-        private:
-            void ReleaseBitmapHandlers(BitmapInfo^ bitmapInfo)
+            ///
+            // Called when the web view wants to update the mouse cursor during a
+            // drag & drop operation. |operation| describes the allowed operation
+            // (none, move, copy, link).
+            ///
+            /*--cef()--*/
+            virtual DECL void UpdateDragCursor(CefRefPtr<CefBrowser> browser, CefRenderHandler::DragOperation operation) OVERRIDE
             {
-                if(bitmapInfo)
+                return _renderWebBrowser->UpdateDragCursor((CefSharp::Enums::DragOperationsMask)operation);
+            }
+
+            ///
+            // Called when the IME composition range has changed. |selected_range| is the
+            // range of characters that have been selected. |character_bounds| is the
+            // bounds of each character in view coordinates.
+            ///
+            /*--cef()--*/
+            virtual DECL void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selectedRange, const RectList& characterBounds) OVERRIDE
+            {
+                auto charBounds = gcnew cli::array<Rect>((int)characterBounds.size());
+
+                std::vector<CefRect>::const_iterator it = characterBounds.begin();
+                for (int index = 0; it != characterBounds.end(); ++it, index++)
                 {
-                    auto backBufferHandle = (HANDLE)bitmapInfo->BackBufferHandle;
-                    auto fileMappingHandle = (HANDLE)bitmapInfo->FileMappingHandle;
+                    charBounds[index] = Rect((*it).x, (*it).y, (*it).width, (*it).height);
+                }
 
-                    if (backBufferHandle != NULL)
-                    {
-                        UnmapViewOfFile(backBufferHandle);
-                        backBufferHandle = NULL;
-                        bitmapInfo->BackBufferHandle = IntPtr::Zero;
-                    }
+                _renderWebBrowser->OnImeCompositionRangeChanged(Range(selectedRange.from, selectedRange.to), charBounds);
+            }
 
-                    if (fileMappingHandle != NULL)
-                    {
-                        CloseHandle(fileMappingHandle);
-                        fileMappingHandle = NULL;
-                        bitmapInfo->FileMappingHandle = IntPtr::Zero;
-                    }
+            //CefAccessibilityHandler
+            virtual DECL void OnAccessibilityLocationChange(CefRefPtr<CefValue> value) OVERRIDE
+            {
+                auto handler = _renderWebBrowser->AccessibilityHandler;
+
+                if (handler != nullptr)
+                {
+                    auto valueWrapper = gcnew CefValueWrapper(value);
+
+                    handler->OnAccessibilityLocationChange(valueWrapper);
                 }
             }
 
-            IMPLEMENT_REFCOUNTING(RenderClientAdapter)
+            virtual DECL void OnAccessibilityTreeChange(CefRefPtr<CefValue> value) OVERRIDE
+            {
+                auto handler = _renderWebBrowser->AccessibilityHandler;
+
+                if (handler != nullptr)
+                {
+                    auto valueWrapper = gcnew CefValueWrapper(value);
+
+                    handler->OnAccessibilityTreeChange(valueWrapper);
+                }
+            }
+
+            virtual DECL void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser, cef_text_input_mode_t input_mode) OVERRIDE
+            {
+                _renderWebBrowser->OnVirtualKeyboardRequested(GetBrowserWrapper(browser->GetIdentifier()), (CefSharp::Enums::TextInputMode)input_mode);
+            }
+
+            IMPLEMENT_REFCOUNTING(RenderClientAdapter);
         };
     }
 }

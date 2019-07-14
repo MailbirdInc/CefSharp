@@ -10,17 +10,25 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The CefSharp Chromium-based browser component (WPF control).</description>
     <tags>wpf chrome browser</tags>
-    <copyright>Copyright © 2010-2016 The CefSharp Authors</copyright>
+    <copyright>Copyright © The CefSharp Authors</copyright>
     <dependencies>
-      <dependency id="CefSharp.Common" version="[$version$]" />
+      <group targetFramework=".NETFramework4.5.2">
+        <dependency id="CefSharp.Common" version="[$version$]" />
+      </group>
     </dependencies>
+    <releaseNotes>
+    <![CDATA[
+      See https://github.com/cefsharp/CefSharp/releases/tag/v$version$ for release notes including Known Issues, Breaking Changes, Bugs Fixed, new features.
+      Important you read the release notes to see what's changed in this version.
+    ]]>
+    </releaseNotes>
   </metadata>
   <files>
     <!-- Cannot put these inside lib\net40 etc, since there are both x86 and x64 versions which we must distinguish between. We
          solve this using a .props file instead. -->
     <file src="..\CefSharp.Wpf\bin\x86\Release\CefSharp.Wpf.dll" target="CefSharp\x86" />
-    <file src="..\CefSharp.Wpf\bin\x64\Release\CefSharp.Wpf.xml" target="CefSharp\x86" />
-    <file src="..\CefSharp.Wpf\bin\x64\Release\CefSharp.Wpf.pdb" target="CefSharp\x86" />
+    <file src="..\CefSharp.Wpf\bin\x86\Release\CefSharp.Wpf.xml" target="CefSharp\x86" />
+    <file src="..\CefSharp.Wpf\bin\x86\Release\CefSharp.Wpf.pdb" target="CefSharp\x86" />
 
     <file src="..\CefSharp.Wpf\bin\x64\Release\CefSharp.Wpf.xml" target="CefSharp\x64" />
     <file src="..\CefSharp.Wpf\bin\x64\Release\CefSharp.Wpf.dll" target="CefSharp\x64" />

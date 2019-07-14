@@ -1,36 +1,39 @@
-// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright Â© 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 #include "Stdafx.h"
+#include "CefBrowserHostWrapper.h"
+
 #include "include\cef_client.h"
 
-#include "CefBrowserHostWrapper.h"
-#include "CefDragDataWrapper.h"
-#include "CefPdfPrintCallbackWrapper.h"
-#include "WindowInfo.h"
-#include "CefTaskScheduler.h"
 #include "Cef.h"
-#include "RequestContext.h"
+#include "CefExtensionWrapper.h"
+#include "CefTaskScheduler.h"
+#include "CefDragDataWrapper.h"
+#include "CefRunFileDialogCallbackAdapter.h"
+#include "CefPdfPrintCallbackWrapper.h"
 #include "CefNavigationEntryVisitorAdapter.h"
+#include "RequestContext.h"
+#include "WindowInfo.h"
 
-void CefBrowserHostWrapper::DragTargetDragEnter(IDragData^ dragData, MouseEvent^ mouseEvent, DragOperationsMask allowedOperations)
+void CefBrowserHostWrapper::DragTargetDragEnter(IDragData^ dragData, MouseEvent mouseEvent, DragOperationsMask allowedOperations)
 {
     ThrowIfDisposed();
 
     auto dragDataWrapper = static_cast<CefDragDataWrapper^>(dragData);
     dragDataWrapper->ResetFileContents(); // Recommended by documentation to reset before calling DragEnter
-    _browserHost->DragTargetDragEnter(dragDataWrapper, GetCefMouseEvent(mouseEvent), (CefBrowserHost::DragOperationsMask) allowedOperations);
+    _browserHost->DragTargetDragEnter(static_cast<CefRefPtr<CefDragData>>(dragDataWrapper), GetCefMouseEvent(mouseEvent), (CefBrowserHost::DragOperationsMask) allowedOperations);
 }
 
-void CefBrowserHostWrapper::DragTargetDragOver(MouseEvent^ mouseEvent, DragOperationsMask allowedOperations)
+void CefBrowserHostWrapper::DragTargetDragOver(MouseEvent mouseEvent, DragOperationsMask allowedOperations)
 {
     ThrowIfDisposed();
 
     _browserHost->DragTargetDragOver(GetCefMouseEvent(mouseEvent), (CefBrowserHost::DragOperationsMask) allowedOperations);
 }
 
-void CefBrowserHostWrapper::DragTargetDragDrop(MouseEvent^ mouseEvent)
+void CefBrowserHostWrapper::DragTargetDragDrop(MouseEvent mouseEvent)
 {
     ThrowIfDisposed();
 
@@ -72,15 +75,6 @@ void CefBrowserHostWrapper::Print()
     _browserHost->Print();
 }
 
-Task<bool>^ CefBrowserHostWrapper::PrintToPdfAsync(String^ path, PdfPrintSettings^ settings)
-{
-    ThrowIfDisposed();
-
-    auto printToPdfTask = gcnew TaskPrintToPdfCallback();
-    PrintToPdf(path, settings, printToPdfTask);
-    return printToPdfTask->Task;
-}
-
 void CefBrowserHostWrapper::PrintToPdf(String^ path, PdfPrintSettings^ settings, IPrintToPdfCallback^ callback)
 {
     ThrowIfDisposed();
@@ -98,6 +92,7 @@ void CefBrowserHostWrapper::PrintToPdf(String^ path, PdfPrintSettings^ settings,
         nativeSettings.margin_top = settings->MarginTop;
         nativeSettings.margin_left = settings->MarginLeft;
         nativeSettings.margin_right = settings->MarginRight;
+        nativeSettings.scale_factor = settings->ScaleFactor;
         nativeSettings.page_height = settings->PageHeight;
         nativeSettings.page_width = settings->PageWidth;
         nativeSettings.margin_type = static_cast<cef_pdf_print_margin_type_t>(settings->MarginType);
@@ -148,7 +143,7 @@ void CefBrowserHostWrapper::ShowDevTools(IWindowInfo^ windowInfo, int inspectEle
     CefBrowserSettings settings;
     CefWindowInfo nativeWindowInfo;
 
-    if(windowInfo == nullptr)
+    if (windowInfo == nullptr)
     {
         nativeWindowInfo.SetAsPopup(_browserHost->GetWindowHandle(), "DevTools");
     }
@@ -169,6 +164,13 @@ void CefBrowserHostWrapper::CloseDevTools()
     _browserHost->CloseDevTools();
 }
 
+bool CefBrowserHostWrapper::HasDevTools::get()
+{
+    ThrowIfDisposed();
+
+    return _browserHost->HasDevTools();
+}
+
 void CefBrowserHostWrapper::AddWordToDictionary(String^ word)
 {
     ThrowIfDisposed();
@@ -181,6 +183,32 @@ void CefBrowserHostWrapper::ReplaceMisspelling(String^ word)
     ThrowIfDisposed();
 
     _browserHost->ReplaceMisspelling(StringUtils::ToNative(word));
+}
+
+IExtension^ CefBrowserHostWrapper::Extension::get()
+{
+    ThrowIfDisposed();
+
+    auto extension = _browserHost->GetExtension();
+
+    if (extension.get())
+    {
+        return gcnew CefExtensionWrapper(_browserHost->GetExtension());
+    }
+
+    return nullptr;
+}
+
+void CefBrowserHostWrapper::RunFileDialog(CefFileDialogMode mode, String^ title, String^ defaultFilePath, IList<String^>^ acceptFilters, int selectedAcceptFilter, IRunFileDialogCallback^ callback)
+{
+    ThrowIfDisposed();
+
+    _browserHost->RunFileDialog((CefBrowserHost::FileDialogMode)mode,
+        StringUtils::ToNative(title),
+        StringUtils::ToNative(defaultFilePath),
+        StringUtils::ToNative(acceptFilters),
+        selectedAcceptFilter,
+        new CefRunFileDialogCallbackAdapter(callback));
 }
 
 void CefBrowserHostWrapper::Find(int identifier, String^ searchText, bool forward, bool matchCase, bool findNext)
@@ -222,7 +250,7 @@ void CefBrowserHostWrapper::SendKeyEvent(KeyEvent keyEvent)
     nativeKeyEvent.type = (cef_key_event_type_t)keyEvent.Type;
     nativeKeyEvent.native_key_code = keyEvent.NativeKeyCode;
     nativeKeyEvent.windows_key_code = keyEvent.WindowsKeyCode;
-        
+
     _browserHost->SendKeyEvent(nativeKeyEvent);
 }
 
@@ -264,27 +292,63 @@ double CefBrowserHostWrapper::GetZoomLevelOnUI()
     CefTaskScheduler::EnsureOn(TID_UI, "CefBrowserHostWrapper::GetZoomLevel");
 
     //Don't throw exception if no browser host here as it's not easy to handle
-    if(_browserHost.get())
+    if (_browserHost.get())
     {
         return _browserHost->GetZoomLevel();
     }
 
-    return 0.0;	
+    return 0.0;
 }
 
-void CefBrowserHostWrapper::SendMouseWheelEvent(int x, int y, int deltaX, int deltaY, CefEventFlags modifiers)
+void CefBrowserHostWrapper::SendMouseWheelEvent(MouseEvent mouseEvent, int deltaX, int deltaY)
 {
     ThrowIfDisposed();
 
     if (_browserHost.get())
     {
-        CefMouseEvent mouseEvent;
-        mouseEvent.x = x;
-        mouseEvent.y = y;
-        mouseEvent.modifiers = (uint32)modifiers;
+        CefMouseEvent m;
+        m.x = mouseEvent.X;
+        m.y = mouseEvent.Y;
+        m.modifiers = (uint32)mouseEvent.Modifiers;
 
-        _browserHost->SendMouseWheelEvent(mouseEvent, deltaX, deltaY);
+        _browserHost->SendMouseWheelEvent(m, deltaX, deltaY);
     }
+}
+
+void CefBrowserHostWrapper::SendTouchEvent(TouchEvent evt)
+{
+    ThrowIfDisposed();
+
+    if (_browserHost.get())
+    {
+        CefTouchEvent e;
+        e.id = evt.Id;
+        e.modifiers = (uint32)evt.Modifiers;
+        e.pointer_type = (cef_pointer_type_t)evt.PointerType;
+        e.pressure = evt.Pressure;
+        e.radius_x = evt.RadiusX;
+        e.radius_y = evt.RadiusY;
+        e.rotation_angle = evt.RotationAngle;
+        e.type = (cef_touch_event_type_t)evt.Type;
+        e.x = evt.X;
+        e.y = evt.Y;
+
+        _browserHost->SendTouchEvent(e);
+    }
+}
+
+void CefBrowserHostWrapper::SetAccessibilityState(CefState accessibilityState)
+{
+    ThrowIfDisposed();
+
+    _browserHost->SetAccessibilityState((cef_state_t)accessibilityState);
+}
+
+void CefBrowserHostWrapper::SetAutoResizeEnabled(bool enabled, Size minSize, Size maxSize)
+{
+    ThrowIfDisposed();
+
+    _browserHost->SetAutoResizeEnabled(enabled, CefSize(minSize.Width, minSize.Height), CefSize(maxSize.Width, maxSize.Height));
 }
 
 void CefBrowserHostWrapper::Invalidate(PaintElementType type)
@@ -294,29 +358,97 @@ void CefBrowserHostWrapper::Invalidate(PaintElementType type)
     _browserHost->Invalidate((CefBrowserHost::PaintElementType)type);
 }
 
-void CefBrowserHostWrapper::SendMouseClickEvent(int x, int y, MouseButtonType mouseButtonType, bool mouseUp, int clickCount, CefEventFlags modifiers)
+bool CefBrowserHostWrapper::IsBackgroundHost::get()
 {
     ThrowIfDisposed();
 
-    CefMouseEvent mouseEvent;
-    mouseEvent.x = x;
-    mouseEvent.y = y;
-    mouseEvent.modifiers = (uint32)modifiers;
-
-    _browserHost->SendMouseClickEvent(mouseEvent, (CefBrowserHost::MouseButtonType) mouseButtonType, mouseUp, clickCount);
+    return _browserHost->IsBackgroundHost();
 }
 
-void CefBrowserHostWrapper::SendMouseMoveEvent(int x, int y, bool mouseLeave, CefEventFlags modifiers)
+void CefBrowserHostWrapper::ImeSetComposition(String^ text, cli::array<CompositionUnderline>^ underlines, Nullable<Range> replacementRange, Nullable<Range> selectionRange)
 {
     ThrowIfDisposed();
 
-    CefMouseEvent mouseEvent;
-    mouseEvent.x = x;
-    mouseEvent.y = y;
+    std::vector<CefCompositionUnderline> underlinesVector = std::vector<CefCompositionUnderline>();
+    CefRange repRange;
+    CefRange selRange;
 
-    mouseEvent.modifiers = (uint32)modifiers;
+    if (underlines != nullptr && underlines->Length > 0)
+    {
+        for each (CompositionUnderline underline in underlines)
+        {
+            auto c = CefCompositionUnderline();
+            c.range = CefRange(underline.Range.From, underline.Range.To);
+            c.color = underline.Color;
+            c.background_color = underline.BackgroundColor;
+            c.thick = (int)underline.Thick;
+            underlinesVector.push_back(c);
+        }
+    }
 
-    _browserHost->SendMouseMoveEvent(mouseEvent, mouseLeave);
+    if (replacementRange.HasValue)
+    {
+        repRange = CefRange(replacementRange.Value.From, replacementRange.Value.To);
+    }
+
+    if (selectionRange.HasValue)
+    {
+        selRange = CefRange(selectionRange.Value.From, selectionRange.Value.To);
+    }
+
+    _browserHost->ImeSetComposition(StringUtils::ToNative(text), underlinesVector, repRange, selRange);
+}
+
+void CefBrowserHostWrapper::ImeCommitText(String^ text, Nullable<Range> replacementRange, int relativeCursorPos)
+{
+    ThrowIfDisposed();
+
+    CefRange repRange;
+
+    if (replacementRange.HasValue)
+    {
+        repRange = CefRange(replacementRange.Value.From, replacementRange.Value.To);
+    }
+
+    _browserHost->ImeCommitText(StringUtils::ToNative(text), repRange, relativeCursorPos);
+}
+
+void CefBrowserHostWrapper::ImeFinishComposingText(bool keepSelection)
+{
+    ThrowIfDisposed();
+
+    _browserHost->ImeFinishComposingText(keepSelection);
+}
+
+void CefBrowserHostWrapper::ImeCancelComposition()
+{
+    ThrowIfDisposed();
+
+    _browserHost->ImeCancelComposition();
+}
+
+void CefBrowserHostWrapper::SendMouseClickEvent(MouseEvent mouseEvent, MouseButtonType mouseButtonType, bool mouseUp, int clickCount)
+{
+    ThrowIfDisposed();
+
+    CefMouseEvent m;
+    m.x = mouseEvent.X;
+    m.y = mouseEvent.Y;
+    m.modifiers = (uint32)mouseEvent.Modifiers;
+
+    _browserHost->SendMouseClickEvent(m, (CefBrowserHost::MouseButtonType) mouseButtonType, mouseUp, clickCount);
+}
+
+void CefBrowserHostWrapper::SendMouseMoveEvent(MouseEvent mouseEvent, bool mouseLeave)
+{
+    ThrowIfDisposed();
+
+    CefMouseEvent m;
+    m.x = mouseEvent.X;
+    m.y = mouseEvent.Y;
+    m.modifiers = (uint32)mouseEvent.Modifiers;
+
+    _browserHost->SendMouseMoveEvent(m, mouseLeave);
 }
 
 void CefBrowserHostWrapper::WasResized()
@@ -340,6 +472,15 @@ void CefBrowserHostWrapper::GetNavigationEntries(INavigationEntryVisitor^ visito
     auto navEntryVisitor = new CefNavigationEntryVisitorAdapter(visitor);
 
     _browserHost->GetNavigationEntries(navEntryVisitor, currentOnly);
+}
+
+NavigationEntry^ CefBrowserHostWrapper::GetVisibleNavigationEntry()
+{
+    ThrowIfDisposed();
+
+    auto entry = _browserHost->GetVisibleNavigationEntry();
+
+    return TypeConversion::FromNative(entry, true);
 }
 
 void CefBrowserHostWrapper::NotifyMoveOrResizeStarted()
@@ -391,11 +532,34 @@ bool CefBrowserHostWrapper::WindowRenderingDisabled::get()
     return _browserHost->IsWindowRenderingDisabled();
 }
 
+bool CefBrowserHostWrapper::IsAudioMuted::get()
+{
+    ThrowIfDisposed();
+
+    ThrowIfExecutedOnNonCefUiThread();
+
+    return _browserHost->IsAudioMuted();
+}
+
+void CefBrowserHostWrapper::SetAudioMuted(bool mute)
+{
+    ThrowIfDisposed();
+
+    _browserHost->SetAudioMuted(mute);
+}
+
 IntPtr CefBrowserHostWrapper::GetOpenerWindowHandle()
 {
     ThrowIfDisposed();
 
     return IntPtr(_browserHost->GetOpenerWindowHandle());
+}
+
+void CefBrowserHostWrapper::SendExternalBeginFrame()
+{
+    ThrowIfDisposed();
+
+    _browserHost->SendExternalBeginFrame();
 }
 
 void CefBrowserHostWrapper::SendCaptureLostEvent()
@@ -413,12 +577,12 @@ IRequestContext^ CefBrowserHostWrapper::RequestContext::get()
     return gcnew CefSharp::RequestContext(_browserHost->GetRequestContext());
 }
 
-CefMouseEvent CefBrowserHostWrapper::GetCefMouseEvent(MouseEvent^ mouseEvent)
+CefMouseEvent CefBrowserHostWrapper::GetCefMouseEvent(MouseEvent mouseEvent)
 {
     CefMouseEvent cefMouseEvent;
-    cefMouseEvent.x = mouseEvent->X;
-    cefMouseEvent.y = mouseEvent->Y;
-    cefMouseEvent.modifiers = (uint32)mouseEvent->Modifiers;
+    cefMouseEvent.x = mouseEvent.X;
+    cefMouseEvent.y = mouseEvent.Y;
+    cefMouseEvent.modifiers = (uint32)mouseEvent.Modifiers;
     return cefMouseEvent;
 }
 

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -6,10 +6,9 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using CefSharp.Example;
-using CefSharp.Internals;
+using CefSharp.Example.Handlers;
 
 namespace CefSharp.OffScreen.Example
 {
@@ -17,14 +16,14 @@ namespace CefSharp.OffScreen.Example
     {
         private const string TestUrl = "https://www.google.com/";
 
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             Console.WriteLine("This example application will load {0}, take a screenshot, and save it to your desktop.", TestUrl);
             Console.WriteLine("You may see a lot of Chromium debugging output, please wait...");
             Console.WriteLine();
 
             // You need to replace this with your own call to Cef.Initialize();
-            CefExample.Init(true, multiThreadedMessageLoop:true);
+            CefExample.Init(new CefSettings(), browserProcessHandler: new BrowserProcessHandler());
 
             MainAsync("cachePath1", 1.0);
             //Demo showing Zoom Level of 3.0
@@ -38,6 +37,9 @@ namespace CefSharp.OffScreen.Example
             // Clean up Chromium objects.  You need to call this in your application otherwise
             // you will get a crash when closing.
             Cef.Shutdown();
+
+            //Success
+            return 0;
         }
 
         private static async void MainAsync(string cachePath, double zoomLevel)
@@ -49,7 +51,7 @@ namespace CefSharp.OffScreen.Example
 
             // RequestContext can be shared between browser instances and allows for custom settings
             // e.g. CachePath
-            using(var requestContext = new RequestContext(requestContextSettings))
+            using (var requestContext = new RequestContext(requestContextSettings))
             using (var browser = new ChromiumWebBrowser(TestUrl, browserSettings, requestContext))
             {
                 if (zoomLevel > 1)
@@ -73,7 +75,7 @@ namespace CefSharp.OffScreen.Example
                     //Check do not track status
                     var doNotTrack = (bool)preferences["enable_do_not_track"];
 
-                    Debug.WriteLine("DoNotTrack:" + doNotTrack);
+                    Debug.WriteLine("DoNotTrack: " + doNotTrack);
                 });
 
                 var onUi = Cef.CurrentlyOnThread(CefThreadIds.TID_UI);
@@ -81,13 +83,23 @@ namespace CefSharp.OffScreen.Example
                 // For Google.com pre-pupulate the search text box
                 await browser.EvaluateScriptAsync("document.getElementById('lst-ib').value = 'CefSharp Was Here!'");
 
+                //Example using SendKeyEvent for input instead of javascript
+                //var browserHost = browser.GetBrowserHost();
+                //var inputString = "CefSharp Was Here!";
+                //foreach(var c in inputString)
+                //{
+                //	browserHost.SendKeyEvent(new KeyEvent { WindowsKeyCode = c, Type = KeyEventType.Char });
+                //}
+
+                ////Give the browser a little time to finish drawing our SendKeyEvent input
+                //await Task.Delay(100);
+
                 // Wait for the screenshot to be taken,
                 // if one exists ignore it, wait for a new one to make sure we have the most up to date
                 await browser.ScreenshotAsync(true).ContinueWith(DisplayBitmap);
 
                 await LoadPageAsync(browser, "http://github.com");
 
-                
                 //Gets a wrapper around the underlying CefBrowser instance
                 var cefBrowser = browser.GetBrowser();
                 // Gets a warpper around the CefBrowserHost instance
@@ -104,7 +116,7 @@ namespace CefSharp.OffScreen.Example
 
         public static Task LoadPageAsync(IWebBrowser browser, string address = null)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             EventHandler<LoadingStateChangedEventArgs> handler = null;
             handler = (sender, args) =>
@@ -113,7 +125,8 @@ namespace CefSharp.OffScreen.Example
                 if (!args.IsLoading)
                 {
                     browser.LoadingStateChanged -= handler;
-                    tcs.TrySetResultAsync(true);
+                    //Important that the continuation runs async using TaskCreationOptions.RunContinuationsAsynchronously
+                    tcs.TrySetResult(true);
                 }
             };
 

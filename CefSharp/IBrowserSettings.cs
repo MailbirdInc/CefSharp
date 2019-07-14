@@ -1,13 +1,15 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+using System;
 
 namespace CefSharp
 {
     /// <summary>
     /// Interface representing browser initialization settings. 
     /// </summary>
-    public interface IBrowserSettings
+    public interface IBrowserSettings : IDisposable
     {
         /// <summary>
         /// StandardFontFamily
@@ -23,7 +25,7 @@ namespace CefSharp
         /// SerifFontFamily
         /// </summary>
         string SerifFontFamily { get; set; }
-        
+
         /// <summary>
         /// SansSerifFontFamily
         /// </summary>
@@ -72,17 +74,10 @@ namespace CefSharp
         CefState RemoteFonts { get; set; }
 
         /// <summary>
-        /// Controls whether JavaScript can be executed.
-        /// (Disable javascript)
+        /// Controls whether JavaScript can be executed. (Used to Enable/Disable javascript)
+        /// Also configurable using the "disable-javascript" command-line switch.
         /// </summary>
         CefState Javascript { get; set; }
-
-        /// <summary>
-        /// Controls whether JavaScript can be used for opening windows. Also
-        /// configurable using the "disable-javascript-open-windows" command-line
-        /// switch.
-        /// </summary>
-        CefState JavascriptOpenWindows { get; set; }
 
         /// <summary>
         /// Controls whether JavaScript can be used to close windows that were not
@@ -105,12 +100,6 @@ namespace CefSharp
         /// command-line switch.
         /// </summary>
         CefState JavascriptDomPaste { get; set; }
-
-        /// <summary>
-        /// Controls whether the caret position will be drawn. Also configurable using
-        /// the "enable-caret-browsing" command-line switch.
-        /// </summary>
-        CefState CaretBrowsing { get; set; }
 
         /// <summary>
         /// Controls whether any plugins will be loaded. Also configurable using the
@@ -188,11 +177,11 @@ namespace CefSharp
         /// configurable using the "disable-webgl" command-line switch.
         /// </summary>
         CefState WebGl { get; set; }
-        
+
         /// <summary>
         /// Opaque background color used for the browser before a document is loaded
         /// and when no document color is specified. By default the background color
-        /// will be the same as CefSettings.background_color. Only the RGB compontents
+        /// will be the same as CefSettings.BackgroundColor. Only the RGB compontents
         /// of the specified value will be used. The alpha component must greater than
         /// 0 to enable use of the background color but will be otherwise ignored.
         /// </summary>
@@ -216,5 +205,17 @@ namespace CefSharp
         /// changed dynamically via IBrowserHost.SetWindowlessFrameRate.
         /// </summary>
         int WindowlessFrameRate { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating if the browser settings has been disposed.
+        /// </summary>
+        bool IsDisposed { get; }
+
+        /// <summary>
+        /// Gets a value indicating if the browser settings instance was created internally by CefSharp.
+        /// instances created by CefSharp will be Disposed of after use. To control the lifespan yourself
+        /// create an set BrowserSettings yourself.
+        /// </summary>
+        bool FrameworkCreated { get; }
     }
 }

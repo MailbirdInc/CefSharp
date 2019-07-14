@@ -1,10 +1,10 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2016 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace CefSharp.Example.Filters
@@ -43,13 +43,13 @@ namespace CefSharp.Example.Filters
             dataInRead = dataIn.Length;
             dataOutWritten = Math.Min(dataInRead, dataOut.Length);
 
-            if(dataIn.Length > 0)
-            { 
+            if (dataIn.Length > 0)
+            {
                 //Copy all the existing data first
                 dataIn.CopyTo(dataOut);
             }
 
-            // If we have overflow data then write it.
+            // If we have overflow data and remaining space in the buffer then write the overflow.
             if (overflow.Count > 0)
             {
                 // Number of bytes remaining in the output buffer.
@@ -64,7 +64,7 @@ namespace CefSharp.Example.Filters
                     dataOutWritten += maxWrite;
                 }
 
-                if(maxWrite == 0 && overflow.Count > 0)
+                if (maxWrite == 0 && overflow.Count > 0)
                 {
                     //We haven't yet got space to append our data
                     return FilterStatus.NeedMoreData;
@@ -80,11 +80,11 @@ namespace CefSharp.Example.Filters
                 {
                     overflow.Clear();
                 }
-            } 
+            }
 
-            if(overflow.Count > 0)
+            if (overflow.Count > 0)
             {
-                return FilterStatus.NeedMoreData; 
+                return FilterStatus.NeedMoreData;
             }
 
             return FilterStatus.Done;
@@ -92,7 +92,7 @@ namespace CefSharp.Example.Filters
 
         public void Dispose()
         {
-            
+
         }
     }
 }

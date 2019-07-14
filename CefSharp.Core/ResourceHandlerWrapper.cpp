@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -7,20 +7,22 @@
 #include "Internals/CefRequestWrapper.h"
 #include "Internals/CefResponseWrapper.h"
 #include "Internals/CefCallbackWrapper.h"
-#include "ResourceHandlerWrapper.h"
+#include "Internals/CefResourceReadCallbackWrapper.h"
+#include "Internals/CefResourceSkipCallbackWrapper.h"
 #include "Internals/TypeConversion.h"
+#include "ResourceHandlerWrapper.h"
 
 using namespace System::Runtime::InteropServices;
 using namespace System::IO;
 
 namespace CefSharp
 {
-    bool ResourceHandlerWrapper::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
+    bool ResourceHandlerWrapper::Open(CefRefPtr<CefRequest> request, bool& handleRequest, CefRefPtr<CefCallback> callback)
     {
         auto callbackWrapper = gcnew CefCallbackWrapper(callback);
-        CefRequestWrapper requestWrapper(request);
+        _request = gcnew CefRequestWrapper(request);
 
-        return _handler->ProcessRequest(%requestWrapper, callbackWrapper);
+        return _handler->Open(_request, handleRequest, callbackWrapper);
     }
 
     void ResourceHandlerWrapper::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
@@ -34,84 +36,43 @@ namespace CefSharp
         redirectUrl = StringUtils::ToNative(newRedirectUrl);
     }
 
-    bool ResourceHandlerWrapper::ReadResponse(void* dataOut, int bytesToRead, int& bytesRead, CefRefPtr<CefCallback> callback)
+    bool ResourceHandlerWrapper::Skip(int64 bytesToSkip, int64& bytesSkipped, CefRefPtr<CefResourceSkipCallback> callback)
     {
-        UnmanagedMemoryStream writeStream((Byte*)dataOut, (Int64)bytesToRead, (Int64)bytesToRead, FileAccess::Write);
-        auto callbackWrapper = gcnew CefCallbackWrapper(callback);
+        auto callbackWrapper = gcnew CefResourceSkipCallbackWrapper(callback);
 
-        return _handler->ReadResponse(%writeStream, bytesRead, callbackWrapper);
+        return _handler->Skip(bytesToSkip, bytesSkipped, callbackWrapper);
     }
 
-    bool ResourceHandlerWrapper::CanGetCookie(const CefCookie& cefCookie)
+    bool ResourceHandlerWrapper::Read(void* dataOut, int bytesToRead, int& bytesRead, CefRefPtr<CefResourceReadCallback> callback)
     {
-        auto cookie = GetCookie(cefCookie);
+        auto writeStream = gcnew UnmanagedMemoryStream((Byte*)dataOut, (Int64)bytesToRead, (Int64)bytesToRead, FileAccess::Write);
+        auto callbackWrapper = gcnew CefResourceReadCallbackWrapper(callback);
 
-        //Default value is true
-        return _handler->CanGetCookie(cookie);
-    }
-
-    bool ResourceHandlerWrapper::CanSetCookie(const CefCookie& cefCookie)
-    {
-        auto cookie = GetCookie(cefCookie);
-
-        //Default value is true
-        return _handler->CanSetCookie(cookie);
+        return _handler->Read(writeStream, bytesRead, callbackWrapper);
     }
 
     void ResourceHandlerWrapper::Cancel()
     {
         _handler->Cancel();
+
+        delete _request;
+        _request = nullptr;
     }
 
-    Cookie^ ResourceHandlerWrapper::GetCookie(const CefCookie& cefCookie)
+    //Deprecated
+    bool ResourceHandlerWrapper::ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback)
     {
-        auto cookie = gcnew Cookie();
-        String^ cookieName = StringUtils::ToClr(cefCookie.name);
+        auto callbackWrapper = gcnew CefCallbackWrapper(callback);
+        _request = gcnew CefRequestWrapper(request);
 
-        if (!String::IsNullOrEmpty(cookieName))
-        {
-            cookie->Name = StringUtils::ToClr(cefCookie.name);
-            cookie->Value = StringUtils::ToClr(cefCookie.value);
-            cookie->Domain = StringUtils::ToClr(cefCookie.domain);
-            cookie->Path = StringUtils::ToClr(cefCookie.path);
-            cookie->Secure = cefCookie.secure == 1;
-            cookie->HttpOnly = cefCookie.httponly == 1;
+        return _handler->ProcessRequest(_request, callbackWrapper);
+    }
 
-            if (cefCookie.has_expires)
-            {
-                cookie->Expires = DateTime(
-                    cefCookie.expires.year,
-                    cefCookie.expires.month,
-                    cefCookie.expires.day_of_month,
-                    cefCookie.expires.hour,
-                    cefCookie.expires.minute,
-                    cefCookie.expires.second,
-                    cefCookie.expires.millisecond
-                    );
-            }
+    bool ResourceHandlerWrapper::ReadResponse(void* dataOut, int bytesToRead, int& bytesRead, CefRefPtr<CefCallback> callback)
+    {
+        auto writeStream = gcnew UnmanagedMemoryStream((Byte*)dataOut, (Int64)bytesToRead, (Int64)bytesToRead, FileAccess::Write);
+        auto callbackWrapper = gcnew CefCallbackWrapper(callback);
 
-            //TODO: There is a method in TypeUtils that's in BrowserSubProcess that convers CefTime, need to make it accessible.
-            cookie->Creation = DateTime(
-                cefCookie.creation.year,
-                cefCookie.creation.month,
-                cefCookie.creation.day_of_month,
-                cefCookie.creation.hour,
-                cefCookie.creation.minute,
-                cefCookie.creation.second,
-                cefCookie.creation.millisecond
-                );
-
-            cookie->LastAccess = DateTime(
-                cefCookie.last_access.year,
-                cefCookie.last_access.month,
-                cefCookie.last_access.day_of_month,
-                cefCookie.last_access.hour,
-                cefCookie.last_access.minute,
-                cefCookie.last_access.second,
-                cefCookie.last_access.millisecond
-                );
-        }
-
-        return cookie;
+        return _handler->ReadResponse(writeStream, bytesRead, callbackWrapper);
     }
 }

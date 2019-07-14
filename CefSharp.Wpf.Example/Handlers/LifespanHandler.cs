@@ -1,10 +1,6 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-
-using System;
-using System.Windows;
-using System.Windows.Interop;
 
 namespace CefSharp.Wpf.Example.Handlers
 {
@@ -12,11 +8,16 @@ namespace CefSharp.Wpf.Example.Handlers
     {
         bool ILifeSpanHandler.OnBeforePopup(IWebBrowser browserControl, IBrowser browser, IFrame frame, string targetUrl, string targetFrameName, WindowOpenDisposition targetDisposition, bool userGesture, IPopupFeatures popupFeatures, IWindowInfo windowInfo, IBrowserSettings browserSettings, ref bool noJavascriptAccess, out IWebBrowser newBrowser)
         {
+            //Set newBrowser to null unless your attempting to host the popup in a new instance of ChromiumWebBrowser
             newBrowser = null;
 
             return false;
 
-            //NOTE: This is experimental
+            //WARNING: This is example code is experimental, feature incomplete and not well tested, it was 
+            //written as a basic proof of concept and is not being actively maintained.
+            //It should only be used by advanced users. There are bugs in CEF like the one reported
+            //at https://github.com/cefsharp/CefSharp/issues/1267
+            //If you would like to make improvements then please submit a PR including a test case
             //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
             //ChromiumWebBrowser chromiumBrowser = null;
@@ -55,9 +56,9 @@ namespace CefSharp.Wpf.Example.Handlers
             //	//The parentHandle value will be used to identify monitor info and to act as the parent window for dialogs,
             //	//context menus, etc. If parentHandle is not provided then the main screen monitor will be used and some
             //	//functionality that requires a parent window may not function correctly.
-            //	windowInfo.SetAsWindowless(handle, true);
+            //	windowInfo.SetAsWindowless(handle);
 
-            //	popup.Closed += (o, e) => 
+            //	popup.Closed += (o, e) =>
             //	{
             //		var w = o as Window;
             //		if (w != null && w.Content is IWebBrowser)
@@ -75,18 +76,25 @@ namespace CefSharp.Wpf.Example.Handlers
 
         void ILifeSpanHandler.OnAfterCreated(IWebBrowser browserControl, IBrowser browser)
         {
-            //NOTE: This is experimental
-            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+            //WARNING: This is example code is experimental, feature incomplete and not well tested, it was 
+            //written as a basic proof of concept and is not being actively maintained.
+            //It should only be used by advanced users. There are bugs in CEF like the one reported
+            //at https://github.com/cefsharp/CefSharp/issues/1267
+            //If you would like to make improvements then please submit a PR including a test case
+            //if(!browser.IsDisposed && browser.IsPopup)
+            //{ 
+            //	var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
-            //chromiumWebBrowser.Dispatcher.Invoke(() =>
-            //{
-            //	var owner = Window.GetWindow(chromiumWebBrowser);
-
-            //	if (owner != null && owner.Content == browserControl)
+            //	chromiumWebBrowser.Dispatcher.Invoke(() =>
             //	{
-            //		owner.Show();
-            //	}
-            //});
+            //		var owner = Window.GetWindow(chromiumWebBrowser);
+
+            //		if (owner != null && owner.Content == browserControl)
+            //		{
+            //			owner.Show();
+            //		}
+            //	});
+            //}
         }
 
         bool ILifeSpanHandler.DoClose(IWebBrowser browserControl, IBrowser browser)
@@ -96,18 +104,25 @@ namespace CefSharp.Wpf.Example.Handlers
 
         void ILifeSpanHandler.OnBeforeClose(IWebBrowser browserControl, IBrowser browser)
         {
-            //NOTE: This is experimental
-            //var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
+            //WARNING: This is example code is experimental, feature incomplete and not well tested, it was 
+            //written as a basic proof of concept and is not being actively maintained.
+            //It should only be used by advanced users. There are bugs in CEF like the one reported
+            //at https://github.com/cefsharp/CefSharp/issues/1267
+            //If you would like to make improvements then please submit a PR including a test case
+            //if(!browser.IsDisposed && browser.IsPopup)
+            //{ 
+            //	var chromiumWebBrowser = (ChromiumWebBrowser)browserControl;
 
-            //chromiumWebBrowser.Dispatcher.Invoke(() =>
-            //{
-            //	var owner = Window.GetWindow(chromiumWebBrowser);
-
-            //	if (owner != null && owner.Content == browserControl)
+            //	chromiumWebBrowser.Dispatcher.Invoke(() =>
             //	{
-            //		owner.Close();
-            //	}
-            //});
+            //		var owner = Window.GetWindow(chromiumWebBrowser);
+
+            //		if (owner != null && owner.Content == browserControl)
+            //		{
+            //			owner.Close();
+            //		}
+            //	});
+            //}
         }
     }
 }

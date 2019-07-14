@@ -1,10 +1,13 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CefSharp.Example;
+using CefSharp.Example.Handlers;
+using CefSharp.WinForms.Example.Handlers;
 using CefSharp.WinForms.Example.Minimal;
 
 namespace CefSharp.WinForms.Example
@@ -24,7 +27,7 @@ namespace CefSharp.WinForms.Example
             {
                 var exitCode = Cef.ExecuteProcess();
 
-                if(exitCode >= 0)
+                if (exitCode >= 0)
                 {
                     return exitCode;
                 }
@@ -32,7 +35,7 @@ namespace CefSharp.WinForms.Example
 #if DEBUG
                 if (!System.Diagnostics.Debugger.IsAttached)
                 {
-                    MessageBox.Show("When running this Example outside of Visual Studio" +
+                    MessageBox.Show("When running this Example outside of Visual Studio " +
                                     "please make sure you compile in `Release` mode.", "Warning");
                 }
 #endif
@@ -42,7 +45,7 @@ namespace CefSharp.WinForms.Example
 
                 Cef.Initialize(settings);
 
-                var browser = new SimpleBrowserForm();
+                var browser = new SimpleBrowserForm(true);
                 Application.Run(browser);
             }
             else
@@ -50,29 +53,48 @@ namespace CefSharp.WinForms.Example
 #if DEBUG
                 if (!System.Diagnostics.Debugger.IsAttached)
                 {
-                    MessageBox.Show("When running this Example outside of Visual Studio" +
+                    MessageBox.Show("When running this Example outside of Visual Studio " +
                                     "please make sure you compile in `Release` mode.", "Warning");
                 }
 #endif
 
+                //When multiThreadedMessageLoop = true then externalMessagePump must be set to false
+                // To enable externalMessagePump set  multiThreadedMessageLoop = false and externalMessagePump = true
                 const bool multiThreadedMessageLoop = true;
-                CefExample.Init(false, multiThreadedMessageLoop: multiThreadedMessageLoop);
+                const bool externalMessagePump = false;
 
-                if (multiThreadedMessageLoop == false)
+                var browser = new BrowserForm(multiThreadedMessageLoop);
+                //var browser = new SimpleBrowserForm(multiThreadedMessageLoop);
+                //var browser = new TabulationDemoForm();
+
+                IBrowserProcessHandler browserProcessHandler;
+
+                if (multiThreadedMessageLoop)
                 {
-                    //http://magpcss.org/ceforum/apidocs3/projects/%28default%29/%28_globals%29.html#CefDoMessageLoopWork%28%29
-                    //Perform a single iteration of CEF message loop processing.
-                    //This function is used to integrate the CEF message loop into an existing application message loop.
-                    //Care must be taken to balance performance against excessive CPU usage.
-                    //This function should only be called on the main application thread and only if CefInitialize() is called with a CefSettings.multi_threaded_message_loop value of false.
-                    //This function will not block. 
+                    browserProcessHandler = new BrowserProcessHandler();
+                }
+                else
+                {
+                    if (externalMessagePump)
+                    {
+                        //Get the current taskScheduler (must be called after the form is created)
+                        var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                        browserProcessHandler = new ScheduleMessagePumpBrowserProcessHandler(scheduler);
+                    }
+                    else
+                    {
+                        //We'll add out WinForms timer to the components container so it's Diposed
+                        browserProcessHandler = new WinFormsBrowserProcessHandler(browser.Components);
+                    }
 
-                    Application.Idle += (s, e) => Cef.DoMessageLoopWork();
                 }
 
-                var browser = new BrowserForm();
-                //var browser = new SimpleBrowserForm();
-                //var browser = new TabulationDemoForm();
+                var settings = new CefSettings();
+                settings.MultiThreadedMessageLoop = multiThreadedMessageLoop;
+                settings.ExternalMessagePump = externalMessagePump;
+
+                CefExample.Init(settings, browserProcessHandler: browserProcessHandler);
+
                 Application.Run(browser);
             }
 

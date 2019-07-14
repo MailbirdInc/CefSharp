@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CefSharp.Internals
 {
-    public sealed class MethodRunnerQueue
+    public sealed class MethodRunnerQueue : IMethodRunnerQueue
     {
         private readonly JavascriptObjectRepository repository;
         private readonly AutoResetEvent stopped = new AutoResetEvent(false);
@@ -27,17 +27,12 @@ namespace CefSharp.Internals
 
         public void Start()
         {
-            if (running)
-            {
-                return;
-            }
-
             lock (lockObject)
             {
                 if (!running)
                 {
                     cancellationTokenSource = new CancellationTokenSource();
-                    Task.Factory.StartNew(ConsumeTasks, cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    Task.Factory.StartNew(ConsumeTasks, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                     running = true;
                 }
             }
@@ -45,29 +40,21 @@ namespace CefSharp.Internals
 
         public void Stop()
         {
-            if (!running)
+            lock (lockObject)
             {
-                return;
-            }
-
-            Task.Run(() => // Added to avoid deadlock between the UI running this method and waiting at stopped.WaitOne() below while task.RunSynchronously() waits in ConsumeTasks() causing the reset event to never set
-            {
-                lock (lockObject)
+                if (running)
                 {
-                    if (running)
+                    cancellationTokenSource.Cancel();
+                    stopped.WaitOne();
+                    //clear the queue
+                    while (queue.Count > 0)
                     {
-                        cancellationTokenSource.Cancel();
-                        stopped.WaitOne();
-                        //clear the queue
-                        while (queue.Count > 0)
-                        {
-                            queue.Take();
-                        }
-                        cancellationTokenSource = null;
-                        running = false;
+                        queue.Take();
                     }
+                    cancellationTokenSource = null;
+                    running = false;
                 }
-            });
+            }
         }
 
         public void Enqueue(MethodInvocation methodInvocation)
@@ -80,6 +67,7 @@ namespace CefSharp.Internals
         {
             try
             {
+                //Tasks are run in sequential order on the current Thread.
                 while (!cancellationTokenSource.IsCancellationRequested)
                 {
                     var task = queue.Take(cancellationTokenSource.Token);
@@ -107,6 +95,23 @@ namespace CefSharp.Internals
             try
             {
                 success = repository.TryCallMethod(methodInvocation.ObjectId, methodInvocation.MethodName, methodInvocation.Parameters.ToArray(), out result, out exception);
+
+                //We don't support Tasks by default
+                if (success && result != null && (typeof(Task).IsAssignableFrom(result.GetType())))
+                {
+                    //Use StringBuilder to improve the formatting/readability of the error message
+                    //I'm sure there's a better way I just cannot remember of the top of my head so going
+                    //with this for now, as it's only for error scenaiors I'm not concerned about performance.
+                    var builder = new System.Text.StringBuilder();
+                    builder.AppendLine("Your method returned a Task which is not supported by default you must set CefSharpSettings.ConcurrentTaskExecution = true; before creating your first ChromiumWebBrowser instance.");
+                    builder.AppendLine("This will likely change to the default at some point in the near future, subscribe to the issue link below to be notified of any changes.");
+                    builder.AppendLine("See https://github.com/cefsharp/CefSharp/issues/2758 for more details, please report any issues you have there, make sure you have an example ready that reproduces your problem.");
+
+                    success = false;
+                    result = null;
+                    exception = builder.ToString();
+                }
+
             }
             catch (Exception e)
             {

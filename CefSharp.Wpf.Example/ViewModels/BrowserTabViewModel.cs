@@ -1,12 +1,13 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2013 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
-using CefSharp.Example;
 using System;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using CefSharp.Example;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 
@@ -70,12 +71,34 @@ namespace CefSharp.Wpf.Example.ViewModels
             set { Set(ref showSidebar, value); }
         }
 
+        private bool showDownloadInfo;
+        public bool ShowDownloadInfo
+        {
+            get { return showDownloadInfo; }
+            set { Set(ref showDownloadInfo, value); }
+        }
+
+        private string lastDownloadAction;
+        public string LastDownloadAction
+        {
+            get { return lastDownloadAction; }
+            set { Set(ref lastDownloadAction, value); }
+        }
+
+        private DownloadItem downloadItem;
+        public DownloadItem DownloadItem
+        {
+            get { return downloadItem; }
+            set { Set(ref downloadItem, value); }
+        }
+
         public ICommand GoCommand { get; private set; }
         public ICommand HomeCommand { get; private set; }
         public ICommand ExecuteJavaScriptCommand { get; private set; }
         public ICommand EvaluateJavaScriptCommand { get; private set; }
         public ICommand ShowDevToolsCommand { get; private set; }
         public ICommand CloseDevToolsCommand { get; private set; }
+        public ICommand JavascriptBindingStressTest { get; private set; }
 
         public BrowserTabViewModel(string address)
         {
@@ -88,6 +111,23 @@ namespace CefSharp.Wpf.Example.ViewModels
             EvaluateJavaScriptCommand = new RelayCommand<string>(EvaluateJavaScript, s => !String.IsNullOrWhiteSpace(s));
             ShowDevToolsCommand = new RelayCommand(() => webBrowser.ShowDevTools());
             CloseDevToolsCommand = new RelayCommand(() => webBrowser.CloseDevTools());
+            JavascriptBindingStressTest = new RelayCommand(() =>
+            {
+                WebBrowser.Load(CefExample.BindingTestUrl);
+                WebBrowser.LoadingStateChanged += (e, args) =>
+                {
+                    if (args.IsLoading == false)
+                    {
+                        Task.Delay(10000).ContinueWith(t =>
+                        {
+                            if (WebBrowser != null)
+                            {
+                                WebBrowser.Reload();
+                            }
+                        });
+                    }
+                };
+            });
 
             PropertyChanged += OnPropertyChanged;
 
@@ -143,7 +183,15 @@ namespace CefSharp.Wpf.Example.ViewModels
                         // TODO: This is a bit of a hack. It would be nicer/cleaner to give the webBrowser focus in the Go()
                         // TODO: method, but it seems like "something" gets messed up (= doesn't work correctly) if we give it
                         // TODO: focus "too early" in the loading process...
-                        WebBrowser.FrameLoadEnd += delegate { Application.Current.Dispatcher.BeginInvoke((Action)(() => webBrowser.Focus())); };
+                        WebBrowser.FrameLoadEnd += (s, args) =>
+                        {
+                            //Sender is the ChromiumWebBrowser object 
+                            var browser = s as ChromiumWebBrowser;
+                            if (browser != null && !browser.IsDisposed)
+                            {
+                                browser.Dispatcher.BeginInvoke((Action)(() => browser.Focus()));
+                            }
+                        };
                     }
 
                     break;
@@ -164,7 +212,9 @@ namespace CefSharp.Wpf.Example.ViewModels
         {
             // Don't display an error for downloaded files where the user aborted the download.
             if (args.ErrorCode == CefErrorCode.Aborted)
+            {
                 return;
+            }
 
             var errorMessage = "<html><body><h2>Failed to load URL " + args.FailedUrl +
                   " with error " + args.ErrorText + " (" + args.ErrorCode +
@@ -183,20 +233,9 @@ namespace CefSharp.Wpf.Example.ViewModels
 
         public void LoadCustomRequestExample()
         {
-            var frame = WebBrowser.GetMainFrame();
+            var postData = System.Text.Encoding.Default.GetBytes("test=123&data=456");
 
-            //Create a new request knowing we'd like to use PostData
-            var request = frame.CreateRequest(initializePostData:true);
-            request.Method = "POST";
-            request.Url = "custom://cefsharp/PostDataTest.html";
-            request.PostData.AddData("test=123&data=456");
-
-            frame.LoadRequest(request);
-        }
-
-        internal void ShowDevtools()
-        {
-            webBrowser.ShowDevTools();
+            WebBrowser.LoadUrlWithPostData("https://cefsharp.com/PostDataTest.html", postData);
         }
     }
 }

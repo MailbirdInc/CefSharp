@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
+// Copyright Â© 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -10,6 +10,11 @@
 #include "Internals\CefFrameWrapper.h"
 #include "Internals\StringVisitor.h"
 #include "Internals\ClientAdapter.h"
+#include "Internals\Serialization\Primitives.h"
+#include "Internals\Messaging\Messages.h"
+
+using namespace CefSharp::Internals::Messaging;
+using namespace CefSharp::Internals::Serialization;
 
 ///
 // True if this object is currently attached to a valid frame.
@@ -232,7 +237,7 @@ void CefFrameWrapper::ExecuteJavaScriptAsync(String^ code, String^ scriptUrl, in
     _frame->ExecuteJavaScript(StringUtils::ToNative(code), StringUtils::ToNative(scriptUrl), startLine);
 }
 
-Task<JavascriptResponse^>^ CefFrameWrapper::EvaluateScriptAsync(String^ script, Nullable<TimeSpan> timeout)
+Task<JavascriptResponse^>^ CefFrameWrapper::EvaluateScriptAsync(String^ script, String^ scriptUrl, int startLine, Nullable<TimeSpan> timeout)
 {
     ThrowIfDisposed();
     ThrowIfFrameInvalid();
@@ -240,9 +245,29 @@ Task<JavascriptResponse^>^ CefFrameWrapper::EvaluateScriptAsync(String^ script, 
     auto browser = _frame->GetBrowser();
     auto host = browser->GetHost();
 
+    //If we're unable to get the underlying browser/browserhost then return null
+    if (!browser.get() || !host.get())
+    {
+        return nullptr;
+    }
+
     auto client = static_cast<ClientAdapter*>(host->GetClient().get());
 
-    return client->EvaluateScriptAsync(browser->GetIdentifier(), browser->IsPopup(), _frame->GetIdentifier(), script, timeout);
+    auto pendingTaskRepository = client->GetPendingTaskRepository();
+
+    //create a new taskcompletionsource
+    auto idAndComplectionSource = pendingTaskRepository->CreatePendingTask(timeout);
+
+    auto message = CefProcessMessage::Create(kEvaluateJavascriptRequest);
+    auto argList = message->GetArgumentList();
+    SetInt64(argList, 0, idAndComplectionSource.Key);
+    argList->SetString(1, StringUtils::ToNative(script));
+    argList->SetString(2, StringUtils::ToNative(scriptUrl));
+    argList->SetInt(3, startLine);
+
+    _frame->SendProcessMessage(CefProcessId::PID_RENDERER, message);
+
+    return idAndComplectionSource.Value->Task;
 }
 
 ///

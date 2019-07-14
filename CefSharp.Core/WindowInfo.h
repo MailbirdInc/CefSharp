@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright Â© 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -14,19 +14,27 @@ namespace CefSharp
     {
     private:
         CefWindowInfo* _windowInfo;
+        bool _ownsPointer = false;
+
+    internal:
+        WindowInfo(CefWindowInfo* windowInfo) : _windowInfo(windowInfo)
+        {
+
+        }
 
     public:
         WindowInfo() : _windowInfo(new CefWindowInfo())
         {
-        }
-
-        WindowInfo(CefWindowInfo* windowInfo) : _windowInfo(windowInfo)
-        {
-            
+            _ownsPointer = true;
         }
 
         !WindowInfo()
         {
+            if (_ownsPointer)
+            {
+                delete _windowInfo;
+            }
+
             _windowInfo = NULL;
         }
 
@@ -95,6 +103,18 @@ namespace CefSharp
             }
         }
 
+        virtual property UINT32 ExStyle
+        {
+            UINT32 get()
+            {
+                return _windowInfo->ex_style;
+            }
+            void set(UINT32 ex_style)
+            {
+                _windowInfo->ex_style = ex_style;
+            }
+        }
+
         virtual property IntPtr ParentWindowHandle
         {
             IntPtr get()
@@ -119,18 +139,6 @@ namespace CefSharp
             }
         }
 
-        virtual property bool TransparentPaintingEnabled
-        {
-            bool get()
-            {
-                return _windowInfo->transparent_painting_enabled == 1;
-            }
-            void set(bool transparentPaintingEnabled)
-            {
-                _windowInfo->transparent_painting_enabled = transparentPaintingEnabled;
-            }
-        }
-
         virtual property bool WindowlessRenderingEnabled
         {
             bool get()
@@ -141,6 +149,39 @@ namespace CefSharp
             {
                 _windowInfo->windowless_rendering_enabled = windowlessRenderingEnabled;
             }
+        }
+
+        virtual property bool SharedTextureEnabled
+        {
+            bool get()
+            {
+                return _windowInfo->shared_texture_enabled == 1;
+            }
+            void set(bool sharedTextureEnabled)
+            {
+                _windowInfo->shared_texture_enabled = sharedTextureEnabled;
+            }
+        }
+
+        virtual property bool ExternalBeginFrameEnabled
+        {
+            bool get()
+            {
+                return _windowInfo->external_begin_frame_enabled == 1;
+            }
+            void set(bool externalBeginFrameEnabled)
+            {
+                _windowInfo->external_begin_frame_enabled = externalBeginFrameEnabled;
+            }
+        }
+
+        virtual void SetAsChild(IntPtr parentHandle)
+        {
+            HWND hwnd = static_cast<HWND>(parentHandle.ToPointer());
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+            CefWindowInfo window;
+            _windowInfo->SetAsChild(hwnd, rect);
         }
 
         virtual void SetAsChild(IntPtr parentHandle, int left, int top, int right, int bottom)
@@ -158,9 +199,9 @@ namespace CefSharp
             _windowInfo->SetAsPopup((HWND)parentHandle.ToPointer(), StringUtils::ToNative(windowName));
         }
 
-        virtual void SetAsWindowless(IntPtr parentHandle, bool transparent)
+        virtual void SetAsWindowless(IntPtr parentHandle)
         {
-            _windowInfo->SetAsWindowless((HWND)parentHandle.ToPointer(), transparent);
+            _windowInfo->SetAsWindowless((HWND)parentHandle.ToPointer());
         }
 
         CefWindowInfo* GetWindowInfo()

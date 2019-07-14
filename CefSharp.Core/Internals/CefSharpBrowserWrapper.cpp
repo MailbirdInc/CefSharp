@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Project. All rights reserved.
+// Copyright Â© 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -174,7 +174,15 @@ IFrame^ CefSharpBrowserWrapper::FocusedFrame::get()
 IFrame^ CefSharpBrowserWrapper::GetFrame(Int64 identifier)
 {
     ThrowIfDisposed();
-    return gcnew CefFrameWrapper(_browser->GetFrame(identifier));
+
+    auto frame = _browser->GetFrame(identifier);
+
+    if (frame.get())
+    {
+        return gcnew CefFrameWrapper(frame);
+    }
+
+    return nullptr;
 }
 
 ///
@@ -184,7 +192,15 @@ IFrame^ CefSharpBrowserWrapper::GetFrame(Int64 identifier)
 IFrame^ CefSharpBrowserWrapper::GetFrame(String^ name)
 {
     ThrowIfDisposed();
-    return gcnew CefFrameWrapper(_browser->GetFrame(StringUtils::ToNative(name)));
+
+    auto frame = _browser->GetFrame(StringUtils::ToNative(name));
+
+    if (frame.get())
+    {
+        return gcnew CefFrameWrapper(frame);
+    }
+
+    return nullptr;
 }
 
 ///
@@ -227,17 +243,6 @@ List<String^>^ CefSharpBrowserWrapper::GetFrameNames()
 
     _browser->GetFrameNames(names);
     return StringUtils::ToClr(names);
-}
-
-//
-// Send a message to the specified |target_process|. Returns true if the
-// message was sent successfully.
-///
-/*--cef()--*/
-bool CefSharpBrowserWrapper::SendProcessMessage(CefProcessId targetProcess, CefRefPtr<CefProcessMessage> message)
-{
-    ThrowIfDisposed();
-    return _browser->SendProcessMessage(targetProcess, message);
 }
 
 MCefRefPtr<CefBrowser> CefSharpBrowserWrapper::Browser::get()

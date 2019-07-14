@@ -1,10 +1,11 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.ComponentModel;
 using System.Windows.Forms;
-using CefSharp.Example;
+using CefSharp.Example.JavascriptBinding;
 using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms.Example.Minimal
@@ -12,10 +13,13 @@ namespace CefSharp.WinForms.Example.Minimal
     public partial class SimpleBrowserForm : Form
     {
         private ChromiumWebBrowser browser;
+        private bool multiThreadedMessageLoop;
 
-        public SimpleBrowserForm()
+        public SimpleBrowserForm(bool multiThreadedMessageLoop)
         {
             InitializeComponent();
+
+            this.multiThreadedMessageLoop = multiThreadedMessageLoop;
 
             Text = "CefSharp";
             WindowState = FormWindowState.Maximized;
@@ -29,6 +33,19 @@ namespace CefSharp.WinForms.Example.Minimal
             ResizeEnd += (s, e) => ResumeLayout(true);
 
             Load += OnLoad;
+        }
+
+        public IContainer Components
+        {
+            get
+            {
+                if (components == null)
+                {
+                    components = new Container();
+                }
+
+                return components;
+            }
         }
 
         private void OnLoad(object sender, EventArgs e)
@@ -49,7 +66,12 @@ namespace CefSharp.WinForms.Example.Minimal
             browser.StatusMessage += OnBrowserStatusMessage;
             browser.TitleChanged += OnBrowserTitleChanged;
             browser.AddressChanged += OnBrowserAddressChanged;
-            browser.RegisterJsObject("bound", new BoundObject());
+            browser.JavascriptObjectRepository.Register("bound", new BoundObject());
+            if (!multiThreadedMessageLoop)
+            {
+                browser.FocusHandler = null;
+            }
+
         }
 
         private void OnBrowserConsoleMessage(object sender, ConsoleMessageEventArgs args)

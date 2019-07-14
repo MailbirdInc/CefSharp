@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2014 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -7,8 +7,16 @@ using System.Collections.Specialized;
 
 namespace CefSharp
 {
+    /// <summary>
+    /// Class used to represent a web response. The methods of this class may be called on any thread. 
+    /// </summary>
     public interface IResponse : IDisposable
     {
+        /// <summary>
+        /// Get/Set the response charset.
+        /// </summary>
+        string Charset { get; set; }
+
         /// <summary>
         /// MimeType
         /// </summary>
@@ -17,7 +25,7 @@ namespace CefSharp
         /// <summary>
         /// Response Headers
         /// </summary>
-        NameValueCollection ResponseHeaders { get; set; }
+        NameValueCollection Headers { get; set; }
 
         /// <summary>
         /// Returns true if this object is read-only.

@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -20,7 +20,7 @@ namespace CefSharp
         /// en-US Locales pak file location
         /// </summary>
         public const string LocalesPackFile = @"locales\en-US.pak";
-        
+
         /// <summary>
         /// List of Cef Dependencies
         /// </summary>
@@ -34,7 +34,8 @@ namespace CefSharp
             // https://groups.google.com/a/chromium.org/forum/#!topic/chromium-packagers/75J9Y1vIc_E
             // http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=12580
             "natives_blob.bin",
-            "snapshot_blob.bin"
+            "snapshot_blob.bin",
+            "v8_context_snapshot.bin"
         };
 
         /// <summary>
@@ -57,7 +58,9 @@ namespace CefSharp
             // Note: Without these components HTML5 accelerated content like 2D canvas, 3D CSS and WebGL will not function.
             "libEGL.dll",
             "libGLESv2.dll",
-            "d3dcompiler_47.dll"
+            "d3dcompiler_47.dll",
+            //Crashpad support
+            "chrome_elf.dll"
         };
 
         /// <summary>
@@ -171,11 +174,21 @@ namespace CefSharp
         /// <exception cref="Exception">Throw when not all dependencies are present</exception>
         public static void AssertAllDependenciesPresent(string locale = null, string localesDirPath = null, string resourcesDirPath = null, bool packLoadingDisabled = false, string browserSubProcessPath = "CefSharp.BrowserSubProcess.exe")
         {
-            var executingAssembly = Assembly.GetExecutingAssembly();
+            string path;
 
-            var path = Path.GetDirectoryName(executingAssembly.Location);
+            Uri pathUri;
+            if(Uri.TryCreate(browserSubProcessPath, UriKind.Absolute, out pathUri) && pathUri.IsAbsoluteUri)
+            {
+                path = Path.GetDirectoryName(browserSubProcessPath);
+            }
+            else
+            {
+                var executingAssembly = Assembly.GetExecutingAssembly();
 
-            if(string.IsNullOrEmpty(locale))
+                path = Path.GetDirectoryName(executingAssembly.Location);
+            }            
+
+            if (string.IsNullOrEmpty(locale))
             {
                 locale = "en-US";
             }

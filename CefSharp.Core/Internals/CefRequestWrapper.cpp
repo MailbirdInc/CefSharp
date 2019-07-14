@@ -1,4 +1,4 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -12,6 +12,20 @@ namespace CefSharp
 {
     namespace Internals
     {
+        UrlRequestFlags CefRequestWrapper::Flags::get()
+        {
+            ThrowIfDisposed();
+
+            return (UrlRequestFlags)_wrappedRequest->GetFlags();
+        }
+
+        void CefRequestWrapper::Flags::set(UrlRequestFlags flags)
+        {
+            ThrowIfDisposed();
+
+            _wrappedRequest->SetFlags((int)flags);
+        }
+
         String^ CefRequestWrapper::Url::get()
         {
             ThrowIfDisposed();
@@ -158,6 +172,20 @@ namespace CefSharp
             ThrowIfDisposed();
 
             _wrappedRequest->SetPostData(CefPostData::Create());
+        }
+
+        String^ CefRequestWrapper::GetHeaderByName(String^ name)
+        {
+            ThrowIfDisposed();
+
+            return StringUtils::ToClr(_wrappedRequest->GetHeaderByName(StringUtils::ToNative(name)));
+        }
+
+        void CefRequestWrapper::SetHeaderByName(String^ name, String^ value, bool overwrite)
+        {
+            ThrowIfDisposed();
+
+            _wrappedRequest->SetHeaderByName(StringUtils::ToNative(name), StringUtils::ToNative(value), overwrite);
         }
     }
 }

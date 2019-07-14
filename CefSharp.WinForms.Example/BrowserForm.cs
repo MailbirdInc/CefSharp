@@ -1,12 +1,16 @@
-﻿// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright © 2010 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CefSharp.Example;
-using System.Threading.Tasks;
-using System.Text;
+using CefSharp.Example.Callback;
+using CefSharp.Example.Handlers;
 
 namespace CefSharp.WinForms.Example
 {
@@ -17,7 +21,9 @@ namespace CefSharp.WinForms.Example
         // Default to a small increment:
         private const double ZoomIncrement = 0.10;
 
-        public BrowserForm()
+        private bool multiThreadedMessageLoopEnabled;
+
+        public BrowserForm(bool multiThreadedMessageLoopEnabled)
         {
             InitializeComponent();
 
@@ -25,18 +31,61 @@ namespace CefSharp.WinForms.Example
             Text = "CefSharp.WinForms.Example - " + bitness;
             WindowState = FormWindowState.Maximized;
 
-            AddTab(CefExample.DefaultUrl);
+            Load += BrowserFormLoad;
 
             //Only perform layout when control has completly finished resizing
             ResizeBegin += (s, e) => SuspendLayout();
             ResizeEnd += (s, e) => ResumeLayout(true);
+
+            this.multiThreadedMessageLoopEnabled = multiThreadedMessageLoopEnabled;
+        }
+
+        public IContainer Components
+        {
+            get
+            {
+                if (components == null)
+                {
+                    components = new Container();
+                }
+
+                return components;
+            }
+        }
+
+        private void BrowserFormLoad(object sender, EventArgs e)
+        {
+            AddTab(CefExample.DefaultUrl);
+        }
+
+        /// <summary>
+        /// Used to add a Popup browser as a Tab
+        /// </summary>
+        /// <param name="browserHostControl"></param>
+        public void AddTab(Control browserHostControl, string url)
+        {
+            browserTabControl.SuspendLayout();
+
+            var tabPage = new TabPage(url)
+            {
+                Dock = DockStyle.Fill
+            };
+
+            tabPage.Controls.Add(browserHostControl);
+
+            browserTabControl.TabPages.Add(tabPage);
+
+            //Make newly created tab active
+            browserTabControl.SelectedTab = tabPage;
+
+            browserTabControl.ResumeLayout(true);
         }
 
         private void AddTab(string url, int? insertIndex = null)
         {
             browserTabControl.SuspendLayout();
 
-            var browser = new BrowserTabUserControl(AddTab, url)
+            var browser = new BrowserTabUserControl(AddTab, url, multiThreadedMessageLoopEnabled)
             {
                 Dock = DockStyle.Fill,
             };
@@ -82,6 +131,25 @@ namespace CefSharp.WinForms.Example
             new AboutBox().ShowDialog();
         }
 
+        public void RemoveTab(IntPtr windowHandle)
+        {
+            var parentControl = FromChildHandle(windowHandle);
+            if (!parentControl.IsDisposed)
+            {
+                if (parentControl.Parent is TabPage tabPage)
+                {
+                    browserTabControl.TabPages.Remove(tabPage);
+                }
+                else if (parentControl.Parent is Panel panel)
+                {
+                    var browserTabUserControl = (BrowserTabUserControl)panel.Parent;
+
+                    var tab = (TabPage)browserTabUserControl.Parent;
+                    browserTabControl.TabPages.Remove(tab);
+                }
+            }
+        }
+
         private void FindMenuItemClick(object sender, EventArgs e)
         {
             var control = GetCurrentTabControl();
@@ -108,7 +176,7 @@ namespace CefSharp.WinForms.Example
             }
 
             var tabPage = browserTabControl.Controls[browserTabControl.SelectedIndex];
-            var control = (BrowserTabUserControl)tabPage.Controls[0];
+            var control = tabPage.Controls[0] as BrowserTabUserControl;
 
             return control;
         }
@@ -120,28 +188,28 @@ namespace CefSharp.WinForms.Example
 
         private void CloseTabToolStripMenuItemClick(object sender, EventArgs e)
         {
-            if(browserTabControl.Controls.Count == 0)
+            if (browserTabControl.TabPages.Count == 0)
             {
                 return;
             }
 
             var currentIndex = browserTabControl.SelectedIndex;
 
-            var tabPage = browserTabControl.Controls[currentIndex];
+            var tabPage = browserTabControl.TabPages[currentIndex];
 
             var control = GetCurrentTabControl();
-            if (control != null)
+            if (control != null && !control.IsDisposed)
             {
                 control.Dispose();
             }
 
-            browserTabControl.Controls.Remove(tabPage);
+            browserTabControl.TabPages.Remove(tabPage);
 
             tabPage.Dispose();
 
             browserTabControl.SelectedIndex = currentIndex - 1;
 
-            if (browserTabControl.Controls.Count == 0)
+            if (browserTabControl.TabPages.Count == 0)
             {
                 ExitApplication();
             }
@@ -226,8 +294,9 @@ namespace CefSharp.WinForms.Example
             {
                 control.Browser.ShowDevTools();
 
-                //Example below shows how to use a control to host DevTools
+                //EXPERIMENTAL Example below shows how to use a control to host DevTools
                 //(in this case it's added as a new TabPage)
+                // NOTE: Does not currently move/resize correctly
                 //var tabPage = new TabPage("DevTools")
                 //{
                 //    Dock = DockStyle.Fill
@@ -339,7 +408,7 @@ namespace CefSharp.WinForms.Example
             if (control != null)
             {
                 var frame = control.Browser.GetFocusedFrame();
-                
+
                 //Execute extension method
                 frame.ActiveElementAcceptsTextInput().ContinueWith(task =>
                 {
@@ -471,9 +540,99 @@ namespace CefSharp.WinForms.Example
             if (control != null)
             {
                 const string html = "<html><head><title>Test</title></head><body><h1>Html Encoded in URL!</h1></body></html>";
-                var base64EncodedHtml = Convert.ToBase64String(Encoding.UTF8.GetBytes(html));
-                control.Browser.Load("data:text/html;base64," + base64EncodedHtml);
+                control.Browser.LoadHtml(html, false);
+            }
+        }
 
+        private void OpenHttpBinOrgToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                control.Browser.Load("https://httpbin.org/");
+            }
+        }
+
+        private void RunFileDialogToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                control.Browser.GetBrowserHost().RunFileDialog(CefFileDialogMode.Open, "Open", null, new List<string> { "*.*" }, 0, new RunFileDialogCallback());
+            }
+        }
+
+        private void LoadExtensionsToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                //The sample extension only works for http(s) schemes
+                if (control.Browser.Address.StartsWith("http"))
+                {
+                    var requestContext = control.Browser.GetBrowserHost().RequestContext;
+
+                    var dir = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\CefSharp.Example\Extensions");
+                    dir = Path.GetFullPath(dir);
+                    if (!Directory.Exists(dir))
+                    {
+                        throw new DirectoryNotFoundException("Unable to locate example extensions folder - " + dir);
+                    }
+
+                    var extensionHandler = new ExtensionHandler
+                    {
+                        LoadExtensionPopup = (url) =>
+                        {
+                            BeginInvoke(new Action(() =>
+                            {
+                                var extensionForm = new Form();
+
+                                var extensionBrowser = new ChromiumWebBrowser(url);
+                                //extensionBrowser.IsBrowserInitializedChanged += (s, args) =>
+                                //{
+                                //    extensionBrowser.ShowDevTools();
+                                //};
+
+                                extensionForm.Controls.Add(extensionBrowser);
+
+                                extensionForm.Show(this);
+                            }));
+                        },
+                        GetActiveBrowser = (extension, isIncognito) =>
+                        {
+                            //Return the active browser for which the extension will act upon
+                            return control.Browser.GetBrowser();
+                        }
+                    };
+
+                    requestContext.LoadExtensionsFromDirectory(dir, extensionHandler);
+                }
+                else
+                {
+                    MessageBox.Show("The sample extension only works with http(s) schemes, please load a different website and try again", "Unable to load Extension");
+                }
+            }
+        }
+
+        private void JavascriptBindingStressTestToolStripMenuItemClick(object sender, EventArgs e)
+        {
+            var control = GetCurrentTabControl();
+            if (control != null)
+            {
+                control.Browser.Load(CefExample.BindingTestUrl);
+                control.Browser.LoadingStateChanged += (o, args) =>
+                {
+                    if (args.IsLoading == false)
+                    {
+                        Task.Delay(10000).ContinueWith(t =>
+                        {
+                            if (control.Browser != null)
+                            {
+                                control.Browser.Reload();
+                            }
+                        });
+                    }
+                };
             }
         }
     }

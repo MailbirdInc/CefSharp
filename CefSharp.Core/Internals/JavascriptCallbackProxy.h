@@ -1,4 +1,4 @@
-// Copyright © 2010-2016 The CefSharp Authors. All rights reserved.
+// Copyright Â© 2015 The CefSharp Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -45,13 +45,23 @@ namespace CefSharp
                 auto browser = GetBrowser();
                 if (browser != nullptr && !browser->IsDisposed)
                 {
-                    auto browserWrapper = static_cast<CefSharpBrowserWrapper^>(browser);
-                    browserWrapper->SendProcessMessage(CefProcessId::PID_RENDERER, CreateDestroyMessage());
+                    auto browserWrapper = static_cast<CefSharpBrowserWrapper^>(browser)->Browser;
+                    auto frame = browserWrapper->GetFrame(_callback->FrameId);
+                    if (frame.get() && frame->IsValid())
+                    {
+                        frame->SendProcessMessage(CefProcessId::PID_RENDERER, CreateDestroyMessage());
+                    }
                 }
                 _disposed = true;
             }
 
             virtual Task<JavascriptResponse^>^ ExecuteAsync(cli::array<Object^>^ parameters);
+            virtual Task<JavascriptResponse^>^ ExecuteWithTimeoutAsync(Nullable<TimeSpan> timeout, cli::array<Object^>^ parameters);
+
+            virtual property Int64 Id
+            {
+                Int64 get();
+            }
 
             virtual property bool IsDisposed
             {
