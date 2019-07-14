@@ -3,7 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CefSharp.Enums;
 using CefSharp.Internals;
@@ -110,11 +108,6 @@ namespace CefSharp.Wpf
         /// The request context (we deliberately use a private variable so we can throw an exception if
         /// user attempts to set after browser created)
         /// </summary>
-        
-        /// <summary>
-        /// Last browser size since last resize event
-        /// </summary>
-        private Size lastSize;
         private IRequestContext requestContext;
         /// <summary>
         /// Keep a short term copy of IDragData, so when calling DoDragDrop, DragEnter is called, 
@@ -483,8 +476,8 @@ namespace CefSharp.Wpf
             }
         }
 
-        DispatcherTimer resizeTimer;
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChromiumWebBrowser"/> class.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">Cef::Initialize() failed</exception>
         public ChromiumWebBrowser()
@@ -571,8 +564,6 @@ namespace CefSharp.Wpf
 
             managedCefBrowserAdapter = new ManagedCefBrowserAdapter(this, true);
 
-            resizeTimer = new DispatcherTimer(DispatcherPriority.Render);
-            resizeTimer.Tick += ResizeTimer_Tick;
             browserSettings = new BrowserSettings(frameworkCreated: true);
             RenderHandler = new InteropBitmapRenderHandler();
 
@@ -613,9 +604,7 @@ namespace CefSharp.Wpf
                 return;
             }
 
-                resizeTimer.Stop();
             if (DesignMode)
-
             {
                 return;
             }
@@ -699,11 +688,6 @@ namespace CefSharp.Wpf
                     tooltipTimer.Stop();
                     tooltipTimer = null;
                 }
-
-                    if (resizeTimer != null)
-                    {
-                        resizeTimer.Tick -= ResizeTimer_Tick;
-                    }
 
                 if (CleanupElement != null)
                 {
@@ -1152,7 +1136,7 @@ namespace CefSharp.Wpf
         {
             Interlocked.Exchange(ref browserInitialized, 1);
             this.browser = browser;
-            
+
             UiThreadRunAsync(() =>
             {
                 if (!IsDisposed)
@@ -1316,7 +1300,7 @@ namespace CefSharp.Wpf
             var owner = (ChromiumWebBrowser)d;
             var oldValue = (bool)e.OldValue;
             var newValue = (bool)e.NewValue;
-            
+
             owner.OnIsBrowserInitializedChanged(oldValue, newValue);
 
             owner.IsBrowserInitializedChanged?.Invoke(owner, e);
@@ -1837,8 +1821,6 @@ namespace CefSharp.Wpf
             }
         }
 
-        
-
         /// <summary>
         /// Runs the specific Action on the Dispatcher in an sync fashion
         /// </summary>
@@ -1863,28 +1845,8 @@ namespace CefSharp.Wpf
         /// <param name="e">The <see cref="SizeChangedEventArgs"/> instance containing the event data.</param>
         private void OnActualSizeChanged(object sender, SizeChangedEventArgs e)
         {
-            lastSize = e.NewSize;
-
-            if (browserCreated)
-            {
-                if (!resizeTimer.IsEnabled)
-                    resizeTimer.Start();
-
-                resizeTimer.Interval = TimeSpan.FromMilliseconds(120);
-            }
-            else
-                ResizeTimer_Tick(this, null);  // This will create the browser
-        }
-
-        void ResizeTimer_Tick(object sender, EventArgs e)
-        {
-            resizeTimer.Stop();
-            
-            if (managedCefBrowserAdapter == null) // Browser has been disposed
-                return;
-
             // Initialize RenderClientAdapter when WPF has calculated the actual size of current content.
-            CreateOffscreenBrowser(lastSize);
+            CreateOffscreenBrowser(e.NewSize);
 
             if (browser != null)
             {
