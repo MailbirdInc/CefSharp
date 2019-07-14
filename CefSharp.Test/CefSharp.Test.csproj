@@ -1,9 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\cef.redist.x86.73.1.13\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.73.1.13\build\cef.redist.x86.props')" />
-  <Import Project="..\packages\cef.redist.x64.73.1.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.73.1.13\build\cef.redist.x64.props')" />
-  <Import Project="..\packages\cef.redist.x86.74.1.13\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.74.1.13\build\cef.redist.x86.props')" />
-  <Import Project="..\packages\cef.redist.x64.74.1.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.74.1.13\build\cef.redist.x64.props')" />
   <Import Project="..\packages\cef.redist.x86.75.0.13\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.75.0.13\build\cef.redist.x86.props')" />
   <Import Project="..\packages\cef.redist.x64.75.0.13\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.75.0.13\build\cef.redist.x64.props')" />
   <Import Project="..\packages\xunit.runner.visualstudio.2.2.0\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\packages\xunit.runner.visualstudio.2.2.0\build\net20\xunit.runner.visualstudio.props')" />
@@ -26,9 +22,6 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>c8ab7c2e</NuGetPackageImportStamp>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
-    <NuGetPackageImportStamp>29bdd29e</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -183,12 +176,4 @@
   -->
   <Import Project="..\CefSharp.props" />
   <Import Project="..\CefSharp.Native.props" />
-  <Import Project="..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2357.1287\build\cef.redist.x64.targets')" />
-  <Import Project="..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2357.1287\build\cef.redist.x86.targets')" />
-  <Import Project="..\CefSharp.props" />
-  <Import Project="..\CefSharp.Native.props" />
-  <Import Project="..\packages\cef.redist.x64.3.2526.1347\build\cef.redist.x64.targets" Condition="Exists('..\packages\cef.redist.x64.3.2526.1347\build\cef.redist.x64.targets')" />
-  <Import Project="..\packages\cef.redist.x86.3.2526.1347\build\cef.redist.x86.targets" Condition="Exists('..\packages\cef.redist.x86.3.2526.1347\build\cef.redist.x86.targets')" />
-  <Import Project="$(SolutionDir)\CefSharp.props" />
-  <Import Project="$(SolutionDir)\CefSharp.Native.props" />
 </Project>
