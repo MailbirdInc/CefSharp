@@ -935,21 +935,6 @@ namespace CefSharp.Wpf
             RenderHandler?.OnPaint(isPopup, dirtyRect, buffer, width, height, img);
         }
 
-        //private BitmapSource CreateBitmap(WpfBitmapInfo wpfBitmapInfo)
-        //{
-        //    try
-        //    {
-        //        GC.Collect(1);
-        //        return wpfBitmapInfo.CreateBitmap();
-        //    }
-        //    catch (COMException) {}
-        //    catch (OutOfMemoryException) {}
-
-        //    GC.Collect();
-        //    GC.WaitForPendingFinalizers();
-        //    return wpfBitmapInfo.CreateBitmap();
-        //}
-
         /// <summary>
         /// Sets the popup size and position.
         /// </summary>
@@ -1799,7 +1784,7 @@ namespace CefSharp.Wpf
         /// </summary>
         /// <param name="size">size of the current control, must be greater than Size(0, 0)</param>
         /// <returns>bool to indicate if browser was created. If the browser has already been created then this will return false.</returns>
-        protected virtual bool CreateOffscreenBrowser(Size size, Size? dpiMultiplier = null)
+        protected virtual bool CreateOffscreenBrowser(Size size)
         {
             if (browserCreated || size.IsEmpty || size.Equals(new Size(0, 0)))
             {
