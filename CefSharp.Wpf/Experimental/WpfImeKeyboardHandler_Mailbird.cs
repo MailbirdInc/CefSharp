@@ -15,7 +15,20 @@ using Rect = CefSharp.Structs.Rect;
 
 namespace CefSharp.Wpf.Experimental
 {
-    public class WpfImeKeyboardHandler : WpfKeyboardHandler, IWpfImeKeyboardHandler
+    /// <summary>
+    /// Added this to avoid specifying a class in <see cref="ChromiumWebBrowser"/> that would result in only one of the classes working. This way we can easily test the changes in a new CEF version.
+    /// We can remove this when we remove our own special version of the IME handler.
+    /// </summary>
+    internal interface IWpfImeKeyboardHandler
+    {
+        void ChangeCompositionRange(Range selectionRange, Rect[] characterBounds);
+    }
+
+    /// <summary>
+    /// This has the changes from https://github.com/cefsharp/CefSharp/pull/2782 but with more Mailbird appropriate comments.
+    /// When we update to a new CEF version we should test that their new version works and can then remove this file.
+    /// </summary>
+    public class WpfImeKeyboardHandler_Mailbird : WpfKeyboardHandler, IWpfImeKeyboardHandler
     {
         private int languageCodeId;
         private bool systemCaret;
@@ -27,16 +40,14 @@ namespace CefSharp.Wpf.Experimental
         private MouseButtonEventHandler mouseDownEventHandler;
         private bool isActive;
 
-        public WpfImeKeyboardHandler(ChromiumWebBrowser owner) : base(owner)
+        public WpfImeKeyboardHandler_Mailbird(ChromiumWebBrowser owner) : base(owner)
         {
         }
 
         public void ChangeCompositionRange(Range selectionRange, Rect[] characterBounds)
         {
             if (!isActive)
-            {
                 return;
-            }
 
             var screenInfo = ((IRenderWebBrowser)owner).GetScreenInfo();
             var scaleFactor = screenInfo.HasValue ? screenInfo.Value.DeviceScaleFactor : 1.0f;
@@ -73,9 +84,7 @@ namespace CefSharp.Wpf.Experimental
         public override void Setup(HwndSource source)
         {
             if (isSetup)
-            {
                 return;
-            }
 
             isSetup = true;
 
@@ -83,6 +92,7 @@ namespace CefSharp.Wpf.Experimental
             sourceHook = SourceHook;
             source.AddHook(SourceHook);
 
+            var hadFocus = owner.IsFocused;
             owner.GotFocus += OwnerGotFocus;
             owner.LostFocus += OwnerLostFocus;
 
@@ -90,24 +100,20 @@ namespace CefSharp.Wpf.Experimental
 
             owner.AddHandler(UIElement.MouseDownEvent, mouseDownEventHandler, true);
 
-            // If the owner had focus before adding the handler then we have to run the "got focus" code here
-            // or it won't set up IME properly in all cases
-            if (owner.IsFocused)
-            {
+            // This was causing the body of the compose window to get focus instead of the 'To' field, on pressing compose at the top - which is not what we want
+            //owner.Focus();
+
+            // If the owner had focus before adding the handler then we have to run the "got focus" code here, or it won't set up IME when starting inline reply and then opening as new window
+            if (hadFocus)
                 SetActive();
-            }
         }
 
         public override void Dispose()
         {
-            // Note Setup can be run after disposing, to "reset" this instance
-            // due to the code in ChromiumWebBrowser.PresentationSourceChangedHandler
             if (!isSetup)
-            {
                 return;
-            }
 
-            isSetup = false;
+            isSetup = false; // Note Setup can be run after disposing, to "reset" this instance - due to the code in ChromiumWebBrowser.PresentationSourceChangedHandler
 
             owner.GotFocus -= OwnerGotFocus;
             owner.LostFocus -= OwnerLostFocus;
@@ -138,16 +144,11 @@ namespace CefSharp.Wpf.Experimental
 
         private void SetActive()
         {
-            // Set to false first if not already, because the value change (and raising of changes)
-            // between false and true is necessary for IME to work in all circumstances
+            // Set to false first if not already, because the value change (and raising of changes) between false and true is necessary for IME to work in all circumstances
             if (InputMethod.GetIsInputMethodEnabled(owner))
-            {
                 InputMethod.SetIsInputMethodEnabled(owner, false);
-            }
             if (InputMethod.GetIsInputMethodSuspended(owner))
-            {
                 InputMethod.SetIsInputMethodSuspended(owner, false);
-            }
 
             // These calls are needed in order for IME to function correctly.
             InputMethod.SetIsInputMethodEnabled(owner, true);
@@ -233,8 +234,7 @@ namespace CefSharp.Wpf.Experimental
 
                 if (ImeHandler.GetComposition(hwnd, (uint)lParam, underlines, ref compositionStart, out text))
                 {
-                    owner.GetBrowserHost().ImeSetComposition(text, underlines.ToArray(),
-                        new Range(int.MaxValue, int.MaxValue), new Range(compositionStart, compositionStart));
+                    owner.GetBrowserHost().ImeSetComposition(text, underlines.ToArray(), new Range(int.MaxValue, int.MaxValue), new Range(compositionStart, compositionStart));
 
                     UpdateCaretPosition(compositionStart - 1);
                 }

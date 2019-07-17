@@ -980,7 +980,7 @@ namespace CefSharp.Wpf
         /// <param name="characterBounds">is the bounds of each character in view coordinates.</param>
         protected virtual void OnImeCompositionRangeChanged(Range selectedRange, Rect[] characterBounds)
         {
-            var imeKeyboardHandler = WpfKeyboardHandler as WpfImeKeyboardHandler;
+            var imeKeyboardHandler = WpfKeyboardHandler as IWpfImeKeyboardHandler;
             if (imeKeyboardHandler != null)
             {
                 imeKeyboardHandler.ChangeCompositionRange(selectedRange, characterBounds);
