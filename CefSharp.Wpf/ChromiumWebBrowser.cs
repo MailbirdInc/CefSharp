@@ -129,6 +129,9 @@ namespace CefSharp.Wpf
         /// </summary>
         private static bool DesignMode;
 
+        private bool resizeHackForIssue2779Enabled;
+        private CefSharp.Structs.Size? resizeHackForIssue2779Size;
+
         /// <summary>
         /// The value for disposal, if it's 1 (one) then this instance is either disposed
         /// or in the process of getting disposed
@@ -744,7 +747,7 @@ namespace CefSharp.Wpf
 
             var screenInfo = new ScreenInfo
             {
-                DeviceScaleFactor = (float)DpiScaleFactor,
+                DeviceScaleFactor = DpiScaleFactor,
                 Rect = rect,
                 AvailableRect = availableRect
             };
@@ -769,7 +772,14 @@ namespace CefSharp.Wpf
         /// <returns>View Rectangle</returns>
         protected virtual Rect GetViewRect()
         {
-            return viewRect;
+            if (resizeHackForIssue2779Size == null)
+            {
+                return viewRect;
+            }
+
+            var size = resizeHackForIssue2779Size.Value;
+
+            return new Rect(0, 0, size.Width, size.Height);
         }
 
         bool IRenderWebBrowser.GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
@@ -911,6 +921,11 @@ namespace CefSharp.Wpf
         /// <param name="height">height</param>
         protected virtual void OnPaint(bool isPopup, Rect dirtyRect, IntPtr buffer, int width, int height)
         {
+            if (resizeHackForIssue2779Enabled)
+            {
+                return;
+            }
+
             var paint = Paint;
             if (paint != null)
             {
@@ -1730,10 +1745,15 @@ namespace CefSharp.Wpf
                     {
                         browser.GetHost().WasHidden(false);
                     }
+
+                    ResizeHackFor2779();
+
                     break;
                 }
                 case WindowState.Minimized:
                 {
+                    resizeHackForIssue2779Enabled = true;
+
                     if (browser != null)
                     {
                         browser.GetHost().WasHidden(true);
@@ -1885,6 +1905,8 @@ namespace CefSharp.Wpf
 
                 if (isVisible)
                 {
+                    ResizeHackFor2779();
+
                     //Fix for #1778 - When browser becomes visible we update the zoom level
                     //browsers of the same origin will share the same zoomlevel and
                     //we need to track the update, so our ZoomLevelProperty works
@@ -1899,6 +1921,10 @@ namespace CefSharp.Wpf
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnRanToCompletion,
                     TaskScheduler.FromCurrentSynchronizationContext());
+                }
+                else
+                {
+                    resizeHackForIssue2779Enabled = true;
                 }
             }
         }
@@ -2349,6 +2375,39 @@ namespace CefSharp.Wpf
             // Use CompareExchange to read the current value - if disposeCount is 1, we set it to 1, effectively a no-op
             // Volatile.Read would likely use a memory barrier which I believe is unnecessary in this scenario
             return Interlocked.CompareExchange(ref browserInitialized, 0, 0) == 1;
+        }
+
+        private void ResizeHackFor2779()
+        {
+            const int delayInMs = 50;
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(delayInMs);
+
+                if (browser != null)
+                {
+                    resizeHackForIssue2779Size = new Structs.Size(viewRect.Width - 1, viewRect.Height - 1);
+                    browser.GetHost().WasResized();
+                }
+
+                await Task.Delay(delayInMs);
+
+                if (browser != null)
+                {
+                    resizeHackForIssue2779Size = null;
+                    browser.GetHost().WasResized();
+                }
+
+                await Task.Delay(delayInMs);
+
+                if (browser != null)
+                {
+                    resizeHackForIssue2779Enabled = false;
+
+                    browser.GetHost().Invalidate(PaintElementType.View);
+                }
+            });
         }
     }
 }
