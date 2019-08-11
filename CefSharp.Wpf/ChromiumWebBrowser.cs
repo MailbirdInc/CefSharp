@@ -785,12 +785,14 @@ namespace CefSharp.Wpf
         /// <returns>View Rectangle</returns>
         protected virtual Rect GetViewRect()
         {
-            if (resizeHackForIssue2779Size == null)
+            var resizeHackSize = resizeHackForIssue2779Size;
+
+            if (resizeHackSize == null)
             {
                 return viewRect;
             }
 
-            var size = resizeHackForIssue2779Size.Value;
+            var size = resizeHackSize.Value;
 
             return new Rect(0, 0, size.Width, size.Height);
         }
