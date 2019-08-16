@@ -2,12 +2,17 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using CefSharp.Example;
 using CefSharp.Example.Handlers;
 using CefSharp.Example.JavascriptBinding;
@@ -98,6 +103,7 @@ namespace CefSharp.Wpf.Example.Views
             downloadHandler.OnDownloadUpdatedFired += OnDownloadUpdatedFired;
             browser.DownloadHandler = downloadHandler;
             browser.AudioHandler = new AudioHandler();
+            browser.Loaded += BrowserLoaded;
 
             //Read an embedded bitmap into a memory stream then register it as a resource you can then load custom://cefsharp/images/beach.jpg
             var beachImageStream = new MemoryStream();
@@ -155,6 +161,40 @@ namespace CefSharp.Wpf.Example.Views
             CefExample.RegisterTestResources(browser);
 
             browser.JavascriptMessageReceived += OnBrowserJavascriptMessageReceived;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+        public static extern void mouse_event(uint dwFlags, long dx, long dy, long cButtons, UIntPtr dwExtraInfo);
+        private const int MOUSEEVENTF_WHEEL = 0x0800;
+        
+        private void BrowserLoaded(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    var counter = 0;
+                    var direction = false;
+                    while (true)
+                    {
+                        Dispatcher.Invoke(new Action(() =>
+                        {
+                            var dy = 50 * (direction ? 1 : -1);
+
+                            mouse_event(MOUSEEVENTF_WHEEL, 0, 0, dy, UIntPtr.Zero);
+                            counter++;
+                            if (counter > 8)
+                            {
+                                counter = 0;
+                                direction = !direction;
+                            }
+                        }));
+
+                        Thread.Sleep(10);
+                    }
+                }
+                catch (TaskCanceledException) { } // So it doesn't break in VS on shut down
+            });
         }
 
         private void OnBrowserJavascriptMessageReceived(object sender, JavascriptMessageReceivedEventArgs e)
