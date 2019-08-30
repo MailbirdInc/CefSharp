@@ -1894,7 +1894,8 @@ namespace CefSharp.Wpf
                     Cef.UIThreadTaskFactory.StartNew(delegate
                     {
                         action();
-                    }).Wait();
+
+                    }).Wait(1000); // Added timeout to the wait so it doesn't deadlock. Just a quick fix for https://app.asana.com/0/23652146521619/1137253318856233/f until the next CEF# update
                 }
             }
         }
