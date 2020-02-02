@@ -2,8 +2,10 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
-using CefSharp.OffScreen;
+using System.Text;
 using System.Threading.Tasks;
+using CefSharp.Example;
+using CefSharp.OffScreen;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -127,5 +129,69 @@ namespace CefSharp.Test.OffScreen
             }
         }
 
+        [Fact]
+        public async Task CanMakeFrameUrlRequest()
+        {
+            using (var browser = new ChromiumWebBrowser("https://code.jquery.com/jquery-3.4.1.min.js"))
+            {
+                await browser.LoadPageAsync();
+
+                var mainFrame = browser.GetMainFrame();
+                Assert.True(mainFrame.IsValid);
+
+                var taskCompletionSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var wasCached = false;
+                var requestClient = new UrlRequestClient((IUrlRequest req, byte[] responseBody) =>
+                {
+                    wasCached = req.ResponseWasCached;
+                    taskCompletionSource.TrySetResult(Encoding.UTF8.GetString(responseBody));
+                });
+
+                //Can be created on any valid CEF Thread, here we'll use the CEF UI Thread
+                await Cef.UIThreadTaskFactory.StartNew(delegate
+                {
+                    var request = mainFrame.CreateRequest(false);
+
+                    request.Method = "GET";
+                    request.Url = "https://code.jquery.com/jquery-3.4.1.min.js";
+                    var urlRequest = mainFrame.CreateUrlRequest(request, requestClient);
+                });
+
+                var stringResult = await taskCompletionSource.Task;
+
+                Assert.True(!string.IsNullOrEmpty(stringResult));
+                Assert.True(wasCached);
+            }
+        }
+
+        [Fact]
+        public async Task CanMakeUrlRequest()
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            IUrlRequest urlRequest = null;
+            int statusCode = -1;
+
+            //Can be created on any valid CEF Thread, here we'll use the CEF UI Thread
+            await Cef.UIThreadTaskFactory.StartNew(delegate
+            {
+                var requestClient = new UrlRequestClient((IUrlRequest req, byte[] responseBody) =>
+                {
+                    statusCode = req.Response.StatusCode;
+                    taskCompletionSource.TrySetResult(Encoding.UTF8.GetString(responseBody));
+                });
+
+                var request = new Request();
+                request.Method = "GET";
+                request.Url = "https://code.jquery.com/jquery-3.4.1.min.js";
+
+                //Global RequestContext will be used
+                urlRequest = new UrlRequest(request, requestClient);
+            });
+
+            var stringResult = await taskCompletionSource.Task;
+
+            Assert.True(!string.IsNullOrEmpty(stringResult));
+            Assert.Equal(200, statusCode);
+        }
     }
 }

@@ -32,8 +32,7 @@ namespace CefSharp
             public CefDialogHandler,
             public CefDragHandler,
             public CefDownloadHandler,
-            public CefFindHandler,
-            public CefAudioHandler
+            public CefFindHandler
         {
         private:
             gcroot<IWebBrowserInternal^> _browserControl;
@@ -101,17 +100,6 @@ namespace CefSharp
             virtual DECL CefRefPtr<CefDialogHandler> GetDialogHandler() OVERRIDE { return this; }
             virtual DECL CefRefPtr<CefDragHandler> GetDragHandler() OVERRIDE { return this; }
             virtual DECL CefRefPtr<CefFindHandler> GetFindHandler() OVERRIDE { return this; }
-            virtual DECL CefRefPtr<CefAudioHandler> GetAudioHandler() OVERRIDE
-            {
-                //Audio Mirroring in CEF is only enabled when we a handler is returned
-                //We return NULL if no handler is specified for performance reasons
-                if (_browserControl->AudioHandler == nullptr)
-                {
-                    return NULL;
-                }
-
-                return this;
-            }
             virtual DECL bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
 
@@ -136,7 +124,7 @@ namespace CefSharp
                 CefRequestHandler::WindowOpenDisposition targetDisposition, bool userGesture) OVERRIDE;
             virtual DECL CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(CefRefPtr<CefBrowser> browser,
                 CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool isNavigation, bool isDownload, const CefString& requestInitiator, bool& disableDefaultHandling) OVERRIDE;
-            virtual DECL bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy,
+            virtual DECL bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, const CefString& originUrl, bool isProxy,
                 const CefString& host, int port, const CefString& realm, const CefString& scheme, CefRefPtr<CefAuthCallback> callback) OVERRIDE;
             virtual DECL bool OnQuotaRequest(CefRefPtr<CefBrowser> browser, const CefString& originUrl, int64 newSize, CefRefPtr<CefRequestCallback> callback) OVERRIDE;
             virtual DECL bool OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CefRequestCallback> callback) OVERRIDE;
@@ -201,11 +189,6 @@ namespace CefSharp
 
             //CefFindHandler
             virtual DECL void OnFindResult(CefRefPtr<CefBrowser> browser, int identifier, int count, const CefRect& selectionRect, int activeMatchOrdinal, bool finalUpdate) OVERRIDE;
-
-            //CefAudioHandler
-            virtual DECL void OnAudioStreamStarted(CefRefPtr<CefBrowser> browser, int audio_stream_id, int channels, ChannelLayout channel_layout, int sample_rate, int frames_per_buffer) OVERRIDE;
-            virtual DECL void OnAudioStreamPacket(CefRefPtr<CefBrowser> browser, int audio_stream_id, const float** data, int frames, int64 pts) OVERRIDE;
-            virtual DECL void OnAudioStreamStopped(CefRefPtr<CefBrowser> browser, int audio_stream_id) OVERRIDE;
 
             IMPLEMENT_REFCOUNTING(ClientAdapter);
         };

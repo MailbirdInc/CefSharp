@@ -108,6 +108,20 @@ void CefBrowserHostWrapper::SetZoomLevel(double zoomLevel)
     _browserHost->SetZoomLevel(zoomLevel);
 }
 
+double CefBrowserHostWrapper::GetZoomLevel()
+{
+    ThrowIfDisposed();
+
+    if (CefCurrentlyOn(TID_UI))
+    {
+
+        return _browserHost->GetZoomLevel();
+    }
+
+    throw gcnew InvalidOperationException("This method can only be called directly on the CEF UI Thread. Use GetZoomLevelAsync or use Cef.UIThreadTaskFactory to marshal the call onto the CEF UI Thread.");
+
+}
+
 Task<double>^ CefBrowserHostWrapper::GetZoomLevelAsync()
 {
     ThrowIfDisposed();
@@ -145,7 +159,7 @@ void CefBrowserHostWrapper::ShowDevTools(IWindowInfo^ windowInfo, int inspectEle
 
     if (windowInfo == nullptr)
     {
-        nativeWindowInfo.SetAsPopup(_browserHost->GetWindowHandle(), "DevTools");
+        nativeWindowInfo.SetAsPopup(NULL, "DevTools");
     }
     else
     {
@@ -477,6 +491,8 @@ void CefBrowserHostWrapper::GetNavigationEntries(INavigationEntryVisitor^ visito
 NavigationEntry^ CefBrowserHostWrapper::GetVisibleNavigationEntry()
 {
     ThrowIfDisposed();
+
+    ThrowIfExecutedOnNonCefUiThread();
 
     auto entry = _browserHost->GetVisibleNavigationEntry();
 

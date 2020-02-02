@@ -9,6 +9,7 @@
 #include "CefBrowserWrapper.h"
 #include "CefAppUnmanagedWrapper.h"
 #include "RegisterBoundObjectHandler.h"
+#include "BindObjectAsyncHandler.h"
 #include "JavascriptPostMessageHandler.h"
 #include "JavascriptRootObjectWrapper.h"
 #include "Async\JavascriptAsyncMethodCallback.h"
@@ -54,28 +55,34 @@ namespace CefSharp
         //Multiple CefBrowserWrappers created when opening popups
         _browserWrappers->TryAdd(browser->GetIdentifier(), wrapper);
 
-        _legacyBindingEnabled = extraInfo->GetBool("LegacyBindingEnabled");
-
-        if (_legacyBindingEnabled)
+        //For the main browser only we check LegacyBindingEnabled and
+        //load the objects. Popups don't send this information and checking
+        //will override the _legacyBindingEnabled field
+        if (!browser->IsPopup())
         {
-            auto objects = extraInfo->GetList("LegacyBindingObjects");
-            if (objects.get() && objects->IsValid())
-            {
-                auto javascriptObjects = DeserializeJsObjects(objects, 0);
+            _legacyBindingEnabled = extraInfo->GetBool("LegacyBindingEnabled");
 
-                for each (JavascriptObject^ obj in Enumerable::OfType<JavascriptObject^>(javascriptObjects))
+            if (_legacyBindingEnabled)
+            {
+                auto objects = extraInfo->GetList("LegacyBindingObjects");
+                if (objects.get() && objects->IsValid())
                 {
-                    //Using LegacyBinding with multiple ChromiumWebBrowser instances that share the same
-                    //render process and using LegacyBinding will cause problems for the limited caching implementation
-                    //that exists at the moment, for now we'll remove an object if already exists, same behaviour
-                    //as the new binding method. 
-                    //TODO: This should be removed when https://github.com/cefsharp/CefSharp/issues/2306
-                    //Is complete as objects will be stored at the browser level
-                    if (_javascriptObjects->ContainsKey(obj->JavascriptName))
+                    auto javascriptObjects = DeserializeJsObjects(objects, 0);
+
+                    for each (JavascriptObject^ obj in Enumerable::OfType<JavascriptObject^>(javascriptObjects))
                     {
-                        _javascriptObjects->Remove(obj->JavascriptName);
+                        //Using LegacyBinding with multiple ChromiumWebBrowser instances that share the same
+                        //render process and using LegacyBinding will cause problems for the limited caching implementation
+                        //that exists at the moment, for now we'll remove an object if already exists, same behaviour
+                        //as the new binding method. 
+                        //TODO: This should be removed when https://github.com/cefsharp/CefSharp/issues/2306
+                        //Is complete as objects will be stored at the browser level
+                        if (_javascriptObjects->ContainsKey(obj->JavascriptName))
+                        {
+                            _javascriptObjects->Remove(obj->JavascriptName);
+                        }
+                        _javascriptObjects->Add(obj->JavascriptName, obj);
                     }
-                    _javascriptObjects->Add(obj->JavascriptName, obj);
                 }
             }
         }
@@ -125,10 +132,10 @@ namespace CefSharp
 
         //TODO: JSB: Split functions into their own classes
         //Browser wrapper is only used for BindObjectAsync
-        auto bindObjAsyncFunction = CefV8Value::CreateFunction(kBindObjectAsync, new RegisterBoundObjectHandler(_registerBoundObjectRegistry, _javascriptObjects, browserWrapper));
-        auto unBindObjFunction = CefV8Value::CreateFunction(kDeleteBoundObject, new RegisterBoundObjectHandler(_registerBoundObjectRegistry, _javascriptObjects, nullptr));
-        auto removeObjectFromCacheFunction = CefV8Value::CreateFunction(kRemoveObjectFromCache, new RegisterBoundObjectHandler(_registerBoundObjectRegistry, _javascriptObjects, nullptr));
-        auto isObjectCachedFunction = CefV8Value::CreateFunction(kIsObjectCached, new RegisterBoundObjectHandler(_registerBoundObjectRegistry, _javascriptObjects, nullptr));
+        auto bindObjAsyncFunction = CefV8Value::CreateFunction(kBindObjectAsync, new BindObjectAsyncHandler(_registerBoundObjectRegistry, _javascriptObjects, browserWrapper));
+        auto unBindObjFunction = CefV8Value::CreateFunction(kDeleteBoundObject, new RegisterBoundObjectHandler(_javascriptObjects));
+        auto removeObjectFromCacheFunction = CefV8Value::CreateFunction(kRemoveObjectFromCache, new RegisterBoundObjectHandler(_javascriptObjects));
+        auto isObjectCachedFunction = CefV8Value::CreateFunction(kIsObjectCached, new RegisterBoundObjectHandler(_javascriptObjects));
         auto postMessageFunction = CefV8Value::CreateFunction(kPostMessage, new JavascriptPostMessageHandler(rootObject == nullptr ? nullptr : rootObject->CallbackRegistry));
 
         cefSharpObj->SetValue(kBindObjectAsync, bindObjAsyncFunction, CefV8Value::PropertyAttribute::V8_PROPERTY_ATTRIBUTE_NONE);
@@ -534,11 +541,12 @@ namespace CefSharp
 
                 if (context.get() && context->Enter())
                 {
+                    JavascriptAsyncMethodCallback^ callback;
+
                     try
                     {
                         rootObject->Bind(javascriptObjects, context->GetGlobal());
 
-                        JavascriptAsyncMethodCallback^ callback;
                         if (_registerBoundObjectRegistry->TryGetAndRemoveMethodCallback(callbackId, callback))
                         {
                             //Response object has no Accessor or Interceptor
@@ -587,28 +595,34 @@ namespace CefSharp
                     finally
                     {
                         context->Exit();
+
+                        delete callback;
                     }
                 }
+            }
+            else
+            {
+                LOG(INFO) << "CefAppUnmanagedWrapper Frame Invalid";
             }
 
             handled = true;
         }
         else if (name == kJavascriptAsyncMethodCallResponse)
         {
-            auto frameId = frame->GetIdentifier();
-            auto callbackId = GetInt64(argList, 0);
-
-            JavascriptRootObjectWrapper^ rootObjectWrapper;
-            browserWrapper->JavascriptRootObjectWrappers->TryGetValue(frameId, rootObjectWrapper);
-
-            if (rootObjectWrapper != nullptr)
+            if (frame.get() && frame->IsValid())
             {
-                JavascriptAsyncMethodCallback^ callback;
-                if (rootObjectWrapper->TryGetAndRemoveMethodCallback(callbackId, callback))
+                auto frameId = frame->GetIdentifier();
+                auto callbackId = GetInt64(argList, 0);
+
+                JavascriptRootObjectWrapper^ rootObjectWrapper;
+                browserWrapper->JavascriptRootObjectWrappers->TryGetValue(frameId, rootObjectWrapper);
+
+                if (rootObjectWrapper != nullptr)
                 {
-                    try
+                    JavascriptAsyncMethodCallback^ callback;
+                    if (rootObjectWrapper->TryGetAndRemoveMethodCallback(callbackId, callback))
                     {
-                        if (frame.get() && frame->IsValid())
+                        try
                         {
                             auto context = frame->GetV8Context();
 
@@ -636,11 +650,11 @@ namespace CefSharp
                                 callback->Fail("Unable to Enter Context");
                             }
                         }
-                    }
-                    finally
-                    {
-                        //dispose
-                        delete callback;
+                        finally
+                        {
+                            //dispose
+                            delete callback;
+                        }
                     }
                 }
             }

@@ -3,16 +3,24 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using CefSharp.Example.Filters;
 using CefSharp.Handler;
+using CefSharp.ResponseFilter;
 
 namespace CefSharp.Example.Handlers
 {
+    /// <summary>
+    /// ExampleResourceRequestHandler demonstrates some of the features you can perform
+    /// using a <see cref="ResourceRequestHandler"/>
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="ResourceRequestHandler"/> represents a single resource request
+    /// </remarks>
     public class ExampleResourceRequestHandler : ResourceRequestHandler
     {
-        private readonly Dictionary<UInt64, MemoryStreamResponseFilter> responseDictionary = new Dictionary<UInt64, MemoryStreamResponseFilter>();
+        private MemoryStream memoryStream;
 
         protected override CefReturnValue OnBeforeResourceLoad(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback)
         {
@@ -88,7 +96,7 @@ namespace CefSharp.Example.Handlers
             return CefReturnValue.Continue;
         }
 
-        protected override void OnResourceRedirect(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, ref string newUrl)
+        protected override void OnResourceRedirect(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IResponse response, ref string newUrl)
         {
             //Example of how to redirect - need to check `newUrl` in the second pass
             //if (request.Url.StartsWith("https://www.google.com", StringComparison.OrdinalIgnoreCase) && !newUrl.Contains("github"))
@@ -102,7 +110,7 @@ namespace CefSharp.Example.Handlers
             return request.Url.StartsWith("mailto");
         }
 
-        protected override bool OnResourceResponse(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response)
+        protected override bool OnResourceResponse(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IResponse response)
         {
             //NOTE: You cannot modify the response, only the request
             // You can now access the headers
@@ -111,7 +119,7 @@ namespace CefSharp.Example.Handlers
             return false;
         }
 
-        protected override IResponseFilter GetResourceResponseFilter(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response)
+        protected override IResponseFilter GetResourceResponseFilter(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IResponse response)
         {
             var url = new Uri(request.Url);
             if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName)
@@ -127,29 +135,24 @@ namespace CefSharp.Example.Handlers
                 }
 
                 //Only called for our customScheme
-                var dataFilter = new MemoryStreamResponseFilter();
-                responseDictionary.Add(request.Identifier, dataFilter);
-                return dataFilter;
+                memoryStream = new MemoryStream();
+                return new StreamResponseFilter(memoryStream);
             }
 
             //return new PassThruResponseFilter();
             return null;
         }
 
-        protected override void OnResourceLoadComplete(IWebBrowser browserControl, IBrowser browser, IFrame frame, IRequest request, IResponse response, UrlRequestStatus status, long receivedContentLength)
+        protected override void OnResourceLoadComplete(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IResponse response, UrlRequestStatus status, long receivedContentLength)
         {
             var url = new Uri(request.Url);
-            if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName)
+            if (url.Scheme == CefSharpSchemeHandlerFactory.SchemeName && memoryStream != null)
             {
-                MemoryStreamResponseFilter filter;
-                if (responseDictionary.TryGetValue(request.Identifier, out filter))
-                {
-                    //TODO: Do something with the data here
-                    var data = filter.Data;
-                    var dataLength = filter.Data.Length;
-                    //NOTE: You may need to use a different encoding depending on the request
-                    var dataAsUtf8String = Encoding.UTF8.GetString(data);
-                }
+                //TODO: Do something with the data here
+                var data = memoryStream.ToArray();
+                var dataLength = data.Length;
+                //NOTE: You may need to use a different encoding depending on the request
+                var dataAsUtf8String = Encoding.UTF8.GetString(data);
             }
         }
     }
