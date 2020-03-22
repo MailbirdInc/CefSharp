@@ -2,15 +2,25 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
-using CefSharp.OffScreen;
 using System;
 using System.IO;
+using System.Threading.Tasks;
+using CefSharp.OffScreen;
+using Nito.AsyncEx;
+using Xunit;
 
 namespace CefSharp.Test
 {
-    public class CefSharpFixture : IDisposable
+    public class CefSharpFixture : IAsyncLifetime, IDisposable
     {
+        private readonly AsyncContextThread contextThread;
+
         public CefSharpFixture()
+        {
+            contextThread = new AsyncContextThread();
+        }
+
+        private void CefInitialize()
         {
             if (!Cef.IsInitialized)
             {
@@ -20,6 +30,7 @@ namespace CefSharp.Test
                     throw new Exception(@"Add <add key=""xunit.appDomain"" value=""denied""/> to your app.config to disable appdomains");
                 }
 
+                CefSharpSettings.ShutdownOnExit = false;
                 var settings = new CefSettings();
 
                 //The location where cache data will be stored on disk. If empty an in-memory cache will be used for some features and a temporary disk cache for others.
@@ -30,12 +41,27 @@ namespace CefSharp.Test
             }
         }
 
-        public void Dispose()
+        private void CefShutdown()
         {
             if (Cef.IsInitialized)
             {
                 Cef.Shutdown();
             }
+        }
+
+        public Task InitializeAsync()
+        {
+            return contextThread.Factory.StartNew(CefInitialize);
+        }
+
+        public Task DisposeAsync()
+        {
+            return contextThread.Factory.StartNew(CefShutdown);
+        }
+
+        public void Dispose()
+        {
+            contextThread.Dispose();
         }
     }
 }

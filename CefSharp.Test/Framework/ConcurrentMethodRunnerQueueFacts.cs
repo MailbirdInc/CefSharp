@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CefSharp.Example.JavascriptBinding;
 using CefSharp.Internals;
+using Nito.AsyncEx;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,19 +32,18 @@ namespace CefSharp.Test.Framework
             methodInvocation.Parameters.Add("Echo Me!");
             var methodRunnerQueue = new ConcurrentMethodRunnerQueue(objectRepository);
 
-            methodRunnerQueue.Start();
             methodRunnerQueue.Enqueue(methodInvocation);
 
             //Wait a litle for the queue to start processing our Method call
             await Task.Delay(500);
 
-            var ex = Record.Exception(() => methodRunnerQueue.Stop());
+            var ex = Record.Exception(() => methodRunnerQueue.Dispose());
 
             Assert.Null(ex);
         }
 
         [Fact]
-        public void ValidateAsyncTaskMethodOutput()
+        public async Task ValidateAsyncTaskMethodOutput()
         {
             const string expectedResult = "Echo Me!";
             var boundObject = new AsyncBoundObject();
@@ -53,25 +53,27 @@ namespace CefSharp.Test.Framework
             var methodInvocation = new MethodInvocation(1, 1, 1, nameof(boundObject.AsyncWaitTwoSeconds), 1);
             methodInvocation.Parameters.Add(expectedResult);
             var methodRunnerQueue = new ConcurrentMethodRunnerQueue(objectRepository);
-            var manualResetEvent = new ManualResetEvent(false);
+            var manualResetEvent = new AsyncManualResetEvent();
+            var cancellationToken = new CancellationTokenSource();
+
+            cancellationToken.CancelAfter(5000);
 
             var actualResult = "";
 
             methodRunnerQueue.MethodInvocationComplete += (sender, args) =>
             {
-                methodRunnerQueue.Stop();
-
                 actualResult = args.Result.Result.ToString();
 
                 manualResetEvent.Set();
             };
 
-            methodRunnerQueue.Start();
             methodRunnerQueue.Enqueue(methodInvocation);
 
-            manualResetEvent.WaitOne(3000);
+            await manualResetEvent.WaitAsync(cancellationToken.Token);
 
             Assert.Equal(expectedResult, actualResult);
+
+            methodRunnerQueue.Dispose();
         }
     }
 }
