@@ -6,7 +6,6 @@
 *.ipch
 *.metagen
 *.ncb
-*.nupkg
 *.obj
 *.opensdf
 *.pdb

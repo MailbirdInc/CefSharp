@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2019
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CefSharp.Example", "CefSharp.Example\CefSharp.Example.csproj", "{A4394E7B-1155-43A6-989E-8AB72DDDC9E4}"
 EndProject
@@ -20,6 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CONTRIBUTING.md = CONTRIBUTING.md
 		ISSUE_TEMPLATE.md = ISSUE_TEMPLATE.md
 		LICENSE = LICENSE
+		NuGet.config = NuGet.config
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -78,6 +79,26 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CefSharp.Test", "CefSharp.Test\CefSharp.Test.csproj", "{7A4D5447-183B-4A11-8E63-9848991B46FF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{23EE5140-2C2C-4B53-A954-10B08DCA6BD6} = {23EE5140-2C2C-4B53-A954-10B08DCA6BD6}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "privatenuget", "privatenuget", "{A536DB18-CC45-458E-90F4-76D47B1BA7E3}"
+	ProjectSection(SolutionItems) = preProject
+		privatenuget\cef.redist.nuspec = privatenuget\cef.redist.nuspec
+		privatenuget\cef.redist.x64.80.1.2.nupkg = privatenuget\cef.redist.x64.80.1.2.nupkg
+		privatenuget\cef.redist.x64.props = privatenuget\cef.redist.x64.props
+		privatenuget\cef.redist.x86.80.1.2.nupkg = privatenuget\cef.redist.x86.80.1.2.nupkg
+		privatenuget\cef.redist.x86.props = privatenuget\cef.redist.x86.props
+		privatenuget\cef.sdk.80.1.2.nupkg = privatenuget\cef.sdk.80.1.2.nupkg
+		privatenuget\cef.sdk.nuspec = privatenuget\cef.sdk.nuspec
+		privatenuget\cef.sdk.props = privatenuget\cef.sdk.props
+		privatenuget\cef128x128.gif = privatenuget\cef128x128.gif
+		privatenuget\cef128x128.png = privatenuget\cef128x128.png
+		privatenuget\cef32x32.gif = privatenuget\cef32x32.gif
+		privatenuget\chromiumembeddedframework.redist.win-x64.80.1.2.nupkg = privatenuget\chromiumembeddedframework.redist.win-x64.80.1.2.nupkg
+		privatenuget\chromiumembeddedframework.redist.win-x64.props = privatenuget\chromiumembeddedframework.redist.win-x64.props
+		privatenuget\chromiumembeddedframework.redist.win-x86.80.1.2.nupkg = privatenuget\chromiumembeddedframework.redist.win-x86.80.1.2.nupkg
+		privatenuget\chromiumembeddedframework.redist.win-x86.props = privatenuget\chromiumembeddedframework.redist.win-x86.props
+		privatenuget\chromiumembeddedframework.redist.win.nuspec = privatenuget\chromiumembeddedframework.redist.win.nuspec
 	EndProjectSection
 EndProject
 Global
@@ -191,6 +212,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A23AA466-1903-44F2-946D-25AD0500D56B} = {47D0DC8C-D707-4D8A-A578-7737AA9CE79B}
 		{9AD9C469-B121-47BB-9B9F-30D1B96B52B0} = {47D0DC8C-D707-4D8A-A578-7737AA9CE79B}
+		{A536DB18-CC45-458E-90F4-76D47B1BA7E3} = {47D0DC8C-D707-4D8A-A578-7737AA9CE79B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E667E2F4-BFCF-4187-A0E7-69883146951D}
