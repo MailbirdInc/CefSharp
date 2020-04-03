@@ -16,10 +16,10 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "CefSharp.Core"
-            VALUE "FileVersion", "80.0.40"
+            VALUE "FileVersion", "80.0.99"
             VALUE "LegalCopyright", "Copyright © 2020 The CefSharp Authors"
             VALUE "ProductName", "CefSharp"
-            VALUE "ProductVersion", "80.0.40"
+            VALUE "ProductVersion", "80.0.99"
         END
     END
     BLOCK "VarFileInfo"

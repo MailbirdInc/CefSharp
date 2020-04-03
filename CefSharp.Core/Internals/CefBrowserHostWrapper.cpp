@@ -300,7 +300,14 @@ void CefBrowserHostWrapper::SendKeyEvent(int message, int wParam, int lParam)
         keyEvent.type = KEYEVENT_CHAR;
     }
     keyEvent.modifiers = GetCefKeyboardModifiers(wParam, lParam);
-
+    if ((keyEvent.type == KEYEVENT_CHAR) && IsKeyDown(VK_RMENU)) {
+        HKL current_layout = ::GetKeyboardLayout(0);
+        SHORT scan_res = ::VkKeyScanExW(wParam, current_layout);
+        if (((scan_res >> 8) & 0xFF) == (2 | 4)) { // ctrl-alt pressed
+            keyEvent.modifiers &= ~(EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN);
+            keyEvent.modifiers |= EVENTFLAG_ALTGR_DOWN;
+        }
+    }
     _browserHost->SendKeyEvent(keyEvent);
 }
 
