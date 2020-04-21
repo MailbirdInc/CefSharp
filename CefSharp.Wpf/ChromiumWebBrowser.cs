@@ -147,6 +147,11 @@ namespace CefSharp.Wpf
         private int disposeSignaled;
 
         /// <summary>
+        /// Lock every call to GetBrowser() till the initialization process is completed
+        /// </summary>
+        private ManualResetEventSlim browserInitializationEvent = new ManualResetEventSlim(false);
+
+        /// <summary>
         /// Gets a value indicating whether this instance is disposed.
         /// </summary>
         /// <value><see langword="true" /> if this instance is disposed; otherwise, <see langword="false" />.</value>
@@ -1209,6 +1214,7 @@ namespace CefSharp.Wpf
         {
             Interlocked.Exchange(ref browserInitialized, 1);
             this.browser = browser;
+            browserInitializationEvent.Set();
 
             UiThreadRunAsync(() =>
             {
@@ -2619,6 +2625,8 @@ namespace CefSharp.Wpf
         public IBrowser GetBrowser()
         {
             this.ThrowExceptionIfDisposed();
+            browserInitializationEvent.Wait();
+
             //We don't use the this.ThrowExceptionIfBrowserNotInitialized(); extension method here
             // As it relies on the IWebBrowser.IsBrowserInitialized property which is a DependencyProperty
             // in WPF and will throw an InvalidOperationException if called on a Non-UI thread.
