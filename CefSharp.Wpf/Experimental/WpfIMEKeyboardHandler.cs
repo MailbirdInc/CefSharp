@@ -245,7 +245,7 @@ namespace CefSharp.Wpf.Experimental
             if (ImeHandler.GetResult(hwnd, (uint)lParam, out text))
             {
                 owner.GetBrowserHost().ImeCommitText(text, new Range(int.MaxValue, int.MaxValue), 0);
-                if (languageCodeId == ImeNative.LANG_KOREAN)
+                if (languageCodeId == ImeNative.LANG_KOREAN || languageCodeId == ImeNative.LANG_JAPANESE)
                 {
                     owner.GetBrowserHost().ImeSetComposition(text, new CompositionUnderline[0], new Range(int.MaxValue, int.MaxValue), new Range(0, 0));
                     owner.GetBrowserHost().ImeFinishComposingText(false);
@@ -284,7 +284,7 @@ namespace CefSharp.Wpf.Experimental
         {
             // Korean IMEs somehow ignore function calls to ::ImeFinishComposingText()
             // The same letter is commited in ::OnImeComposition()
-            if (languageCodeId != ImeNative.LANG_KOREAN)
+            if (languageCodeId != ImeNative.LANG_KOREAN && languageCodeId != ImeNative.LANG_JAPANESE)
             {
                 owner.GetBrowserHost().ImeFinishComposingText(false);
             }
