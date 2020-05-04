@@ -146,7 +146,8 @@ namespace CefSharp
 
             Stream.Seek(bytesToSkip, SeekOrigin.Current);
 
-            return false;
+            //If data is available immediately set bytesSkipped to the number of of bytes skipped and return true.
+            return true;
         }
 
         bool IResourceHandler.Read(Stream dataOut, out int bytesRead, IResourceReadCallback callback)
@@ -258,7 +259,7 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Gets the resource from the file path specified. Use the <see cref="GetMimeType"/>
+        /// Gets the resource from the file path specified. Use the Cef.GetMimeType()
         /// helper method to lookup the mimeType if required. Uses CefStreamResourceHandler for reading the data
         /// </summary>
         /// <param name="filePath">Location of the file.</param>
@@ -291,6 +292,7 @@ namespace CefSharp
         /// <param name="text">The text.</param>
         /// <param name="fileExtension">The file extension.</param>
         /// <returns>ResourceHandler.</returns>
+        [Obsolete("Use ResourceHandler.FromString(resource, mimeType: Cef.GetMimeType(fileExtension)); instead, this method will be removed")]
         public static IResourceHandler FromString(string text, string fileExtension)
         {
             var mimeType = GetMimeType(fileExtension);
@@ -996,6 +998,7 @@ namespace CefSharp
         /// <param name="extension">The extension.</param>
         /// <returns>System.String.</returns>
         /// <exception cref="System.ArgumentNullException">extension</exception>
+        [Obsolete("This method is deprecated and will be removed use Cef.GetMimeType(extension); instead. See https://github.com/cefsharp/CefSharp/issues/3041 for details.")]
         public static string GetMimeType(string extension)
         {
             if (extension == null)
