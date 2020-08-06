@@ -100,6 +100,13 @@ namespace CefSharp
             return StringUtils::ToClr(_wrappedInfo->GetSelectionText());
         }
 
+        String^ CefContextMenuParamsWrapper::TitleText::get()
+        {
+            ThrowIfDisposed();
+
+            return StringUtils::ToClr(_wrappedInfo->GetTitleText());
+        }
+
         String^ CefContextMenuParamsWrapper::MisspelledWord::get()
         {
             ThrowIfDisposed();

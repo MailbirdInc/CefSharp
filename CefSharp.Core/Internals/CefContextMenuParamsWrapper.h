@@ -51,6 +51,7 @@ namespace CefSharp
             virtual property ContextMenuMediaType MediaType { ContextMenuMediaType get(); }
             virtual property ContextMenuMediaState MediaStateFlags { ContextMenuMediaState get(); }
             virtual property String^ SelectionText { String^ get(); }
+            virtual property String^ TitleText { String^ get(); }
             virtual property String^ MisspelledWord { String^ get(); }
             virtual property List<String^>^ DictionarySuggestions { List<String^>^ get(); }
             virtual property bool IsEditable { bool get(); }

@@ -125,7 +125,7 @@ namespace CefSharp
         /// Returns true if the context menu was invoked from a pepper plugin.
         /// </summary>
         bool IsPepperMenu { get; }
-
+        string TitleText { get; }
         /// <summary>
         /// Gets a value indicating whether the object has been disposed of.
         /// </summary>
