@@ -125,7 +125,13 @@ namespace CefSharp
         /// Returns true if the context menu was invoked from a pepper plugin.
         /// </summary>
         bool IsPepperMenu { get; }
+
+        /// <summary>
+        /// Returns the "title" html attribute for images.
+        /// Should work for the "alt" attribute as well, but it does not.
+        /// </summary>
         string TitleText { get; }
+
         /// <summary>
         /// Gets a value indicating whether the object has been disposed of.
         /// </summary>
