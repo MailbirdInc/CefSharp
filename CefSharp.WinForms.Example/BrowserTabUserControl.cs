@@ -12,6 +12,8 @@ using CefSharp.Example;
 using CefSharp.Example.Handlers;
 using CefSharp.Example.JavascriptBinding;
 using CefSharp.WinForms.Example.Handlers;
+using CefSharp.WinForms.Experimental;
+using CefSharp.WinForms.Handler;
 
 namespace CefSharp.WinForms.Example
 {
@@ -19,7 +21,7 @@ namespace CefSharp.WinForms.Example
     {
         public IWinFormsWebBrowser Browser { get; private set; }
         private IntPtr browserHandle;
-        private ChromeWidgetMessageInterceptor messageInterceptor;
+        private ChromiumWidgetNativeWindow messageInterceptor;
         private bool multiThreadedMessageLoopEnabled;
 
         public BrowserTabUserControl(Action<string, int?> openNewTab, string url, bool multiThreadedMessageLoopEnabled)
@@ -39,6 +41,8 @@ namespace CefSharp.WinForms.Example
             browser.RequestHandler = new WinFormsRequestHandler(openNewTab);
             browser.JsDialogHandler = new JsDialogHandler();
             browser.DownloadHandler = new DownloadHandler();
+            browser.AudioHandler = new AudioHandler();
+
             if (multiThreadedMessageLoopEnabled)
             {
                 browser.KeyboardHandler = new KeyboardHandler();
@@ -50,10 +54,49 @@ namespace CefSharp.WinForms.Example
                 browser.FocusHandler = null;
             }
 
-            //Handling DevTools docked inside the same window requires 
-            //an instance of the LifeSpanHandler all the window events,
-            //e.g. creation, resize, moving, closing etc.
-            browser.LifeSpanHandler = new LifeSpanHandler(openPopupsAsTabs: false);
+            //The CefSharp.WinForms.Handler.LifeSpanHandler implementation
+            //allows for Popups to be hosted in Controls/Tabs
+            //This example also demonstrates docking DevTools in a SplitPanel
+            browser.LifeSpanHandler = LifeSpanHandler
+                .Create()
+                .OnPopupCreated((ctrl, targetUrl) =>
+                {
+                    //Don't try using ctrl.FindForm() here as
+                    //the control hasn't been attached to a parent yet.
+                    if (FindForm() is BrowserForm owner)
+                    {
+                        owner.AddTab(ctrl, targetUrl);
+                    }
+                })
+                .OnPopupDestroyed((ctrl, popupBrowser) =>
+                {
+                    //If we docked  DevTools (hosted it ourselves rather than the default popup)
+                    //Used when the BrowserTabUserControl.ShowDevToolsDocked method is called
+                    if (popupBrowser.MainFrame.Url.Equals("devtools://devtools/devtools_app.html"))
+                    {
+                        //Dispose of the parent control we used to host DevTools, this will release the DevTools window handle
+                        //and the ILifeSpanHandler.OnBeforeClose() will be call after.
+                        ctrl.Dispose();
+                    }
+                    else
+                    {
+                        //If browser is disposed or the handle has been released then we don't
+                        //need to remove the tab in this example. The user likely used the
+                        // File -> Close Tab menu option which also calls BrowserForm.RemoveTab
+                        if (!ctrl.IsDisposed && ctrl.IsHandleCreated)
+                        {
+                            if (ctrl.FindForm() is BrowserForm owner)
+                            {
+                                var windowHandle = popupBrowser.GetHost().GetWindowHandle();
+
+                                owner.RemoveTab(windowHandle);
+                            }
+
+                            ctrl.Dispose();
+                        }
+                    }
+                })
+                .Build();            
 
             browser.LoadingStateChanged += OnBrowserLoadingStateChanged;
             browser.ConsoleMessage += OnBrowserConsoleMessage;
@@ -63,8 +106,12 @@ namespace CefSharp.WinForms.Example
             browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
             browser.LoadError += OnLoadError;
 
+#if NETCOREAPP
+            browser.JavascriptObjectRepository.Register("boundAsync", new AsyncBoundObject(), options: BindingOptions.DefaultBinder);
+#else
             browser.JavascriptObjectRepository.Register("bound", new BoundObject(), isAsync: false, options: BindingOptions.DefaultBinder);
             browser.JavascriptObjectRepository.Register("boundAsync", new AsyncBoundObject(), isAsync: true, options: BindingOptions.DefaultBinder);
+#endif
 
             //If you call CefSharp.BindObjectAsync in javascript and pass in the name of an object which is not yet
             //bound, then ResolveObject will be called, you can then register it
@@ -73,7 +120,11 @@ namespace CefSharp.WinForms.Example
                 var repo = e.ObjectRepository;
                 if (e.ObjectName == "boundAsync2")
                 {
+#if NETCOREAPP
+                    repo.Register("boundAsync2", new AsyncBoundObject(), options: BindingOptions.DefaultBinder);
+#else
                     repo.Register("boundAsync2", new AsyncBoundObject(), isAsync: true, options: BindingOptions.DefaultBinder);
+#endif
                 }
             };
 
@@ -88,7 +139,9 @@ namespace CefSharp.WinForms.Example
             eventObject.EventArrived += OnJavascriptEventArrived;
             // Use the default of camelCaseJavascriptNames
             // .Net methods starting with a capitol will be translated to starting with a lower case letter when called from js
+#if !NETCOREAPP
             browser.JavascriptObjectRepository.Register("boundEvent", eventObject, isAsync: false, options: BindingOptions.DefaultBinder);
+#endif
 
             CefExample.RegisterTestResources(browser);
 
@@ -265,9 +318,11 @@ namespace CefSharp.WinForms.Example
                     while (true)
                     {
                         IntPtr chromeWidgetHostHandle;
-                        if (ChromeWidgetHandleFinder.TryFindHandle(browserHandle, out chromeWidgetHostHandle))
+                        if (ChromiumRenderWidgetHandleFinder.TryFindHandle(Browser, out chromeWidgetHostHandle))
                         {
-                            messageInterceptor = new ChromeWidgetMessageInterceptor((Control)Browser, chromeWidgetHostHandle, message =>
+                            messageInterceptor = new ChromiumWidgetNativeWindow((Control)Browser, chromeWidgetHostHandle);
+
+                            messageInterceptor.OnWndProc(message =>
                             {
                                 const int WM_MOUSEACTIVATE = 0x0021;
                                 const int WM_NCLBUTTONDOWN = 0x00A1;
@@ -277,7 +332,7 @@ namespace CefSharp.WinForms.Example
                                 if (message.Msg == WM_DESTROY)
                                 {
                                     SetupMessageInterceptor();
-                                    return;
+                                    return false;
                                 }
 
                                 if (message.Msg == WM_MOUSEACTIVATE)
@@ -312,6 +367,8 @@ namespace CefSharp.WinForms.Example
                                 //        Console.WriteLine("WM_MOUSELEAVE");
                                 //        break;
                                 //}
+
+                                return false;
                             });
 
                             break;
@@ -384,6 +441,13 @@ namespace CefSharp.WinForms.Example
             {
                 Browser.Load(url);
             }
+            else
+            {
+                var searchUrl = "https://www.google.com/search?q=" + Uri.EscapeDataString(url);
+
+                Browser.Load(searchUrl);
+            }
+
         }
 
         public async void CopySourceToClipBoardAsync()
@@ -456,16 +520,14 @@ namespace CefSharp.WinForms.Example
             }
 
             //Find devToolsControl in Controls collection
-            DevToolsContainerControl devToolsControl = null;
-            devToolsControl = browserSplitContainer.Panel2.Controls.Find(nameof(devToolsControl), false).FirstOrDefault() as DevToolsContainerControl;
+            Control devToolsControl = null;
+            devToolsControl = browserSplitContainer.Panel2.Controls.Find(nameof(devToolsControl), false).FirstOrDefault();
 
             if (devToolsControl == null || devToolsControl.IsDisposed)
             {
-                devToolsControl = new DevToolsContainerControl()
-                {
-                    Name = nameof(devToolsControl),
-                    Dock = DockStyle.Fill
-                };
+                devToolsControl = Browser.ShowDevToolsDocked(
+                    parentControl: browserSplitContainer.Panel2,
+                    controlName: nameof(devToolsControl));
 
                 EventHandler devToolsPanelDisposedHandler = null;
                 devToolsPanelDisposedHandler = (s, e) =>
@@ -477,27 +539,7 @@ namespace CefSharp.WinForms.Example
 
                 //Subscribe for devToolsPanel dispose event
                 devToolsControl.Disposed += devToolsPanelDisposedHandler;
-
-                //Add new devToolsPanel instance to Controls collection
-                browserSplitContainer.Panel2.Controls.Add(devToolsControl);
             }
-
-            if (!devToolsControl.IsHandleCreated)
-            {
-                //It's very important the handle for the control is created prior to calling
-                //SetAsChild, if the handle hasn't been created then manually call CreateControl();
-                //This code is not required for this example, it's left here for demo purposes.
-                devToolsControl.CreateControl();
-            }
-
-            //Devtools will be a child of the DevToolsContainerControl
-            //DevToolsContainerControl is a simple custom Control that's only required
-            //when CefSettings.MultiThreadedMessageLoop = false so arrow/tab key presses
-            //are forwarded to DevTools correctly.
-            var rect = devToolsControl.ClientRectangle;
-            var windowInfo = new WindowInfo();
-            windowInfo.SetAsChild(devToolsControl.Handle, rect.Left, rect.Top, rect.Right, rect.Bottom);
-            Browser.GetBrowserHost().ShowDevTools(windowInfo);
         }
 
         public Task<bool> CheckIfDevToolsIsOpenAsync()

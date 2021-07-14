@@ -2,10 +2,11 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using CefSharp.Enums;
 using CefSharp.Structs;
-using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms.Example.Handlers
 {
@@ -20,6 +21,11 @@ namespace CefSharp.WinForms.Example.Handlers
         }
 
         bool IDisplayHandler.OnAutoResize(IWebBrowser chromiumWebBrowser, IBrowser browser, Size newSize)
+        {
+            return false;
+        }
+
+        bool IDisplayHandler.OnCursorChange(IWebBrowser chromiumWebBrowser, IBrowser browser, IntPtr cursor, CursorType type, CursorInfo customCursorInfo)
         {
             return false;
         }
@@ -86,6 +92,6 @@ namespace CefSharp.WinForms.Example.Handlers
         bool IDisplayHandler.OnConsoleMessage(IWebBrowser chromiumWebBrowser, ConsoleMessageEventArgs consoleMessageArgs)
         {
             return false;
-        }
+        }        
     }
 }
