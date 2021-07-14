@@ -4,9 +4,13 @@
 
 using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
+using CefSharp.Example;
 using CefSharp.OffScreen;
 using Nito.AsyncEx;
+using Titanium.Web.Proxy;
+using Titanium.Web.Proxy.Models;
 using Xunit;
 
 namespace CefSharp.Test
@@ -14,6 +18,7 @@ namespace CefSharp.Test
     public class CefSharpFixture : IAsyncLifetime, IDisposable
     {
         private readonly AsyncContextThread contextThread;
+        private ProxyServer proxyServer;
 
         public CefSharpFixture()
         {
@@ -35,9 +40,18 @@ namespace CefSharp.Test
                 CefSharpSettings.ShutdownOnExit = false;
                 var settings = new CefSettings();
 
+                settings.RegisterScheme(new CefCustomScheme
+                {
+                    SchemeName = "https",
+                    SchemeHandlerFactory = new CefSharpSchemeHandlerFactory(),
+                    DomainName = CefExample.ExampleDomain
+                });
+
                 //The location where cache data will be stored on disk. If empty an in-memory cache will be used for some features and a temporary disk cache for others.
                 //HTML5 databases such as localStorage will only persist across sessions if a cache path is specified. 
                 settings.CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Tests\\Cache");
+                settings.RootCachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Tests");
+                //settings.CefCommandLineArgs.Add("renderer-startup-dialog");
 
                 Cef.Initialize(settings, performDependencyCheck: false, browserProcessHandler: null);
             }
@@ -49,6 +63,8 @@ namespace CefSharp.Test
             {
                 Cef.Shutdown();
             }
+
+            StopProxyServer();
         }
 
         public Task InitializeAsync()
@@ -64,6 +80,27 @@ namespace CefSharp.Test
         public void Dispose()
         {
             contextThread.Dispose();
+        }
+
+        public void StartProxyServerIfRequired()
+        {
+            if (proxyServer == null)
+            {
+                proxyServer = new ProxyServer(userTrustRootCertificate: false);
+
+                var explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Loopback, 8080, false);
+
+                // An explicit endpoint is where the client knows about the existence of a proxy
+                // So client sends request in a proxy friendly manner
+                proxyServer.AddEndPoint(explicitEndPoint);
+                proxyServer.Start();
+            }
+        }
+
+        public void StopProxyServer()
+        {
+            proxyServer?.Stop();
+            proxyServer = null;
         }
     }
 }
