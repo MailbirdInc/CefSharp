@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using CefSharp.Example;
+using CefSharp.Example.Handlers;
 using CefSharp.Wpf.Example.Controls;
 using CefSharp.Wpf.Example.ViewModels;
 using Microsoft.Win32;
@@ -80,9 +82,9 @@ namespace CefSharp.Wpf.Example
             CreateNewTab(CefExample.DefaultUrl, true);
         }
 
-        private void CreateNewTab(string url = DefaultUrlForAddedTabs, bool showSideBar = false)
+        private void CreateNewTab(string url = DefaultUrlForAddedTabs, bool showSideBar = false, bool legacyBindingEnabled = false)
         {
-            BrowserTabs.Add(new BrowserTabViewModel(url) { ShowSidebar = showSideBar });
+            BrowserTabs.Add(new BrowserTabViewModel(url) { ShowSidebar = showSideBar, LegacyBindingEnabled = legacyBindingEnabled });
         }
 
         private void CustomCommandBinding(object sender, ExecutedRoutedEventArgs e)
@@ -109,31 +111,26 @@ namespace CefSharp.Wpf.Example
                 {
                     browserViewModel.LoadCustomRequestExample();
                 }
-
-                if (param == "OpenDevTools")
+                else if (param == "OpenDevTools")
                 {
                     browserViewModel.WebBrowser.ShowDevTools();
                 }
-
-                if (param == "ZoomIn")
+                else if (param == "ZoomIn")
                 {
                     var cmd = browserViewModel.WebBrowser.ZoomInCommand;
                     cmd.Execute(null);
                 }
-
-                if (param == "ZoomOut")
+                else if (param == "ZoomOut")
                 {
                     var cmd = browserViewModel.WebBrowser.ZoomOutCommand;
                     cmd.Execute(null);
                 }
-
-                if (param == "ZoomReset")
+                else if (param == "ZoomReset")
                 {
                     var cmd = browserViewModel.WebBrowser.ZoomResetCommand;
                     cmd.Execute(null);
                 }
-
-                if (param == "ClearHttpAuthCredentials")
+                else if (param == "ClearHttpAuthCredentials")
                 {
                     var browserHost = browserViewModel.WebBrowser.GetBrowserHost();
                     if (browserHost != null && !browserHost.IsDisposed)
@@ -146,28 +143,78 @@ namespace CefSharp.Wpf.Example
                         });
                     }
                 }
+                else if (param == "LoadExtension")
+                {
+                    var browser = browserViewModel.WebBrowser;
+                    //The sample extension only works for http(s) schemes
+                    if (browser.Address.StartsWith("http"))
+                    {
+                        var requestContext = browser.GetBrowserHost().RequestContext;
 
-                if (param == "ToggleSidebar")
+                        var dir = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\CefSharp.Example\Extensions");
+                        dir = Path.GetFullPath(dir);
+                        if (!Directory.Exists(dir))
+                        {
+                            throw new DirectoryNotFoundException("Unable to locate example extensions folder - " + dir);
+                        }
+
+                        var extensionHandler = new ExtensionHandler
+                        {
+                            LoadExtensionPopup = (url) =>
+                            {
+                                Dispatcher.BeginInvoke(new Action(() =>
+                                {
+                                    var extensionWindow = new Window();
+
+                                    var extensionBrowser = new ChromiumWebBrowser(url);
+                                    //extensionBrowser.IsBrowserInitializedChanged += (s, args) =>
+                                    //{
+                                    //    extensionBrowser.ShowDevTools();
+                                    //};
+
+                                    extensionWindow.Content = extensionBrowser;
+
+                                    extensionWindow.Show();
+                                }));
+                            },
+                            GetActiveBrowser = (extension, isIncognito) =>
+                            {
+                                //Return the active browser for which the extension will act upon
+                                return browser.GetBrowser();
+                            }
+                        };
+
+                        requestContext.LoadExtensionsFromDirectory(dir, extensionHandler);
+                    }
+                    else
+                    {
+                        MessageBox.Show("The sample extension only works with http(s) schemes, please load a different website and try again", "Unable to load Extension");
+                    }
+                }
+                else if (param == "ToggleSidebar")
                 {
                     browserViewModel.ShowSidebar = !browserViewModel.ShowSidebar;
                 }
-
-                if (param == "ToggleDownloadInfo")
+                else if (param == "ToggleDownloadInfo")
                 {
                     browserViewModel.ShowDownloadInfo = !browserViewModel.ShowDownloadInfo;
                 }
-
-                if (param == "ResizeHackTests")
+                else if (param == "ResizeHackTests")
                 {
                     ReproduceWasResizedCrashAsync();
                 }
-
-                if (param == "AsyncJsbTaskTests")
+                else if (param == "AsyncJsbTaskTests")
                 {
                     //After this setting has changed all tests will run through the Concurrent MethodQueueRunner
                     CefSharpSettings.ConcurrentTaskExecution = true;
 
                     CreateNewTab(CefExample.BindingTestsAsyncTaskUrl, true);
+
+                    TabControl.SelectedIndex = TabControl.Items.Count - 1;
+                }
+                else if (param == "LegacyBindingTest")
+                {
+                    CreateNewTab(CefExample.LegacyBindingTestUrl, true, legacyBindingEnabled: true);
 
                     TabControl.SelectedIndex = TabControl.Items.Count - 1;
                 }

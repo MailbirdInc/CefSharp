@@ -4,16 +4,15 @@
 
 using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using CefSharp.Example;
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
 
 namespace CefSharp.Wpf.Example.ViewModels
 {
-    public class BrowserTabViewModel : ViewModelBase
+    public class BrowserTabViewModel : INotifyPropertyChanged
     {
         private string address;
         public string Address
@@ -90,6 +89,16 @@ namespace CefSharp.Wpf.Example.ViewModels
         {
             get { return downloadItem; }
             set { Set(ref downloadItem, value); }
+        }
+
+        private bool legacyBindingEnabled;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public bool LegacyBindingEnabled
+        {
+            get { return legacyBindingEnabled; }
+            set { Set(ref legacyBindingEnabled, value); }
         }
 
         public ICommand GoCommand { get; private set; }
@@ -178,19 +187,6 @@ namespace CefSharp.Wpf.Example.ViewModels
                     {
                         WebBrowser.ConsoleMessage += OnWebBrowserConsoleMessage;
                         WebBrowser.StatusMessage += OnWebBrowserStatusMessage;
-
-                        // TODO: This is a bit of a hack. It would be nicer/cleaner to give the webBrowser focus in the Go()
-                        // TODO: method, but it seems like "something" gets messed up (= doesn't work correctly) if we give it
-                        // TODO: focus "too early" in the loading process...
-                        WebBrowser.FrameLoadEnd += (s, args) =>
-                        {
-                            //Sender is the ChromiumWebBrowser object 
-                            var browser = s as ChromiumWebBrowser;
-                            if (browser != null && !browser.IsDisposed)
-                            {
-                                browser.Dispatcher.BeginInvoke((Action)(() => browser.Focus()));
-                            }
-                        };
                     }
 
                     break;
@@ -211,8 +207,7 @@ namespace CefSharp.Wpf.Example.ViewModels
         {
             Address = AddressEditable;
 
-            // Part of the Focus hack further described in the OnPropertyChanged() method...
-            Keyboard.ClearFocus();
+            Keyboard.Focus(WebBrowser);
         }
 
         public void LoadCustomRequestExample()
@@ -220,6 +215,15 @@ namespace CefSharp.Wpf.Example.ViewModels
             var postData = System.Text.Encoding.Default.GetBytes("test=123&data=456");
 
             WebBrowser.LoadUrlWithPostData("https://cefsharp.com/PostDataTest.html", postData);
+        }
+
+        protected void Set<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            field = value;
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
     }
 }
