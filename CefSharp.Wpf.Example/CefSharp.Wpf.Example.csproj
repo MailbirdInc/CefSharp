@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\cef.redist.x86.81.2.18\build\cef.redist.x86.props" Condition="Exists('$(SolutionDir)\packages\cef.redist.x86.81.2.18\build\cef.redist.x86.props')" />
-  <Import Project="$(SolutionDir)\packages\cef.redist.x64.81.2.18\build\cef.redist.x64.props" Condition="Exists('$(SolutionDir)\packages\cef.redist.x64.81.2.18\build\cef.redist.x64.props')" />
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)\packages\cef.redist.x86.91.1.21\build\cef.redist.x86.props" Condition="Exists('$(SolutionDir)\packages\cef.redist.x86.91.1.21\build\cef.redist.x86.props')" />
+  <Import Project="$(SolutionDir)\packages\cef.redist.x64.91.1.21\build\cef.redist.x64.props" Condition="Exists('$(SolutionDir)\packages\cef.redist.x64.91.1.21\build\cef.redist.x64.props')" />
   <Import Project="$(SolutionDir)\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props" Condition="Exists('$(SolutionDir)\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -24,37 +24,6 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
-    <NuGetPackageImportStamp>cc83ab8b</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>abab765e</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>6741ef50</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>e08d0872</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>39af8b73</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>7a75bfb3</NuGetPackageImportStamp>
-    <NuGetPackageImportStamp>75fe660a</NuGetPackageImportStamp>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
@@ -105,27 +74,12 @@
     <StartupObject>CefSharp.Wpf.Example.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CommonServiceLocator, Version=2.0.2.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\packages\CommonServiceLocator.2.0.2\lib\net45\CommonServiceLocator.dll</HintPath>
-    </Reference>
-    <Reference Include="GalaSoft.MvvmLight, Version=5.4.1.0, Culture=neutral, PublicKeyToken=e7570ab207bcb616, processorArchitecture=MSIL">
-      <HintPath>..\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.dll</HintPath>
-    </Reference>
-    <Reference Include="GalaSoft.MvvmLight.Extras, Version=5.4.1.0, Culture=neutral, PublicKeyToken=669f0b5e8f868abf, processorArchitecture=MSIL">
-      <HintPath>..\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.Extras.dll</HintPath>
-    </Reference>
-    <Reference Include="GalaSoft.MvvmLight.Platform, Version=5.4.1.0, Culture=neutral, PublicKeyToken=5f873c45e98af8a1, processorArchitecture=MSIL">
-      <HintPath>..\packages\MvvmLightLibs.5.4.1.1\lib\net45\GalaSoft.MvvmLight.Platform.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\MvvmLightLibs.5.4.1.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
@@ -143,17 +97,16 @@
     <Compile Include="Controls\NonReloadingTabControl.cs" />
     <Compile Include="Controls\TouchKeyboard\InputPaneRcw.cs" />
     <Compile Include="Controls\TouchKeyboard\TouchKeyboardEventManager.cs" />
-    <Compile Include="Handlers\AccessibilityHandler.cs" />
     <Compile Include="Handlers\DisplayHandler.cs" />
     <Compile Include="Handlers\DragHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
     <Compile Include="Handlers\ExperimentalLifespanHandler.cs" />
-    <Compile Include="Handlers\RequestContextHandler.cs" />
     <Compile Include="Handlers\WpfBrowserProcessHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="JavascriptCallbackMainWindow.xaml.cs">
       <DependentUpon>JavascriptCallbackMainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="RelayCommand.cs" />
     <Compile Include="StandardTabControlWindow.xaml.cs">
       <DependentUpon>StandardTabControlWindow.xaml</DependentUpon>
     </Compile>
@@ -223,8 +176,12 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CefSharp.Core\CefSharp.Core.vcxproj">
+    <ProjectReference Include="..\CefSharp.Core.Runtime\CefSharp.Core.Runtime.vcxproj">
       <Project>{7b495581-2271-4f41-9476-acb86e8c864f}</Project>
+      <Name>CefSharp.Core.Runtime</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CefSharp.Core\CefSharp.Core.csproj">
+      <Project>{b760b002-d277-4525-9f63-67ed2065034a}</Project>
       <Name>CefSharp.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\CefSharp.Example\CefSharp.Example.csproj">
