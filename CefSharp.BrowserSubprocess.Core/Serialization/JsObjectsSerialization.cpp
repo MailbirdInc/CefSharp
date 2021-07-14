@@ -4,8 +4,8 @@
 
 #include "stdafx.h"
 #include "JsObjectsSerialization.h"
-#include "../CefSharp.Core/Internals/Serialization/Primitives.h"
-#include "../CefSharp.Core/Internals/Serialization/ObjectsSerialization.h"
+#include "../CefSharp.Core.Runtime/Internals/Serialization/Primitives.h"
+#include "../CefSharp.Core.Runtime/Internals/Serialization/ObjectsSerialization.h"
 
 namespace CefSharp
 {
@@ -68,7 +68,7 @@ namespace CefSharp
             {
                 auto result = gcnew List<JavascriptObject^>();
                 auto subList = list->GetList(index);
-                for (auto i = 0; i < subList->GetSize(); i++)
+                for (size_t i = 0; i < subList->GetSize(); i++)
                 {
                     result->Add(DeserializeJsObject(subList, i));
                 }

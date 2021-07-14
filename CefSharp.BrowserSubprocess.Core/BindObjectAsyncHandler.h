@@ -6,8 +6,8 @@
 
 #include "include/cef_v8.h"
 #include "RegisterBoundObjectRegistry.h"
-#include "..\CefSharp.Core\Internals\Messaging\Messages.h"
-#include "..\CefSharp.Core\Internals\Serialization\Primitives.h"
+#include "..\CefSharp.Core.Runtime\Internals\Messaging\Messages.h"
+#include "..\CefSharp.Core.Runtime\Internals\Serialization\Primitives.h"
 
 using namespace System;
 using namespace CefSharp::Internals::Messaging;
@@ -49,6 +49,12 @@ namespace CefSharp
                 try
                 {
                     auto params = CefListValue::Create();
+                    //We need to store a seperate index into our params as
+                    //there are instances we skip over already cached objects
+                    //and end up with empty strings in the list.
+                    //e.g. first object is already bound/cached, we previously
+                    //second object isn't we end up with a list of "", "secondObject"
+                    int paramsIndex = 0;
 
                     auto boundObjectRequired = false;
                     auto notifyIfAlreadyBound = false;
@@ -76,7 +82,7 @@ namespace CefSharp
                         auto global = context->GetGlobal();
 
                         //Loop through all arguments and ignore anything that's not a string
-                        for (auto i = 0; i < arguments.size(); i++)
+                        for (size_t i = 0; i < arguments.size(); i++)
                         {
                             //Validate arg as being a string
                             if (arguments[i]->IsString())
@@ -95,7 +101,7 @@ namespace CefSharp
                                 {
                                     //If no matching object found then we'll add the object name to the list
                                     boundObjectRequired = true;
-                                    params->SetString(i, objectName);
+                                    params->SetString(paramsIndex++, objectName);
 
                                     JavascriptObject^ obj;
                                     if (_javascriptObjects->TryGetValue(managedObjectName, obj))
@@ -125,7 +131,10 @@ namespace CefSharp
                             //If the number of cached objects matches the number of args
                             //(we have a cached copy of all requested objects)
                             //then we'll immediately bind the cached objects
-                            if (cachedObjects->Count == objectCount && ignoreCache == false)
+                            //If objectCount and cachedObject count are both 0 then we'll
+                            //send the kJavascriptRootObjectRequest message
+                            //https://github.com/cefsharp/CefSharp/issues/3470
+                            if (objectCount > 0 && cachedObjects->Count == objectCount && ignoreCache == false)
                             {
                                 if (Object::ReferenceEquals(_browserWrapper, nullptr))
                                 {
@@ -141,7 +150,11 @@ namespace CefSharp
                                 JavascriptRootObjectWrapper^ rootObject;
                                 if (!rootObjectWrappers->TryGetValue(frame->GetIdentifier(), rootObject))
                                 {
+#ifdef NETCOREAPP
+                                    rootObject = gcnew JavascriptRootObjectWrapper(browser->GetIdentifier());
+#else
                                     rootObject = gcnew JavascriptRootObjectWrapper(browser->GetIdentifier(), _browserWrapper->BrowserProcess);
+#endif
                                     rootObjectWrappers->TryAdd(frame->GetIdentifier(), rootObject);
                                 }
 
