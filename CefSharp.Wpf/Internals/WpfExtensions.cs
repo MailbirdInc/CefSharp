@@ -7,7 +7,6 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using CefSharp.Internals;
 
 namespace CefSharp.Wpf.Internals
 {
@@ -92,17 +91,21 @@ namespace CefSharp.Wpf.Internals
         {
             CefEventFlags modifiers = 0;
 
-            if (e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Shift))
+            //Only read modifiers once for performance reasons
+            //https://referencesource.microsoft.com/#PresentationCore/Core/CSharp/System/Windows/Input/KeyboardDevice.cs,227
+            var keyboardDeviceModifiers = e.KeyboardDevice.Modifiers;
+
+            if (keyboardDeviceModifiers.HasFlag(ModifierKeys.Shift))
             {
                 modifiers |= CefEventFlags.ShiftDown;
             }
 
-            if (e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Alt))
+            if (keyboardDeviceModifiers.HasFlag(ModifierKeys.Alt))
             {
                 modifiers |= CefEventFlags.AltDown;
             }
 
-            if (e.KeyboardDevice.Modifiers.HasFlag(ModifierKeys.Control))
+            if (keyboardDeviceModifiers.HasFlag(ModifierKeys.Control))
             {
                 modifiers |= CefEventFlags.ControlDown;
             }
@@ -115,10 +118,10 @@ namespace CefSharp.Wpf.Internals
         /// </summary>
         /// <param name="e">The <see cref="DragEventArgs"/> instance containing the event data.</param>
         /// <returns>CefDragDataWrapper.</returns>
-        public static CefDragDataWrapper GetDragDataWrapper(this DragEventArgs e)
+        public static IDragData GetDragData(this DragEventArgs e)
         {
             // Convert Drag Data
-            var dragData = CefDragDataWrapper.Create();
+            var dragData = DragData.Create();
 
             // Files            
             dragData.IsFile = e.Data.GetDataPresent(DataFormats.FileDrop);

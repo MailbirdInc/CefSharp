@@ -11,6 +11,7 @@ using CefSharp.Internals;
 using CefSharp.Structs;
 using CefSharp.Wpf.Internals;
 using Point = System.Windows.Point;
+using Range = CefSharp.Structs.Range;
 using Rect = CefSharp.Structs.Rect;
 
 namespace CefSharp.Wpf.Experimental
@@ -374,6 +375,18 @@ namespace CefSharp.Wpf.Experimental
             if (systemCaret)
             {
                 ImeNative.SetCaretPos(x, y);
+            }
+
+            if (languageCodeId == ImeNative.LANG_CHINESE)
+            {
+                // Chinese IMEs need set composition window 
+                var compositionPotision = new ImeNative.COMPOSITIONFORM
+                {
+                    dwStyle = (int)ImeNative.CFS_POINT,
+                    ptCurrentPos = new ImeNative.POINT(x, y),
+                    rcArea = new ImeNative.RECT(0, 0, 0, 0)
+                };
+                ImeNative.ImmSetCompositionWindow(hIMC, ref compositionPotision);
             }
 
             if (languageCodeId == ImeNative.LANG_KOREAN)
