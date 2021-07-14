@@ -5,6 +5,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <OutputPath>bin\Release\</OutputPath>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B760B002-D277-4525-9F63-67ED2065034A}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -82,7 +83,7 @@
       <Name>CefSharp.Core.Runtime</Name>
     </ProjectReference>
     <ProjectReference Include="..\CefSharp\CefSharp.csproj">
-      <Project>{a55848cc-10e7-40cb-addb-04740b16dd43}</Project>
+      <Project>{A55848CC-10E7-40CB-ADDB-04740B16DD43}</Project>
       <Name>CefSharp</Name>
     </ProjectReference>
   </ItemGroup>

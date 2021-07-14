@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CefSharp.Callback;
 using CefSharp.Enums;
 using CefSharp.Structs;
+using Range = CefSharp.Structs.Range;
 using Size = CefSharp.Structs.Size;
 
 namespace CefSharp
@@ -57,6 +58,86 @@ namespace CefSharp
         bool HasDevTools { get; }
 
         /// <summary>
+        /// Send a method call message over the DevTools protocol. <paramref name="message"/> must be a
+        /// UTF8-encoded JSON dictionary that contains "id" (int), "method" (string)
+        /// and "params" (dictionary, optional) values. See the DevTools protocol
+        /// documentation at https://chromedevtools.github.io/devtools-protocol/ for
+        /// details of supported methods and the expected "params" dictionary contents.
+        /// <paramref name="message"/> will be copied if necessary. This method will return true if
+        /// called on the CEF UI thread and the message was successfully submitted for
+        /// validation, otherwise false. Validation will be applied asynchronously and
+        /// any messages that fail due to formatting errors or missing parameters may
+        /// be discarded without notification. Prefer ExecuteDevToolsMethod if a more
+        /// structured approach to message formatting is desired.
+        ///
+        /// Every valid method call will result in an asynchronous method result or
+        /// error message that references the sent message "id". Event messages are
+        /// received while notifications are enabled (for example, between method calls
+        /// for "Page.enable" and "Page.disable"). All received messages will be
+        /// delivered to the observer(s) registered with AddDevToolsMessageObserver.
+        /// See <see cref="IDevToolsMessageObserver.OnDevToolsMessage"/>  documentation for details
+        /// of received message contents.
+        ///
+        /// Usage of the SendDevToolsMessage, ExecuteDevToolsMethod and
+        /// AddDevToolsMessageObserver methods does not require an active DevTools
+        /// front-end or remote-debugging session. Other active DevTools sessions will
+        /// continue to function independently. However, any modification of global
+        /// browser state by one session may not be reflected in the UI of other
+        /// sessions.
+        ///
+        /// Communication with the DevTools front-end (when displayed) can be logged
+        /// for development purposes by passing the
+        /// `--devtools-protocol-log-file=&lt;path&gt;` command-line flag.
+        /// </summary>
+        /// <param name="messageAsJson">must be a UTF8-encoded JSON dictionary that contains "id" (int), "method" (string)
+        /// and "params" (dictionary, optional) values. See comments above for further details.</param>
+        /// <returns>returns true if called on the CEF UI thread and the message was successfully submitted for
+        /// validation, otherwise false.</returns>
+        bool SendDevToolsMessage(string messageAsJson);
+
+        /// <summary>
+        /// Execute a method call over the DevTools protocol. This is a more structured
+        /// version of SendDevToolsMessage.
+        /// See the DevTools protocol documentation at https://chromedevtools.github.io/devtools-protocol/ for details
+        /// of supported methods and the expected <paramref name="paramsAsJson"/> dictionary contents.
+        /// See the SendDevToolsMessage documentation for additional usage information.
+        /// </summary>
+        /// <param name="messageId">is an incremental number that uniquely identifies the message (pass 0 to have the next number assigned
+        /// automatically based on previous values)</param>
+        /// <param name="method">is the method name</param>
+        /// <param name="paramsAsJson">are the method parameters represented as a JSON string,
+        /// which may be empty.</param>
+        /// <returns>return the assigned message Id if called on the CEF UI thread and the message was
+        /// successfully submitted for validation, otherwise 0</returns>
+        int ExecuteDevToolsMethod(int messageId, string method, string paramsAsJson);
+
+        /// <summary>
+        /// Execute a method call over the DevTools protocol. This is a more structured
+        /// version of SendDevToolsMessage.
+        /// See the DevTools protocol documentation at https://chromedevtools.github.io/devtools-protocol/ for details
+        /// of supported methods and the expected <paramref name="paramsAsJson"/> dictionary contents.
+        /// See the SendDevToolsMessage documentation for additional usage information.
+        /// </summary>
+        /// <param name="messageId">is an incremental number that uniquely identifies the message (pass 0 to have the next number assigned
+        /// automatically based on previous values)</param>
+        /// <param name="method">is the method name</param>
+        /// <param name="parameters">are the method parameters represented as a dictionary,
+        /// which may be empty.</param>
+        /// <returns>return the assigned message Id if called on the CEF UI thread and the message was
+        /// successfully submitted for validation, otherwise 0</returns>
+        int ExecuteDevToolsMethod(int messageId, string method, IDictionary<string, object> parameters = null);
+
+        /// <summary>
+        /// Add an observer for DevTools protocol messages (method results and events).
+        /// The observer will remain registered until the returned Registration object
+        /// is destroyed. See the SendDevToolsMessage documentation for additional
+        /// usage information.
+        /// </summary>
+        /// <param name="observer">DevTools observer</param>
+        /// <returns>The observer will remain registered until the returned IRegistration object is Disposed.</returns>
+        IRegistration AddDevToolsMessageObserver(IDevToolsMessageObserver observer);
+
+        /// <summary>
         /// Call this method when the user drags the mouse into the web view (before calling <see cref="DragTargetDragOver"/>/<see cref="DragTargetDragLeave"/>/<see cref="DragTargetDragDrop"/>).
         /// </summary>
         void DragTargetDragEnter(IDragData dragData, MouseEvent mouseEvent, DragOperationsMask allowedOperations);
@@ -99,14 +180,17 @@ namespace CefSharp
         void DragSourceSystemDragEnded();
 
         /// <summary>
-        /// Search for text
+        /// Search for <paramref name="searchText"/>.
         /// </summary>
-        /// <param name="identifier">can be used to have multiple searches running simultaniously</param>
+        /// <param name="identifier">must be a unique ID and these IDs
+        /// must strictly increase so that newer requests always have greater IDs than
+        /// older requests. If identifier is zero or less than the previous ID value
+        /// then it will be automatically assigned a new valid ID. </param>
         /// <param name="searchText">text to search for</param>
         /// <param name="forward">indicates whether to search forward or backward within the page</param>
         /// <param name="matchCase">indicates whether the search should be case-sensitive</param>
         /// <param name="findNext">indicates whether this is the first request or a follow-up</param>
-        /// <remarks>The IFindHandler instance, if any, will be called to report find results. </remarks>
+        /// <remarks>The <see cref="IFindHandler"/> instance, if any, will be called to report find results.</remarks>
         void Find(int identifier, string searchText, bool forward, bool matchCase, bool findNext);
 
         /// <summary>
@@ -203,12 +287,8 @@ namespace CefSharp
         void ImeCancelComposition();
 
         /// <summary>
-        /// Get/Set Mouse cursor change disabled
-        /// </summary>
-        bool MouseCursorChangeDisabled { get; set; }
-
-        /// <summary>
         /// Notify the browser that the window hosting it is about to be moved or resized.
+        /// This will dismiss any existing popups (dropdowns).
         /// </summary>
         void NotifyMoveOrResizeStarted();
 
@@ -361,7 +441,7 @@ namespace CefSharp
         void ShowDevTools(IWindowInfo windowInfo = null, int inspectElementAtX = 0, int inspectElementAtY = 0);
 
         /// <summary>
-        /// Download the file at url using IDownloadHandler. 
+        /// Download the file at url using <see cref="IDownloadHandler"/>. 
         /// </summary>
         /// <param name="url">url to download</param>
         void StartDownload(string url);

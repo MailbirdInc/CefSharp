@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CefSharp.Internals;
 using CefSharp.Web;
@@ -18,11 +19,6 @@ namespace CefSharp
     /// </summary>
     public static class WebBrowserExtensions
     {
-        internal const string BrowserNotInitializedExceptionErrorMessage =
-            "The ChromiumWebBrowser instance creates the underlying Chromium Embedded Framework (CEF) browser instance in an async fashion. " +
-            "The undelying CefBrowser instance is not yet initialized. Use the IsBrowserInitializedChanged event and check " +
-            "the IsBrowserInitialized property to determine when the browser has been initialized.";
-
         #region Legacy Javascript Binding
         /// <summary>
         /// Registers a Javascript object in this specific browser instance.
@@ -49,7 +45,7 @@ namespace CefSharp
         /// <param name="options">binding options - camelCaseJavascriptNames default to true </param>
         /// <exception cref="Exception">Browser is already initialized. RegisterJsObject must be +
         ///                                     called before the underlying CEF browser is created.</exception>
-        /// <remarks>The registered methods can only be called in an async way, they will all return immeditaly and the resulting
+        /// <remarks>The registered methods can only be called in an async way, they will all return immediately and the resulting
         /// object will be a standard javascript Promise object which is usable to wait for completion or failure.</remarks>
         [Obsolete("This method has been removed, see https://github.com/cefsharp/CefSharp/issues/2990 for details on migrating your code.")]
         public static void RegisterAsyncJsObject(this IWebBrowser webBrowser, string name, object objectToBind, BindingOptions options = null)
@@ -234,6 +230,124 @@ namespace CefSharp
         }
 
         /// <summary>
+        /// Download the file at url using <see cref="IDownloadHandler"/>. 
+        /// </summary>
+        /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
+        /// <param name="url">url to download</param>
+        public static void StartDownload(this IWebBrowser browser, string url)
+        {
+            var host = browser.GetBrowserHost();
+
+            ThrowExceptionIfBrowserHostNull(host);
+
+            host.StartDownload(url);
+        }
+
+        /// <summary>
+        /// See <see cref="IWebBrowser.LoadUrlAsync(string, SynchronizationContext)"/> for details
+        /// </summary>
+        /// <param name="chromiumWebBrowser">ChromiumWebBrowser instance (cannot be null)</param>
+        /// <summary>
+        /// Load the <paramref name="url"/> in the main frame of the browser
+        /// </summary>
+        /// <param name="url">url to load</param>
+        /// <param name="ctx">SynchronizationContext to execute the continuation on, if null then the ThreadPool will be used.</param>
+        /// <returns>See <see cref="IWebBrowser.LoadUrlAsync(string, SynchronizationContext)"/> for details</returns>
+        public static Task<LoadUrlAsyncResponse> LoadUrlAsync(IWebBrowser chromiumWebBrowser, string url = null, SynchronizationContext ctx = null)
+        {
+            var tcs = new TaskCompletionSource<LoadUrlAsyncResponse>();
+
+            EventHandler<LoadErrorEventArgs> loadErrorHandler = null;
+            EventHandler<LoadingStateChangedEventArgs> loadingStateChangeHandler = null;
+
+            loadErrorHandler = (sender, args) =>
+            {
+                //Ignore Aborted
+                //Currently invalid SSL certificates which aren't explicitly allowed
+                //end up with CefErrorCode.Aborted, I've created the following PR
+                //in the hopes of getting this fixed.
+                //https://bitbucket.org/chromiumembedded/cef/pull-requests/373
+                if (args.ErrorCode == CefErrorCode.Aborted)
+                {
+                    return;
+                }
+
+                //If LoadError was called then we'll remove both our handlers
+                //as we won't need to capture LoadingStateChanged, we know there
+                //was an error
+                chromiumWebBrowser.LoadError -= loadErrorHandler;
+                chromiumWebBrowser.LoadingStateChanged -= loadingStateChangeHandler;
+
+                if (ctx == null)
+                {
+                    //Ensure our continuation is executed on the ThreadPool
+                    //For the .Net Core implementation we could use
+                    //TaskCreationOptions.RunContinuationsAsynchronously
+                    tcs.TrySetResultAsync(new LoadUrlAsyncResponse(args.ErrorCode, -1));
+                }
+                else
+                {
+                    ctx.Post(new SendOrPostCallback((o) =>
+                    {
+                        tcs.TrySetResult(new LoadUrlAsyncResponse(args.ErrorCode, -1));
+                    }), null);
+                }
+            };
+
+            loadingStateChangeHandler = (sender, args) =>
+            {
+                //Wait for IsLoading = false
+                if (!args.IsLoading)
+                {
+                    //If LoadingStateChanged was called then we'll remove both our handlers
+                    //as LoadError won't be called, our site has loaded with a valid HttpStatusCode
+                    //HttpStatusCodes can still be for example 404, this is considered a successful request,
+                    //the server responded, it just didn't have the page you were after.
+                    chromiumWebBrowser.LoadError -= loadErrorHandler;
+                    chromiumWebBrowser.LoadingStateChanged -= loadingStateChangeHandler;
+
+                    var host = args.Browser.GetHost();
+
+                    var navEntry = host?.GetVisibleNavigationEntry();
+
+                    int statusCode = navEntry?.HttpStatusCode ?? -1;
+
+                    //By default 0 is some sort of error, we map that to -1
+                    //so that it's clearer that something failed.
+                    if (statusCode == 0)
+                    {
+                        statusCode = -1;
+                    }
+
+                    if (ctx == null)
+                    {
+                        //Ensure our continuation is executed on the ThreadPool
+                        //For the .Net Core implementation we could use
+                        //TaskCreationOptions.RunContinuationsAsynchronously
+                        tcs.TrySetResultAsync(new LoadUrlAsyncResponse(CefErrorCode.None, statusCode));
+                    }
+                    else
+                    {
+                        ctx.Post(new SendOrPostCallback((o) =>
+                        {
+                            tcs.TrySetResult(new LoadUrlAsyncResponse(CefErrorCode.None, statusCode));
+                        }), null);
+                    }
+                }
+            };
+
+            chromiumWebBrowser.LoadError += loadErrorHandler;
+            chromiumWebBrowser.LoadingStateChanged += loadingStateChangeHandler;
+
+            if (!string.IsNullOrEmpty(url))
+            {
+                chromiumWebBrowser.Load(url);
+            }
+
+            return tcs.Task;
+        }
+
+        /// <summary>
         /// Execute some Javascript code in the context of this WebBrowser. As the method name implies, the script will be executed
         /// asynchronously, and the method therefore returns before the script has actually been executed. This simple helper extension
         /// will encapsulate params in single quotes (unless int, uint, etc)
@@ -241,7 +355,7 @@ namespace CefSharp
         /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
         /// <param name="methodName">The javascript method name to execute.</param>
         /// <param name="args">the arguments to be passed as params to the method. Args are encoded using
-        /// <see cref="EncodeScriptParam"/>, you can provide a custom implementation if you require a custom implementation.</param>
+        /// <see cref="EncodeScriptParam"/>, you can provide a custom implementation if you require one.</param>
         public static void ExecuteScriptAsync(this IWebBrowser browser, string methodName, params object[] args)
         {
             var script = GetScriptForJavascriptMethodWithArgs(methodName, args);
@@ -282,7 +396,7 @@ namespace CefSharp
         /// </remarks>
         /// <param name="webBrowser">The ChromiumWebBrowser instance this method extends.</param>
         /// <param name="script">The Javascript code that should be executed.</param>
-        /// <param name="oneTime">(Optional) The script will only be executed on first page load, subsiquent page loads will be ignored.</param>
+        /// <param name="oneTime">(Optional) The script will only be executed on first page load, subsequent page loads will be ignored.</param>
         public static void ExecuteScriptAsyncWhenPageLoaded(this IWebBrowser webBrowser, string script, bool oneTime = true)
         {
             var useLoadingStateChangedEventHandler = webBrowser.IsBrowserInitialized == false || oneTime == false;
@@ -337,7 +451,6 @@ namespace CefSharp
         /// <param name="url">url to load</param>
         /// <param name="postDataBytes">post data as byte array</param>
         /// <param name="contentType">(Optional) if set the Content-Type header will be set</param>
-        [Obsolete("This method will be removed in version 75 as it has become unreliable see https://github.com/cefsharp/CefSharp/issues/2705 for details.")]
         public static void LoadUrlWithPostData(this IWebBrowser browser, string url, byte[] postDataBytes, string contentType = null)
         {
             using (var frame = browser.GetMainFrame())
@@ -576,7 +689,7 @@ namespace CefSharp
         /// </summary>
         /// <exception cref="Exception">Thrown when an exception error condition occurs.</exception>
         /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
-        /// <param name="callback">(Optional) If not null it will be executed asnychronously on the CEF IO thread after the manager's
+        /// <param name="callback">(Optional) If not null it will be executed asynchronously on the CEF IO thread after the manager's
         /// storage has been initialized.</param>
         /// <returns>
         /// Cookie Manager.
@@ -990,17 +1103,88 @@ namespace CefSharp
 
         /// <summary>
         /// Evaluate some Javascript code in the context of the MainFrame of the ChromiumWebBrowser. The script will be executed
-        /// asynchronously and the method returns a Task encapsulating the response from the Javascript This simple helper extension will
-        /// encapsulate params in single quotes (unless int, uint, etc)
+        /// asynchronously and the method returns a Task encapsulating the response from the Javascript. The result of the script execution
+        /// in javascript is Promise.resolve so even no promise values will be treated as a promise. Your javascript should return a value.
+        /// The javascript will be wrapped in an Immediately Invoked Function Expression.
+        /// When the promise either trigger then/catch this returned Task will be completed.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when one or more arguments are outside the required range.</exception>
-        /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
+        /// <param name="chromiumWebBrowser">The ChromiumWebBrowser instance this method extends.</param>
         /// <param name="script">The Javascript code that should be executed.</param>
         /// <param name="timeout">(Optional) The timeout after which the Javascript code execution should be aborted.</param>
         /// <returns>
         /// <see cref="Task{JavascriptResponse}"/> that can be awaited to perform the script execution.
         /// </returns>
-        public static Task<JavascriptResponse> EvaluateScriptAsync(this IWebBrowser browser, string script, TimeSpan? timeout = null)
+        public static Task<JavascriptResponse> EvaluateScriptAsPromiseAsync(this IWebBrowser chromiumWebBrowser, string script, TimeSpan? timeout = null)
+        {
+            var jsbSettings = chromiumWebBrowser.JavascriptObjectRepository.Settings;
+
+            var promiseHandlerScript = GetPromiseHandlerScript(script, jsbSettings.JavascriptBindingApiGlobalObjectName);
+
+            return chromiumWebBrowser.EvaluateScriptAsync(promiseHandlerScript, timeout: timeout, useImmediatelyInvokedFuncExpression: true);
+        }
+
+        /// <summary>
+        /// Evaluate some Javascript code in the context of the MainFrame of the ChromiumWebBrowser. The script will be executed
+        /// asynchronously and the method returns a Task encapsulating the response from the Javascript. The result of the script execution
+        /// in javascript is Promise.resolve so even no promise values will be treated as a promise. Your javascript should return a value.
+        /// The javascript will be wrapped in an Immediately Invoked Function Expression.
+        /// When the promise either trigger then/catch this returned Task will be completed.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when one or more arguments are outside the required range.</exception>
+        /// <param name="frame">The <seealso cref="IFrame"/> instance this method extends.</param>
+        /// <param name="script">The Javascript code that should be executed.</param>
+        /// <param name="timeout">(Optional) The timeout after which the Javascript code execution should be aborted.</param>
+        /// <returns>
+        /// <see cref="Task{JavascriptResponse}"/> that can be awaited to perform the script execution.
+        /// </returns>
+        public static Task<JavascriptResponse> EvaluateScriptAsPromiseAsync(this IFrame frame, string script, TimeSpan? timeout = null)
+        {
+            var promiseHandlerScript = GetPromiseHandlerScript(script, null);
+
+            return frame.EvaluateScriptAsync(promiseHandlerScript, timeout: timeout, useImmediatelyInvokedFuncExpression: true);
+        }
+
+        private static string GetPromiseHandlerScript(string script, string javascriptBindingApiGlobalObjectName)
+        {
+            var internalJsFunctionName = "cefSharp.sendEvalScriptResponse";
+
+            //If the user chose to customise the name of the object CefSharp
+            //creates in Javascript then we'll workout what the name should be.
+            if (!string.IsNullOrWhiteSpace(javascriptBindingApiGlobalObjectName))
+            {
+                internalJsFunctionName = javascriptBindingApiGlobalObjectName;
+
+                if (char.IsLower(internalJsFunctionName[0]))
+                {
+                    internalJsFunctionName += ".sendEvalScriptResponse";
+                }
+                else
+                {
+                    internalJsFunctionName += ".SendEvalScriptResponse";
+                }
+            }
+            var promiseHandlerScript = "let innerImmediatelyInvokedFuncExpression = (async function() { " + script + " })(); Promise.resolve(innerImmediatelyInvokedFuncExpression).then((val) => " + internalJsFunctionName + "(cefSharpInternalCallbackId, true, val, false)).catch ((reason) => " + internalJsFunctionName + "(cefSharpInternalCallbackId, false, String(reason), false)); return 'CefSharpDefEvalScriptRes';";
+
+            return promiseHandlerScript;
+        }
+
+        /// <summary>
+        /// Evaluate some Javascript code in the context of the MainFrame of the ChromiumWebBrowser. The script will be executed
+        /// asynchronously and the method returns a Task encapsulating the response from the Javascript
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when one or more arguments are outside the required range.</exception>
+        /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
+        /// <param name="script">The Javascript code that should be executed.</param>
+        /// <param name="timeout">(Optional) The timeout after which the Javascript code execution should be aborted.</param>
+        /// <param name="useImmediatelyInvokedFuncExpression">When true the script is wrapped in a self executing function.
+        /// Make sure to use a return statement in your javascript. e.g. (function () { return 42; })();
+        /// When false don't include a return statement e.g. 42;
+        /// </param>
+        /// <returns>
+        /// <see cref="Task{JavascriptResponse}"/> that can be awaited to perform the script execution.
+        /// </returns>
+        public static Task<JavascriptResponse> EvaluateScriptAsync(this IWebBrowser browser, string script, TimeSpan? timeout = null, bool useImmediatelyInvokedFuncExpression = false)
         {
             if (timeout.HasValue && timeout.Value.TotalMilliseconds > UInt32.MaxValue)
             {
@@ -1016,7 +1200,7 @@ namespace CefSharp
             {
                 ThrowExceptionIfFrameNull(frame);
 
-                return frame.EvaluateScriptAsync(script, timeout: timeout);
+                return frame.EvaluateScriptAsync(script, timeout: timeout, useImmediatelyInvokedFuncExpression: useImmediatelyInvokedFuncExpression);
             }
         }
 
@@ -1161,36 +1345,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// An IWebBrowser extension method that throw exception if browser not initialized.
-        /// </summary>
-        /// <remarks>
-        /// Not used in WPF as IsBrowserInitialized is a dependency property and can only be checked on the UI thread(throws
-        /// InvalidOperationException if called on another Thread).
-        /// </remarks>
-        /// <exception cref="Exception">Thrown when an exception error condition occurs.</exception>
-        /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
-        internal static void ThrowExceptionIfBrowserNotInitialized(this IWebBrowser browser)
-        {
-            if (!browser.IsBrowserInitialized)
-            {
-                throw new Exception(BrowserNotInitializedExceptionErrorMessage);
-            }
-        }
-
-        /// <summary>
-        /// An IWebBrowser extension method that throw exception if disposed.
-        /// </summary>
-        /// <exception cref="ObjectDisposedException">Thrown when a supplied object has been disposed.</exception>
-        /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
-        internal static void ThrowExceptionIfDisposed(this IWebBrowser browser)
-        {
-            if (browser.IsDisposed)
-            {
-                throw new ObjectDisposedException("browser", "Browser has been disposed");
-            }
-        }
-
-        /// <summary>
         /// Throw exception if frame null.
         /// </summary>
         /// <exception cref="Exception">Thrown when an exception error condition occurs.</exception>
@@ -1208,7 +1362,7 @@ namespace CefSharp
         /// </summary>
         /// <exception cref="Exception">Thrown when an exception error condition occurs.</exception>
         /// <param name="browser">The ChromiumWebBrowser instance this method extends.</param>
-        private static void ThrowExceptionIfBrowserNull(this IBrowser browser)
+        internal static void ThrowExceptionIfBrowserNull(this IBrowser browser)
         {
             if (browser == null)
             {
@@ -1221,7 +1375,7 @@ namespace CefSharp
         /// </summary>
         /// <exception cref="Exception">Thrown when an exception error condition occurs.</exception>
         /// <param name="browserHost">The browser host.</param>
-        private static void ThrowExceptionIfBrowserHostNull(IBrowserHost browserHost)
+        internal static void ThrowExceptionIfBrowserHostNull(IBrowserHost browserHost)
         {
             if (browserHost == null)
             {
