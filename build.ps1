@@ -1,19 +1,19 @@
 ﻿param(
-    [ValidateSet("vs2015", "vs2017", "vs2019", "nupkg-only", "gitlink")]
+    [ValidateSet("vs2015", "vs2017", "vs2019", "nupkg-only")]
     [Parameter(Position = 0)] 
     [string] $Target = "vs2015",
     [Parameter(Position = 1)]
-    [string] $Version = "81.2.18",
+    [string] $Version = "91.1.211",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "81.2.18"
+    [string] $AssemblyVersion = "91.1.211"
 )
 
 $WorkingDir = split-path -parent $MyInvocation.MyCommand.Definition
 $CefSln = Join-Path $WorkingDir 'CefSharp3.sln'
 
-# Extract the current CEF Redist version from the CefSharp.Core\packages.config file
+# Extract the current CEF Redist version from the CefSharp.Core.Runtime\packages.CefSharp.Core.Runtime.config file
 # Save having to update this file manually Example 3.2704.1418
-$CefSharpCorePackagesXml = [xml](Get-Content (Join-Path $WorkingDir 'CefSharp.Core\Packages.config'))
+$CefSharpCorePackagesXml = [xml](Get-Content (Join-Path $WorkingDir 'CefSharp.Core.Runtime\packages.CefSharp.Core.Runtime.config'))
 $RedistVersion = $CefSharpCorePackagesXml.SelectSingleNode("//packages/package[@id='cef.sdk']/@version").value
 
 function Write-Diagnostic 
@@ -293,16 +293,6 @@ function Nupkg
     . $nuget pack nuget\CefSharp.Wpf.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
     . $nuget pack nuget\CefSharp.OffScreen.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
     . $nuget pack nuget\CefSharp.WinForms.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget
-	
-	# Build newer style packages
-	. $nuget pack nuget\PackageReference\CefSharp.Common.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "RedistVersion=$RedistVersion;Platform=x86;PlatformNative=Win32"
-	. $nuget pack nuget\PackageReference\CefSharp.Common.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "RedistVersion=$RedistVersion;Platform=x64;PlatformNative=x64"
-    . $nuget pack nuget\PackageReference\CefSharp.OffScreen.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x86"
-	. $nuget pack nuget\PackageReference\CefSharp.OffScreen.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x64"
-	. $nuget pack nuget\PackageReference\CefSharp.Wpf.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x86"
-	. $nuget pack nuget\PackageReference\CefSharp.Wpf.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x64"
-	. $nuget pack nuget\PackageReference\CefSharp.WinForms.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x86"
-	. $nuget pack nuget\PackageReference\CefSharp.WinForms.win.nuspec -NoPackageAnalysis -Version $Version -OutputDirectory nuget\PackageReference -Properties "Platform=x64"
 
     # Invoke `AfterBuild` script if available (ie. upload packages to myget)
     if(-not (Test-Path $WorkingDir\AfterBuild.ps1)) {
@@ -320,33 +310,6 @@ function DownloadNuget()
         $client = New-Object System.Net.WebClient;
         $client.DownloadFile('https://dist.nuget.org/win-x86-commandline/latest/nuget.exe', $nuget);
     }
-}
-
-function UpdateSymbolsWithGitLink()
-{
-    $gitlink = "GitLink.exe"
-    
-    #Check for GitLink
-    if ((Get-Command $gitlink -ErrorAction SilentlyContinue) -eq $null) 
-    { 
-        #Download if not on path and not in Nuget folder (TODO: change to different folder)
-        $gitlink = Join-Path $WorkingDir .\nuget\GitLink.exe
-        if(-not (Test-Path $gitlink))
-        {
-            Write-Diagnostic "Downloading GitLink"
-			#Powershell is having problems download GitLink SSL/TLS error, force TLS 1.2
-			#https://stackoverflow.com/a/55809878/4583726
-			[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::TLS12
-            $client = New-Object System.Net.WebClient;
-            $client.DownloadFile('https://github.com/GitTools/GitLink/releases/download/2.3.0/GitLink.exe', $gitlink);
-        }
-    }
-    
-    Write-Diagnostic "GitLink working dir : $WorkingDir"
-    
-    # Run GitLink in the workingDir
-    . $gitlink $WorkingDir -f CefSharp3.sln -u https://github.com/CefSharp/CefSharp -c Release -p x64 -ignore CefSharp.Example`,CefSharp.Wpf.Example`,CefSharp.OffScreen.Example`,CefSharp.WinForms.Example
-    . $gitlink $WorkingDir -f CefSharp3.sln -u https://github.com/CefSharp/CefSharp -c Release -p x86 -ignore CefSharp.Example`,CefSharp.Wpf.Example`,CefSharp.OffScreen.Example`,CefSharp.WinForms.Example
 }
 
 function WriteAssemblyVersion
@@ -381,6 +344,19 @@ function WriteVersionToManifest($manifest)
     [System.IO.File]::WriteAllLines($Filename, $NewString, $Utf8NoBomEncoding)
 }
 
+function WriteVersionToTransform($transform)
+{
+    $Filename = Join-Path $WorkingDir $transform
+    $Regex = 'codeBase version="(.*?)"';
+
+    $TransformData = Get-Content -Encoding UTF8 $Filename
+    $NewString = $TransformData -replace $Regex, "codeBase version=""$AssemblyVersion.0"""
+
+    $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+    [System.IO.File]::WriteAllLines($Filename, $NewString, $Utf8NoBomEncoding)
+}
+
+
 function WriteVersionToResourceFile($resourceFile)
 {
     $Filename = Join-Path $WorkingDir $resourceFile
@@ -390,8 +366,8 @@ function WriteVersionToResourceFile($resourceFile)
     
     $ResourceData = Get-Content -Encoding UTF8 $Filename
     $CurrentYear = Get-Date -Format yyyy
-	#Assembly version with comma instead of dot
-	$CppAssemblyVersion = $AssemblyVersion -replace '\.', ','
+    #Assembly version with comma instead of dot
+    $CppAssemblyVersion = $AssemblyVersion -replace '\.', ','
     
     $NewString = $ResourceData -replace $Regex1, "VERSION $CppAssemblyVersion"
     $NewString = $NewString -replace $Regex2, "Version"", ""$AssemblyVersion"""
@@ -442,8 +418,11 @@ WriteVersionToManifest "CefSharp.OffScreen.Example\app.manifest"
 WriteVersionToManifest "CefSharp.WinForms.Example\app.manifest"
 WriteVersionToManifest "CefSharp.Wpf.Example\app.manifest"
 
+WriteVersionToTransform "NuGet\CefSharp.Common.app.config.x64.transform"
+WriteVersionToTransform "NuGet\CefSharp.Common.app.config.x86.transform"
+
 WriteVersionToResourceFile "CefSharp.BrowserSubprocess.Core\Resource.rc"
-WriteVersionToResourceFile "CefSharp.Core\Resource.rc"
+WriteVersionToResourceFile "CefSharp.Core.Runtime\Resource.rc"
 
 switch -Exact ($Target)
 {
@@ -451,26 +430,19 @@ switch -Exact ($Target)
     {
         Nupkg
     }
-    "gitlink"
-    {
-        UpdateSymbolsWithGitLink
-    }
     "vs2015"
     {
         VSX v140
-        UpdateSymbolsWithGitLink
         Nupkg
     }
     "vs2017"
     {
         VSX v141
-        UpdateSymbolsWithGitLink
         Nupkg
     }
     "vs2019"
     {
         VSX v142
-        UpdateSymbolsWithGitLink
         Nupkg
     }
 }
