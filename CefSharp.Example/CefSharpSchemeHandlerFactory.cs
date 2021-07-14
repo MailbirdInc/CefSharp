@@ -36,6 +36,9 @@ namespace CefSharp.Example
                 { "/bootstrap/bootstrap.min.js", Resources.bootstrap_min_js },
 
                 { "/BindingTest.html", Resources.BindingTest },
+                { "/BindingTestNetCore.html", Resources.BindingTestNetCore },
+                { "/BindingTestAsync.js", Resources.BindingTestAsync },
+                { "/BindingTestSync.js", Resources.BindingTestSync },
                 { "/BindingTestSingle.html", Resources.BindingTestSingle },
                 { "/LegacyBindingTest.html", Resources.LegacyBindingTest },
                 { "/PostMessageTest.html", Resources.PostMessageTest },
@@ -55,7 +58,9 @@ namespace CefSharp.Example
                 { "/UnicodeExampleGreaterThan32kb.html", Resources.UnicodeExampleGreaterThan32kb },
                 { "/UnocodeExampleEqualTo32kb.html", Resources.UnocodeExampleEqualTo32kb },
                 { "/JavascriptCallbackTest.html", Resources.JavascriptCallbackTest },
-                { "/BindingTestsAsyncTask.html", Resources.BindingTestsAsyncTask }
+                { "/BindingTestsAsyncTask.html", Resources.BindingTestsAsyncTask },
+                { "/BindingApiCustomObjectNameTest.html", Resources.BindingApiCustomObjectNameTest },
+                { "/HelloWorld.html", Resources.HelloWorld }
             };
         }
 
