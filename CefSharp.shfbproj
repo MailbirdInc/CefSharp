@@ -25,11 +25,11 @@
     <DisableCodeBlockComponent>False</DisableCodeBlockComponent>
     <CleanIntermediates>True</CleanIntermediates>
     <DocumentationSources>
+      <DocumentationSource sourceFile="CefSharp\CefSharp.csproj" />
+	  <DocumentationSource sourceFile="CefSharp.Core\CefSharp.Core.csproj" />
 	  <DocumentationSource sourceFile="CefSharp.OffScreen\CefSharp.OffScreen.csproj" />
       <DocumentationSource sourceFile="CefSharp.WinForms\CefSharp.WinForms.csproj" />
       <DocumentationSource sourceFile="CefSharp.Wpf\CefSharp.Wpf.csproj" />
-      <DocumentationSource sourceFile="CefSharp\CefSharp.csproj" />
-	  <DocumentationSource sourceFile="CefSharp.Core\CefSharp.Core.csproj" />
     </DocumentationSources>
     <HelpFileVersion>91.1.160</HelpFileVersion>
     <MaximumGroupParts>2</MaximumGroupParts>

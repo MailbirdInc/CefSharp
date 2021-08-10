@@ -21,7 +21,9 @@
 _ReSharper*
 
 bin/
+bin.netcore/
 obj/
+obj.netcore/
 packages/
 Debug/
 Release/
@@ -39,4 +41,5 @@ x64/Release
 Win32/Release
 .vs/
 /Help
+/tools
 !Dependencies/**/*.*
