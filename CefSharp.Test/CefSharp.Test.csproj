@@ -4,6 +4,10 @@
   <Import Project="$(SolutionDir)\packages\cef.redist.x64.91.1.23\build\cef.redist.x64.props" Condition="Exists('$(SolutionDir)\packages\cef.redist.x64.91.1.23\build\cef.redist.x64.props')" />
   <Import Project="$(SolutionDir)\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props" Condition="Exists('$(SolutionDir)\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(SolutionDir)\packages\xunit.runner.visualstudio.2.4.1\build\net20\xunit.runner.visualstudio.props" Condition="Exists('$(SolutionDir)\packages\xunit.runner.visualstudio.2.4.1\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="..\packages\cef.redist.x86.92.0.26\build\cef.redist.x86.props" Condition="Exists('..\packages\cef.redist.x86.92.0.26\build\cef.redist.x86.props')" />
+  <Import Project="..\packages\cef.redist.x64.92.0.26\build\cef.redist.x64.props" Condition="Exists('..\packages\cef.redist.x64.92.0.26\build\cef.redist.x64.props')" />
+  <Import Project="..\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.2.9.0\build\Microsoft.Net.Compilers.props')" />
+  <Import Project="..\packages\xunit.runner.visualstudio.2.4.1\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\packages\xunit.runner.visualstudio.2.4.1\build\net20\xunit.runner.visualstudio.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -14,7 +18,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CefSharp.Test</RootNamespace>
     <AssemblyName>CefSharp.Test</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <LangVersion>7.3</LangVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
@@ -151,6 +155,7 @@
   <ItemGroup>
     <Compile Include="BindingRedirectAssemblyResolver.cs" />
     <Compile Include="DevTools\DevToolsClientFacts.cs" />
+    <Compile Include="DevTools\HeadersFacts.cs" />
     <Compile Include="Framework\BinderFacts.cs" />
     <Compile Include="Framework\AsyncExtensionFacts.cs" />
     <Compile Include="Framework\ConcurrentMethodRunnerQueueFacts.cs" />

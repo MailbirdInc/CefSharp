@@ -4,7 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Threading.Tasks;
+using CefSharp.DevTools;
 using CefSharp.DevTools.Browser;
 using CefSharp.DevTools.Emulation;
 using CefSharp.DevTools.Network;
@@ -29,6 +33,31 @@ namespace CefSharp.Test.DevTools
         }
 
         [Fact]
+        public async Task CanCaptureScreenshot()
+        {
+            using (var browser = new ChromiumWebBrowser("www.google.com"))
+            {
+                await browser.LoadUrlAsync();
+
+                using (var devToolsClient = browser.GetDevToolsClient())
+                {
+                    var response = await devToolsClient.Page.CaptureScreenshotAsync();
+
+                    Assert.NotNull(response.Data);
+                    Assert.NotEmpty(response.Data);
+
+                    var image = Image.FromStream(new MemoryStream(response.Data));
+                    var size = browser.Size;
+
+                    Assert.NotNull(image);
+                    Assert.Equal(ImageFormat.Png, image.RawFormat);
+                    Assert.Equal(size.Width, image.Width);
+                    Assert.Equal(size.Height, image.Height);
+                }
+            }
+        }
+
+        [Fact]
         public void CanConvertDevToolsObjectToDictionary()
         {
             var bounds = new Bounds
@@ -48,7 +77,6 @@ namespace CefSharp.Test.DevTools
             Assert.Equal(bounds.Left, (int)dict["left"]);
             Assert.Equal("fullscreen", (string)dict["windowState"]);
         }
-
 
         [Fact]
         public async Task CanGetDevToolsProtocolVersion()
@@ -169,24 +197,30 @@ namespace CefSharp.Test.DevTools
                 using (var devToolsClient = browser.GetDevToolsClient())
                 {
                     var brandsList = new List<UserAgentBrandVersion>();
-                    var uab = new UserAgentBrandVersion();
-                    uab.Brand = "Google Chrome";
-                    uab.Version = "89";
+                    var uab = new UserAgentBrandVersion
+                    {
+                        Brand = "Google Chrome",
+                        Version = "89"
+                    };
                     brandsList.Add(uab);
 
-                    var uab2 = new UserAgentBrandVersion();
-                    uab2.Brand = "Chromium";
-                    uab2.Version = "89";
+                    var uab2 = new UserAgentBrandVersion
+                    {
+                        Brand = "Chromium",
+                        Version = "89"
+                    };
                     brandsList.Add(uab2);
 
-                    var ua = new UserAgentMetadata();
-                    ua.Brands = brandsList;
-                    ua.Architecture = "arm";
-                    ua.Model = "Nexus 7";
-                    ua.Platform = "Android";
-                    ua.PlatformVersion = "6.0.1";
-                    ua.FullVersion = "89.0.4389.114";
-                    ua.Mobile = true;
+                    var ua = new UserAgentMetadata
+                    {
+                        Brands = brandsList,
+                        Architecture = "arm",
+                        Model = "Nexus 7",
+                        Platform = "Android",
+                        PlatformVersion = "6.0.1",
+                        FullVersion = "89.0.4389.114",
+                        Mobile = true
+                    };
 
                     await devToolsClient.Emulation.SetUserAgentOverrideAsync("Mozilla/5.0 (Linux; Android 6.0.1; Nexus 7 Build/MOB30X) AppleWebKit/5(KHTML,likeGeckoChrome/89.0.4389.114Safari/537.36", null, null, ua);
                 }
@@ -219,6 +253,151 @@ namespace CefSharp.Test.DevTools
                 Assert.Equal("Android", highEntropyValuesResult.platform);
                 Assert.Equal("6.0.1", highEntropyValuesResult.platformVersion);
                 Assert.Equal("89.0.4389.114", highEntropyValuesResult.uaFullVersion);
+            }
+        }
+
+        [Fact]
+        public async Task CanSetExtraHTTPHeaders()
+        {
+            using (var browser = new ChromiumWebBrowser("about:blank", automaticallyCreateBrowser: false))
+            {
+                await browser.CreateBrowserAsync();
+
+                RequestWillBeSentEventArgs requestWillBeSentEventArgs = null;
+                using (var devToolsClient = browser.GetDevToolsClient())
+                {
+                    var extraHeaders = new Headers();
+                    extraHeaders.SetCommaSeparatedValues("TEST", "0");
+                    extraHeaders.AppendCommaSeparatedValues("test", " 1 ", "\" 2 \"");
+                    extraHeaders.AppendCommaSeparatedValues("Test", " 2,5 ");
+
+                    await devToolsClient.Network.SetExtraHTTPHeadersAsync(extraHeaders);
+
+                    devToolsClient.Network.RequestWillBeSent += (sender, args) =>
+                    {
+                        if (requestWillBeSentEventArgs == null)
+                        {
+                            requestWillBeSentEventArgs = args;
+                        }
+                    };
+
+                    // enable events
+                    await devToolsClient.Network.EnableAsync();
+
+                    await browser.LoadUrlAsync("www.google.com");
+                }
+
+                Assert.NotNull(requestWillBeSentEventArgs);
+                Assert.NotEmpty(requestWillBeSentEventArgs.RequestId);
+                Assert.NotEqual(0, requestWillBeSentEventArgs.Timestamp);
+                Assert.NotEqual(0, requestWillBeSentEventArgs.WallTime);
+                Assert.NotNull(requestWillBeSentEventArgs.Request);
+                Assert.True(requestWillBeSentEventArgs.Request.Headers.TryGetValues("TeSt", out var values));
+                Assert.Collection(values,
+                    v => Assert.Equal("0", v),
+                    v => Assert.Equal("1", v),
+                    v => Assert.Equal(" 2 ", v),
+                    v => Assert.Equal(" 2,5 ", v)
+                );
+            }
+        }
+
+        [Fact]
+        public async Task ExecuteDevToolsMethodThrowsExceptionWithInvalidMethod()
+        {
+            using (var browser = new ChromiumWebBrowser("www.google.com"))
+            {
+                await browser.LoadUrlAsync();
+
+                using (var devToolsClient = browser.GetDevToolsClient())
+                {
+                    var ex = await Assert.ThrowsAsync<DevToolsClientException>(
+                        () => devToolsClient.ExecuteDevToolsMethodAsync("methoddoesnotexist"));
+
+                    Assert.NotNull(ex.Response);
+                    Assert.NotEqual(0, ex.Response.MessageId);
+                    Assert.NotEqual(0, ex.Response.Code);
+                    Assert.NotNull(ex.Response.Message);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CanRegisterMultipleEventHandlers()
+        {
+            using (var browser = new ChromiumWebBrowser("about:blank", automaticallyCreateBrowser: false))
+            {
+                await browser.CreateBrowserAsync();
+
+                using (var devToolsClient = browser.GetDevToolsClient())
+                {
+                    DevToolsEventArgs devToolsEventArgs = null;
+                    EventHandler<DevToolsEventArgs> devToolsEventHandler = (sender, args) =>
+                    {
+                        if (devToolsEventArgs == null)
+                        {
+                            devToolsEventArgs = args;
+                        }
+                    };
+                    devToolsClient.DevToolsEvent += devToolsEventHandler;
+
+                    RequestWillBeSentEventArgs requestWillBeSentEventArgs1 = null;
+                    EventHandler<RequestWillBeSentEventArgs> requestWillBeSentEventHandler1 = (sender, args) =>
+                    {
+                        if (requestWillBeSentEventArgs1 == null)
+                        {
+                            requestWillBeSentEventArgs1 = args;
+                        }
+                    };
+                    devToolsClient.Network.RequestWillBeSent += requestWillBeSentEventHandler1;
+
+                    RequestWillBeSentEventArgs requestWillBeSentEventArgs2 = null;
+                    EventHandler<RequestWillBeSentEventArgs> requestWillBeSentEventHandler2 = (sender, args) =>
+                    {
+                        if (requestWillBeSentEventArgs2 == null)
+                        {
+                            requestWillBeSentEventArgs2 = args;
+                        }
+                    };
+                    devToolsClient.Network.RequestWillBeSent += requestWillBeSentEventHandler2;
+
+                    // enable events
+                    await devToolsClient.Network.EnableAsync();
+
+                    await browser.LoadUrlAsync("www.google.com");
+
+                    Assert.NotNull(devToolsEventArgs);
+                    Assert.NotNull(requestWillBeSentEventArgs1);
+                    Assert.NotNull(requestWillBeSentEventArgs2);
+
+                    Assert.Equal(requestWillBeSentEventArgs1.RequestId, requestWillBeSentEventArgs2.RequestId);
+
+                    // remove second event handler
+                    devToolsClient.Network.RequestWillBeSent -= requestWillBeSentEventHandler2;
+                    devToolsEventArgs = null;
+                    requestWillBeSentEventArgs1 = null;
+                    requestWillBeSentEventArgs2 = null;
+
+                    await browser.LoadUrlAsync("www.google.com");
+
+                    Assert.NotNull(devToolsEventArgs);
+                    Assert.NotNull(requestWillBeSentEventArgs1);
+                    Assert.Null(requestWillBeSentEventArgs2);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CanRemoveEventListenerBeforeAddingOne()
+        {
+            using (var browser = new ChromiumWebBrowser("about:blank", automaticallyCreateBrowser: false))
+            {
+                await browser.CreateBrowserAsync();
+
+                using (var devToolsClient = browser.GetDevToolsClient())
+                {
+                    devToolsClient.Network.RequestWillBeSent -= (sender, args) => { };
+                }
             }
         }
     }

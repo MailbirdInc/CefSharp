@@ -93,9 +93,12 @@
     <Compile Include="DevTools\DevToolsClient.cs" />
     <Compile Include="DevTools\DevToolsClient.Generated.cs" />
     <Compile Include="DevTools\DevToolsClientException.cs" />
+    <Compile Include="DevTools\DevToolsEventHandlerRegistration.cs" />
+    <Compile Include="DevTools\DevToolsMethodResponseContext.cs" />
     <Compile Include="DevTools\DevToolsDomainBase.cs" />
     <Compile Include="DevTools\DevToolsDomainEntityBase.cs" />
     <Compile Include="DevTools\DevToolsDomainErrorResponse.cs" />
+    <Compile Include="DevTools\DevToolsDomainEventArgsBase.cs" />
     <Compile Include="DevTools\DevToolsDomainResponseBase.cs" />
     <Compile Include="DevTools\DevToolsEventArgs.cs" />
     <Compile Include="DevTools\DevToolsMethodResponse.cs" />
@@ -127,6 +130,7 @@
     <Compile Include="Internals\FreezableBase.cs" />
     <Compile Include="Internals\IBrowserRefCounter.cs" />
     <Compile Include="Internals\MimeTypeMapping.cs" />
+    <Compile Include="Internals\NoFocusHandler.cs" />
     <Compile Include="Internals\Tasks\SyncContextTaskCompletionSource.cs" />
     <Compile Include="IRegistration.cs" />
     <Compile Include="LoadUrlAsyncResponse.cs" />
