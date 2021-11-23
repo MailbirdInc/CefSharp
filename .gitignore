@@ -42,4 +42,3 @@ Win32/Release
 .vs/
 /Help
 /tools
-!Dependencies/**/*.*
