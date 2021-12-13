@@ -26,8 +26,8 @@ namespace CefSharp
         public const bool ComVisible = false;
         public const string AssemblyCompany = "The CefSharp Authors";
         public const string AssemblyProduct = "CefSharp";
-        public const string AssemblyVersion = "95.7.140";
-        public const string AssemblyFileVersion = "95.7.140.0";
+        public const string AssemblyVersion = "95.7.999";
+        public const string AssemblyFileVersion = "95.7.999.0";
         public const string AssemblyCopyright = "Copyright © 2021 The CefSharp Authors";
         public const string CefSharpCoreProject = "CefSharp.Core, PublicKey=" + PublicKey;
         public const string CefSharpBrowserSubprocessProject = "CefSharp.BrowserSubprocess, PublicKey=" + PublicKey;
