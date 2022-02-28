@@ -1,13 +1,13 @@
 ﻿#requires -Version 5
 
 param(
-    [ValidateSet("vs2022","vs2019", "nupkg-only")]
+    [ValidateSet("vs2022","vs2019", "nupkg-only", "update-build-version")]
     [Parameter(Position = 0)] 
     [string] $Target = "vs2019",
     [Parameter(Position = 1)]
-    [string] $Version = "95.7.140",
+    [string] $Version = "97.1.60",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "95.7.140",
+    [string] $AssemblyVersion = "97.1.60",
     [Parameter(Position = 3)]
     [ValidateSet("NetFramework", "NetCore", "NetFramework452", "NetCore31")]
     [string] $TargetFramework = "NetFramework",
@@ -558,6 +558,11 @@ switch -Exact ($Target)
         VSX v143
         Nupkg $NupkgFiles
     }
+	"update-build-version"
+	{
+		Write-Diagnostic "Updated Version to $Version"
+		Write-Diagnostic "Updated AssemblyVersion to $AssemblyVersion"
+	}
 }
 
 Pop-Location

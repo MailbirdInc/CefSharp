@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using CefSharp.Event;
 using CefSharp.Example;
 using CefSharp.Example.JavascriptBinding;
+using CefSharp.Example.ModelBinding;
 using CefSharp.Internals;
+using CefSharp.ModelBinding;
 using CefSharp.OffScreen;
 using Xunit;
 using Xunit.Abstractions;
@@ -59,8 +61,7 @@ namespace CefSharp.Test.JavascriptBinding
                     }
                 };
 
-                browser.CreateBrowser();
-                var response = await browser.WaitForQUnitTestExeuctionToComplete();
+                var response = await browser.CreateBrowserAndWaitForQUnitTestExeuctionToComplete();
 
                 if (!response.Success)
                 {
@@ -74,7 +75,7 @@ namespace CefSharp.Test.JavascriptBinding
             }
         }
 #else
-        [Fact]
+        [Fact(Skip = "Issue https://github.com/cefsharp/CefSharp/issues/3867")]
         public async Task LoadJavaScriptBindingQunitTestsSuccessfulCompletion()
         {
             using (var browser = new ChromiumWebBrowser(CefExample.BindingTestUrl, automaticallyCreateBrowser: false))
@@ -99,8 +100,7 @@ namespace CefSharp.Test.JavascriptBinding
                     }
                 };
 
-                browser.CreateBrowser();
-                var response = await browser.WaitForQUnitTestExeuctionToComplete();
+                var response = await browser.CreateBrowserAndWaitForQUnitTestExeuctionToComplete();
 
                 if (!response.Success)
                 {
@@ -115,6 +115,55 @@ namespace CefSharp.Test.JavascriptBinding
         }
 
         [Fact]
+        public async Task LoadJavaScriptBindingAsyncTaskQunitTestsSuccessfulCompletion()
+        {
+            CefSharpSettings.ConcurrentTaskExecution = true;
+
+            using (var browser = new ChromiumWebBrowser(CefExample.BindingTestsAsyncTaskUrl, automaticallyCreateBrowser: false))
+            {
+                CefSharpSettings.ConcurrentTaskExecution = false;
+
+                //TODO: Extract this into some sort of helper setup method
+                var bindingOptions = BindingOptions.DefaultBinder;
+                // intercept .net methods calls from js and log it
+                bindingOptions.MethodInterceptor = new MethodInterceptorLogger();
+                var repo = browser.JavascriptObjectRepository;
+
+                repo.Register("boundAsync", new AsyncBoundObject(), isAsync: true, options: bindingOptions);
+
+                browser.JavascriptMessageReceived += (s, e) =>
+                {
+                    dynamic msg = e.Message;
+                    var type = (string)msg.Type;
+
+                    if (type == "QUnitTestFailed")
+                    {
+                        var testOutput = (string)msg.Output;
+                        output.WriteLine(testOutput);
+                    }
+                };
+
+                browser.LoadError += (s, e) =>
+                {
+                    var err = e.ErrorCode;
+                };
+
+                var response = await browser.CreateBrowserAndWaitForQUnitTestExeuctionToComplete();
+
+                if (!response.Success)
+                {
+                    output.WriteLine("QUnit Passed : {0}", response.Passed);
+                    output.WriteLine("QUnit Total : {0}", response.Total);
+                }
+
+                Assert.True(response.Success);
+
+                output.WriteLine("QUnit Tests result: {0}", response.Success);
+            }
+        }
+
+        [SkipIfRunOnAppVeyorFact()]
+        //Skipping Issue https://github.com/cefsharp/CefSharp/issues/3867
         public async Task LoadLegacyJavaScriptBindingQunitTestsSuccessfulCompletion()
         {
             using (var browser = new ChromiumWebBrowser(CefExample.LegacyBindingTestUrl, automaticallyCreateBrowser: false))
@@ -139,8 +188,7 @@ namespace CefSharp.Test.JavascriptBinding
                     }
                 };
 
-                browser.CreateBrowser();
-                var response = await browser.WaitForQUnitTestExeuctionToComplete();
+                var response = await browser.CreateBrowserAndWaitForQUnitTestExeuctionToComplete();
 
                 if(!response.Success)
                 {

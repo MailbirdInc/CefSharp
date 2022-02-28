@@ -5,7 +5,6 @@
 using System;
 using System.Windows.Forms;
 using CefSharp.WinForms.Host;
-using CefSharp.WinForms.Internals;
 
 namespace CefSharp.WinForms
 {
@@ -24,7 +23,7 @@ namespace CefSharp.WinForms
         /// This will avoid the WM_Close message that CEF sends by default to the top level window.
         /// (Which closes your application). This method should generally only be used in the WinForms version.
         /// </summary>
-        /// <param name="chromiumWebBrowser">the ChromiumWebBrowser instance</param>
+        /// <param name="chromiumWebBrowser">the <see cref="ChromiumWebBrowser"/> or <see cref="ChromiumHostControl"/> instance.</param>
         /// <returns>If the function succeeds, the return value is true.</returns>
         /// <example>
         /// <code>
@@ -35,7 +34,7 @@ namespace CefSharp.WinForms
         /// });
         /// </code>
         /// </example>
-        public static bool DestroyWindow(this IWebBrowser chromiumWebBrowser)
+        public static bool DestroyWindow(this IChromiumWebBrowserBase chromiumWebBrowser)
         {
             if (!Cef.CurrentlyOnThread(CefThreadIds.TID_UI))
             {
@@ -48,7 +47,7 @@ namespace CefSharp.WinForms
                 return false;
             }
 
-            var browser = chromiumWebBrowser.GetBrowser();
+            var browser = chromiumWebBrowser.BrowserCore;
 
             if (browser == null)
             {
@@ -72,7 +71,7 @@ namespace CefSharp.WinForms
         /// <param name="inspectElementAtX">x coordinate (used for inspectElement)</param>
         /// <param name="inspectElementAtY">y coordinate (used for inspectElement)</param>
         /// <returns>Returns the <see cref="Control"/> that hosts the DevTools instance if successful, otherwise returns null on error.</returns>
-        public static Control ShowDevToolsDocked(this IWebBrowser chromiumWebBrowser, Control parentControl, string controlName = nameof(ChromiumHostControl) + "DevTools", DockStyle dockStyle = DockStyle.Fill, int inspectElementAtX = 0, int inspectElementAtY = 0)
+        public static Control ShowDevToolsDocked(this IChromiumWebBrowserBase chromiumWebBrowser, Control parentControl, string controlName = nameof(ChromiumHostControl) + "DevTools", DockStyle dockStyle = DockStyle.Fill, int inspectElementAtX = 0, int inspectElementAtY = 0)
         {
             if (chromiumWebBrowser.IsDisposed || parentControl == null || parentControl.IsDisposed)
             {
@@ -96,7 +95,7 @@ namespace CefSharp.WinForms
         /// <param name="inspectElementAtX">x coordinate (used for inspectElement)</param>
         /// <param name="inspectElementAtY">y coordinate (used for inspectElement)</param>
         /// <returns>Returns the <see cref="Control"/> that hosts the DevTools instance if successful, otherwise returns null on error.</returns>
-        public static Control ShowDevToolsDocked(this IWebBrowser chromiumWebBrowser, Action<ChromiumHostControl> addParentControl, string controlName = nameof(ChromiumHostControl) + "DevTools", DockStyle dockStyle = DockStyle.Fill, int inspectElementAtX = 0, int inspectElementAtY = 0)
+        public static Control ShowDevToolsDocked(this IChromiumWebBrowserBase chromiumWebBrowser, Action<ChromiumHostControl> addParentControl, string controlName = nameof(ChromiumHostControl) + "DevTools", DockStyle dockStyle = DockStyle.Fill, int inspectElementAtX = 0, int inspectElementAtY = 0)
         {
             if (chromiumWebBrowser.IsDisposed || addParentControl == null)
             {

@@ -120,8 +120,19 @@ namespace CefSharp
 
                 // The Crashpad Handler doesn't have any HostProcessIdArgument, so we must not try to
                 // parse it lest we want an ArgumentNullException.
-                if (type != "crashpad-handler")
+                if (type == "crashpad-handler")
                 {
+                    //Lower the shutdown priority so the browser process is shutdown first (Issue #3155)
+                    //The system terminates the process without displaying a retry dialog box for the user.
+                    //Crashpad is lower than other sub processes so it can still monitor process exit crashes.
+                    SetProcessShutdownParameters(0x100, SHUTDOWN_NORETRY);
+                }
+                else
+                {
+                    //Lower the shutdown priority so the browser process is shutdown first (Issue #3155)
+                    //The system terminates the process without displaying a retry dialog box for the user.
+                    SetProcessShutdownParameters(0x200, SHUTDOWN_NORETRY);
+
                     parentProcessId = int::Parse(CommandLineArgsParser::GetArgumentValue(args, CefSharpArguments::HostProcessIdArgument));
                     if (CommandLineArgsParser::HasArgument(args, CefSharpArguments::ExitIfParentProcessClosed))
                     {

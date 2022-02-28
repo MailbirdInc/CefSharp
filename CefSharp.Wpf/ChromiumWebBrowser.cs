@@ -17,6 +17,7 @@ using CefSharp.Enums;
 using CefSharp.Internals;
 using CefSharp.Structs;
 using CefSharp.Wpf.Experimental;
+using CefSharp.Wpf.Handler;
 using CefSharp.Wpf.Internals;
 using CefSharp.Wpf.Rendering;
 using Microsoft.Win32.SafeHandles;
@@ -563,6 +564,8 @@ namespace CefSharp.Wpf
 
             PresentationSource.AddSourceChangedHandler(this, PresentationSourceChangedHandler);
 
+            MenuHandler = new ContextMenuHandler();
+
             UseLayoutRounding = true;
         }
 
@@ -653,6 +656,7 @@ namespace CefSharp.Wpf
                 FocusHandler = new NoFocusHandler();
 
                 browser = null;
+                BrowserCore = null;
 
                 // In case we accidentally have a reference to the CEF drag data
                 currentDragData?.Dispose();
@@ -1651,6 +1655,19 @@ namespace CefSharp.Wpf
                     window.StateChanged += OnWindowStateChanged;
                     window.LocationChanged += OnWindowLocationChanged;
                     sourceWindow = window;
+
+                    if (CleanupElement == null)
+                    {
+                        CleanupElement = window;
+                    }
+                    else if(CleanupElement is Window parent)
+                    {
+                        //If the CleanupElement is a window then move it to the new Window
+                        if(parent != window)
+                        {
+                            CleanupElement = window;
+                        }
+                    }
                 }
 
                 browserScreenLocation = GetBrowserScreenLocation();
@@ -1937,11 +1954,6 @@ namespace CefSharp.Wpf
         /// <param name="routedEventArgs">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void OnLoaded(object sender, RoutedEventArgs routedEventArgs)
         {
-            if (CleanupElement == null)
-            {
-                CleanupElement = Window.GetWindow(this);
-            }
-
             // TODO: Consider making the delay here configurable.
             tooltipTimer = new DispatcherTimer(
                 TimeSpan.FromSeconds(0.5),
@@ -2324,7 +2336,17 @@ namespace CefSharp.Wpf
                 }
                 else
                 {
-                    browser.GetHost().SendMouseClickEvent((int)point.X, (int)point.Y, (MouseButtonType)e.ChangedButton, mouseUp, e.ClickCount, modifiers);
+                    //Chromium only supports values of 1, 2 or 3.
+                    //https://github.com/cefsharp/CefSharp/issues/3940
+                    //Anything greater than 3 then we send click count of 1
+                    var clickCount = e.ClickCount;
+
+                    if(clickCount > 3)
+                    {
+                        clickCount = 1;
+                    }
+
+                    browser.GetHost().SendMouseClickEvent((int)point.X, (int)point.Y, (MouseButtonType)e.ChangedButton, mouseUp, clickCount, modifiers);
                 }
 
                 e.Handled = true;

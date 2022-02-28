@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading;
 using System.Threading.Tasks;
+using CefSharp.DevTools.Page;
 using CefSharp.Enums;
 using CefSharp.Internals;
 using CefSharp.Structs;
@@ -45,6 +46,7 @@ namespace CefSharp.OffScreen
         /// uderlying Chromium Embedded Framework (CEF) browser has been created.
         /// </summary>
         private Action<IBrowser> onAfterBrowserCreatedDelegate;
+        private float deviceScaleFactor = 1.0f;
 
         /// <summary>
         /// Gets a value indicating whether this instance is disposed.
@@ -282,6 +284,7 @@ namespace CefSharp.OffScreen
                 FocusHandler = new NoFocusHandler();
 
                 browser = null;
+                BrowserCore = null;
 
                 if (managedCefBrowserAdapter != null)
                 {
@@ -403,6 +406,23 @@ namespace CefSharp.OffScreen
         }
 
         /// <summary>
+        /// Device scale factor. Specifies the ratio between physical and logical pixels.
+        /// </summary>
+        public float DeviceScaleFactor
+        {
+            get { return deviceScaleFactor; }
+            set
+            {
+                deviceScaleFactor = value;
+
+                if (IsBrowserInitialized)
+                {
+                    browser.GetHost().NotifyScreenInfoChanged();
+                }
+            }
+        }
+
+        /// <summary>
         /// Immediately returns a copy of the last rendering from Chrome,
         /// or null if no rendering has occurred yet.
         /// Chrome also renders the page loading, so if you want to see a complete rendering,
@@ -467,8 +487,11 @@ namespace CefSharp.OffScreen
         /// <param name="ignoreExistingScreenshot">Ignore existing bitmap (if any) and return the next available bitmap</param>
         /// <param name="blend">Choose which bitmap to retrieve, choose <see cref="PopupBlending.Blend"/> for a merged bitmap.</param>
         /// <returns>Task&lt;Bitmap&gt;.</returns>
+        [Obsolete("Use CaptureScreenshotAsync instead.")]
         public Task<Bitmap> ScreenshotAsync(bool ignoreExistingScreenshot = false, PopupBlending blend = PopupBlending.Main)
         {
+            ThrowExceptionIfDisposed();
+
             // Try our luck and see if there is already a screenshot, to save us creating a new thread for nothing.
             var screenshot = ScreenshotOrNull(blend);
 
@@ -503,6 +526,139 @@ namespace CefSharp.OffScreen
             }
 
             return completionSource.Task;
+        }
+
+        /// <summary>
+        /// Capture page screenshot.
+        /// </summary>
+        /// <param name="format">Image compression format (defaults to png).</param>
+        /// <param name="quality">Compression quality from range [0..100] (jpeg only).</param>
+        /// <param name="viewport">view port to capture, if not null the browser will be resized if the requested width/height
+        /// are larger than the current browser <see cref="Size"/>.</param>
+        /// <returns>A task that can be awaited to obtain the screenshot as a byte[].</returns>
+        public async Task<byte[]> CaptureScreenshotAsync(CaptureScreenshotFormat? format = null, int? quality = null, Viewport viewport = null)
+        {
+            ThrowExceptionIfDisposed();
+            ThrowExceptionIfBrowserNotInitialized();
+
+            using (var devToolsClient = browser.GetDevToolsClient())
+            {
+                if (viewport == null)
+                {
+                    var screenShot = await devToolsClient.Page.CaptureScreenshotAsync(format, quality, fromSurface: true).ConfigureAwait(continueOnCapturedContext: false);
+
+                    return screenShot.Data;
+                }
+
+                //https://bitbucket.org/chromiumembedded/cef/issues/3103/offscreen-capture-screenshot-with-devtools
+                //CEF OSR mode doesn't set the size internally when CaptureScreenShot is called with a clip param specified, so
+                //we must manually resize our view if size is greater
+                var newWidth = viewport.Width + viewport.X;
+                if (newWidth < size.Width)
+                {
+                    newWidth = size.Width;
+                }
+                var newHeight = viewport.Height + viewport.Y;
+                if (newHeight < size.Height)
+                {
+                    newHeight = size.Height;
+                }
+                var newScale = viewport.Scale;
+                if (newScale == 0)
+                {
+                    newScale = deviceScaleFactor;
+                }
+
+                if ((int)newWidth > size.Width || (int)newHeight > size.Height || newScale != deviceScaleFactor)
+                {
+                    await ResizeAsync((int)newWidth, (int)newHeight, (float)newScale).ConfigureAwait(continueOnCapturedContext:false);
+                }
+
+                //Create a copy instead of modifying users object as we need to set Scale to 1
+                //as CEF doesn't support passing custom scale.
+                var clip = new Viewport
+                {
+                    Height = viewport.Height,
+                    Width = viewport.Width,
+                    X = viewport.X,
+                    Y = viewport.Y,
+                    Scale = 1 
+                };
+                
+                var response = await devToolsClient.Page.CaptureScreenshotAsync(format, quality, clip: clip, fromSurface: true).ConfigureAwait(continueOnCapturedContext: false);
+
+                return response.Data;
+            }
+        }
+
+        /// <summary>
+        /// Resize the browser
+        /// </summary>
+        /// <param name="width">width</param>
+        /// <param name="height">height</param>
+        /// <param name="deviceScaleFactor">device scale factor</param>
+        /// <returns>A task that can be awaited and will resolve when the desired size is achieved.</returns>
+        /// <remarks>
+        /// The current implementation is fairly symplistic, it simply resizes the browser
+        /// and resolves the task when the browser starts painting at the desired size.
+        /// </remarks>
+        public Task ResizeAsync(int width, int height, float? deviceScaleFactor = null)
+        {
+            ThrowExceptionIfDisposed();
+            ThrowExceptionIfBrowserNotInitialized();
+
+            if (size.Width == width && size.Height == height && (deviceScaleFactor == null || deviceScaleFactor == DeviceScaleFactor))
+            {
+                return Task.FromResult(true);
+            }
+
+            var scaledWidth = (int)(width * DeviceScaleFactor);
+            var scaledHeight = (int)(height * DeviceScaleFactor);
+
+            var tcs = new TaskCompletionSource<bool>();
+            EventHandler<OnPaintEventArgs> handler = null;
+
+            handler = (s, e) =>
+            {
+                if (e.Width == scaledWidth && e.Height == scaledHeight)
+                {
+                    AfterPaint -= handler;
+
+                    tcs.TrySetResultAsync(true);
+                }
+            };
+
+            AfterPaint += handler;
+
+            //Only set the value if not null otherwise
+            //a call to NotifyScreenInfoChanged will be made.
+            if (deviceScaleFactor.HasValue)
+            {
+                scaledWidth = (int)(width * deviceScaleFactor.Value);
+                scaledHeight = (int)(height * deviceScaleFactor.Value);
+                DeviceScaleFactor = deviceScaleFactor.Value;
+            }
+            Size = new Size(width, height);
+
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// Size of scrollable area in CSS pixels
+        /// </summary>
+        /// <returns>A task that can be awaited to get the size of the scrollable area in CSS pixels.</returns>
+        public async Task<DevTools.DOM.Rect> GetContentSizeAsync()
+        {
+            ThrowExceptionIfDisposed();
+            ThrowExceptionIfBrowserNotInitialized();
+
+            using (var devToolsClient = browser.GetDevToolsClient())
+            {
+                //Get the content size
+                var layoutMetricsResponse = await devToolsClient.Page.GetLayoutMetricsAsync().ConfigureAwait(continueOnCapturedContext:false);
+
+                return layoutMetricsResponse.CssContentSize;
+            }
         }
 
         /// <inheritdoc/>
@@ -541,7 +697,7 @@ namespace CefSharp.OffScreen
         /// Has Focus - Always False
         /// </summary>
         /// <returns>returns false</returns>
-        bool IWebBrowser.Focus()
+        bool IChromiumWebBrowserBase.Focus()
         {
             // no control to focus for offscreen browser
             return false;

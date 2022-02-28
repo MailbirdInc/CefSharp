@@ -23,7 +23,7 @@ namespace CefSharp.WinForms
     [Docking(DockingBehavior.AutoDock), DefaultEvent("LoadingStateChanged"), ToolboxBitmap(typeof(ChromiumWebBrowser)),
     Description("CefSharp ChromiumWebBrowser - Chromium Embedded Framework .Net wrapper. https://github.com/cefsharp/CefSharp"),
     Designer(typeof(ChromiumWebBrowserDesigner))]
-    public partial class ChromiumWebBrowser : ChromiumHostControl, IWebBrowserInternal, IWinFormsWebBrowser
+    public partial class ChromiumWebBrowser : ChromiumHostControlBase, IWebBrowserInternal, IWinFormsWebBrowser
     {
         //TODO: If we start adding more consts then extract them into a common class
         //Possibly in the CefSharp assembly and move the WPF ones into there as well.
@@ -198,13 +198,6 @@ namespace CefSharp.WinForms
         /// To access UI elements you'll need to Invoke/Dispatch onto the UI Thread.
         /// </summary>
         public event EventHandler<TitleChangedEventArgs> TitleChanged;
-        /// <summary>
-        /// Event called after the underlying CEF browser instance has been created. 
-        /// It's important to note this event is fired on a CEF UI thread, which by default is not the same as your application UI
-        /// thread. It is unwise to block on this thread for any length of time as your browser will become unresponsive and/or hang..
-        /// To access UI elements you'll need to Invoke/Dispatch onto the UI Thread.
-        /// </summary>
-        public event EventHandler IsBrowserInitializedChanged;
 
         /// <summary>
         /// A flag that indicates whether the state of the control currently supports the GoForward action (true) or not (false).
@@ -398,7 +391,6 @@ namespace CefSharp.WinForms
                 ConsoleMessage = null;
                 FrameLoadEnd = null;
                 FrameLoadStart = null;
-                IsBrowserInitializedChanged = null;
                 LoadError = null;
                 LoadingStateChanged = null;
                 StatusMessage = null;
@@ -414,6 +406,7 @@ namespace CefSharp.WinForms
                 FocusHandler = new NoFocusHandler();
 
                 browser = null;
+                BrowserCore = null;
 
                 if (parentFormMessageInterceptor != null)
                 {
@@ -454,19 +447,32 @@ namespace CefSharp.WinForms
                 return;
             }
 
+            var browserCore = BrowserCore;
+
             //There's a small window here between CreateBrowser
             //and OnAfterBrowserCreated where the Address prop
-            //will be updated, though LoadUrl won't be called.
-            if (IsBrowserInitialized)
+            //will be updated, no MainFrame.LoadUrl call will be made.
+            if (browserCore == null)
             {
-                using (var frame = this.GetMainFrame())
-                {
-                    frame.LoadUrl(url);
-                }
+                Address = url;
             }
             else
             {
-                Address = url;
+                if(browserCore.IsDisposed)
+                {
+                    return;
+                }
+
+                using (var frame = browserCore.MainFrame)
+                {
+                    //Only attempt to call load if frame is valid
+                    //I've seen so far one case where the MainFrame is invalid.
+                    //As yet unable to reproduce
+                    if (frame.IsValid)
+                    {
+                        frame.LoadUrl(url);
+                    }
+                }
             }
         }
 
@@ -527,9 +533,15 @@ namespace CefSharp.WinForms
                 parkingControl.CreateControl();
 
                 var host = this.GetBrowserHost();
-                var hwnd = host.GetWindowHandle();
 
-                NativeMethodWrapper.SetWindowParent(hwnd, parkingControl.Handle);
+                // Possible host is null
+                // https://github.com/cefsharp/CefSharp/issues/3931
+                if (host != null)
+                {
+                    var hwnd = host.GetWindowHandle();
+
+                    NativeMethodWrapper.SetWindowParent(hwnd, parkingControl.Handle);
+                }
             }
         }
 
@@ -639,7 +651,7 @@ namespace CefSharp.WinForms
                 browser.GetHost()?.SetFocus(true);
             }
 
-            IsBrowserInitializedChanged?.Invoke(this, EventArgs.Empty);
+            RaiseIsBrowserInitializedChangedEvent();
         }
 
         /// <summary>
@@ -769,13 +781,24 @@ namespace CefSharp.WinForms
         /// <summary>
         /// Returns the current IBrowser Instance
         /// </summary>
-        /// <returns>browser instance or null</returns>
+        /// <returns>browser instance</returns>
         public IBrowser GetBrowser()
         {
             ThrowExceptionIfDisposed();
             ThrowExceptionIfBrowserNotInitialized();
 
             return browser;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ChromiumWebBrowser"/> associated with
+        /// a specific <see cref="IBrowser"/> instance. 
+        /// </summary>
+        /// <param name="browser">browser</param>
+        /// <returns>returns the assocaited <see cref="ChromiumWebBrowser"/> or null if Disposed or no host found.</returns>
+        public static ChromiumWebBrowser FromBrowser(IBrowser browser)
+        {
+            return FromBrowser<ChromiumWebBrowser>(browser);
         }
     }
 }

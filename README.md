@@ -3,23 +3,25 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/9g4mcuqruc283g66/branch/master?svg=true)](https://ci.appveyor.com/project/cefsharp/cefsharp/branch/master)
 [![CefSharp.WinForms](https://img.shields.io/nuget/v/CefSharp.WinForms.svg?style=flat&label=WinForms)](https://www.nuget.org/packages/CefSharp.WinForms/)
 [![CefSharp.Wpf](https://img.shields.io/nuget/v/CefSharp.Wpf.svg?style=flat&label=Wpf)](https://www.nuget.org/packages/CefSharp.Wpf/)
+[![CefSharp.Wpf.HwndHost](https://img.shields.io/nuget/v/CefSharp.Wpf.HwndHost.svg?style=flat&label=Wpf.HwndHost)](https://www.nuget.org/packages/CefSharp.Wpf.HwndHost/)
 [![CefSharp.OffScreen](https://img.shields.io/nuget/v/CefSharp.OffScreen.svg?style=flat&label=OffScreen)](https://www.nuget.org/packages/CefSharp.OffScreen/)
 
-Got a quick question? Jump on [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cefsharp/CefSharp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+Got a quick question? [Discussions](https://github.com/cefsharp/CefSharp/discussions) here on `GitHub` is the preferred place to ask!
 
 [CefSharp](https://cefsharp.github.io/) lets you embed Chromium in .NET apps. It is a lightweight .NET wrapper around the [Chromium Embedded Framework (CEF)](https://bitbucket.org/chromiumembedded/cef) by Marshall A. Greenblatt. About 30% of the bindings are written in C++/CLI with the majority of code here is C#. It can be used from C# or VB, or any other CLR language. CefSharp provides both WPF and WinForms web browser control implementations.
 
 CefSharp is [BSD](https://opensource.org/licenses/BSD-3-Clause "BSD License") licensed, so it can be used in both proprietary and free/open source applications. For the full details, see the [LICENSE](LICENSE) file. 
 
-If you like and use CefSharp please consider signing up for a small monthly donation, even $25 can help tremendously. See [Financial Support](#Financial-Support) for more details.
+If you like and use CefSharp please consider signing up for a small monthly donation, even $25 can help tremendously. See [Financial Support](Readme.md#Financial-Support) for more details.
 
 ## Releases
 
-Stable binaries are released on NuGet, and contain everything you need  to embed Chromium in your .Net/CLR application. For usage see the [Quick Start](https://github.com/cefsharp/CefSharp/wiki/Quick-Start) guide or [FAQ #8](https://github.com/cefsharp/CefSharp/wiki/Frequently-asked-questions#CefSharp_binaries).
+Stable binaries are released on NuGet, and contain everything you need to embed Chromium in your .Net/CLR application. For usage see the [Quick Start](https://github.com/cefsharp/CefSharp/wiki/Quick-Start) guide or checkout [CefSharp.MinimalExample](https://github.com/cefsharp/CefSharp.MinimalExample/) project for basic demos using the CefSharp NuGet packages.
 
 - [CefSharp.WinForms](https://www.nuget.org/packages/CefSharp.WinForms/)
 - [CefSharp.Wpf](https://www.nuget.org/packages/CefSharp.Wpf/)
 - [CefSharp.OffScreen](https://www.nuget.org/packages/CefSharp.OffScreen/)
+- [CefSharp.Wpf.HwndHost](https://github.com/cefsharp/CefSharp.Wpf.HwndHost/) (A [HwndHost](https://docs.microsoft.com/en-us/dotnet/api/system.windows.interop.hwndhost) based WPF implementation, similar to hosting the WinForms version in WPF, supports data binding, airspace issues apply).
 
 ## Documentation
 
@@ -35,10 +37,9 @@ Stable binaries are released on NuGet, and contain everything you need  to embed
 
 Please keep the `Issue Tracker` for **Bugs** only please! Before submitting a `PR` please read [CONTRIBUTING](https://github.com/cefsharp/CefSharp/blob/master/CONTRIBUTING.md).
 
-- [Stackoverflow](https://stackoverflow.com/questions/tagged/cefsharp) is generally where questions should be asked, please search before posting, thanks!
-- [CefSharp Questions-and-Support](https://github.com/cefsharp/Questions-and-Support/issues) is a repository here on `GitHub` where you can ask `CefSharp` specific questions.
+- [CefSharp Discussions](https://github.com/cefsharp/CefSharp/discussions) is generally where `CefSharp` specific questions should be asked, please search before posting, thanks!
+- [Stackoverflow](https://stackoverflow.com/questions/tagged/cefsharp) is where generic html/javascript/C# questions can be asked.
 - [Chromium Embedded Framework(CEF) Forum](https://magpcss.org/ceforum/viewforum.php?f=18)
-- [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cefsharp/CefSharp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) is the place to ask if you need a quick pointer or two.
 
 ## Branches & Forks
 
@@ -87,8 +88,11 @@ If you're new to `CefSharp` and are downloading the source to check it out, plea
 
 | Branch                                                               | CEF Version  | VC++ Version | .Net Version | Status |
 |----------------------------------------------------------------------|------|-------|---------|-----------------|
-| [master](https://github.com/cefsharp/CefSharp/)                      | 4606 | 2019* | 4.5.2** | Development     |
-| [cefsharp/94](https://github.com/cefsharp/CefSharp/tree/cefsharp/94) | 4606 | 2019* | 4.5.2** | **Release**     |
+| [master](https://github.com/cefsharp/CefSharp/)                      | 4692 | 2019* | 4.5.2** | Development     |
+| [cefsharp/96](https://github.com/cefsharp/CefSharp/tree/cefsharp/96) | 4692 | 2019* | 4.5.2** | **Pre-Release** |
+| [cefsharp/96](https://github.com/cefsharp/CefSharp/tree/cefsharp/96) | 4664 | 2019* | 4.5.2** | **Release**     |
+| [cefsharp/95](https://github.com/cefsharp/CefSharp/tree/cefsharp/95) | 4638 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/94](https://github.com/cefsharp/CefSharp/tree/cefsharp/94) | 4606 | 2019* | 4.5.2** | Unsupported     |
 | [cefsharp/93](https://github.com/cefsharp/CefSharp/tree/cefsharp/93) | 4577 | 2019* | 4.5.2** | Unsupported     |
 | [cefsharp/92](https://github.com/cefsharp/CefSharp/tree/cefsharp/92) | 4515 | 2015* | 4.5.2** | Unsupported     |
 | [cefsharp/91](https://github.com/cefsharp/CefSharp/tree/cefsharp/91) | 4472 | 2015* | 4.5.2** | Unsupported     |
