@@ -31,9 +31,10 @@
 
             QUnit.test("WaitBeforeReturnAsync:", async (assert) =>
             {
+                const expectedResult = null;  
                 const actualResult = await boundAsync.waitBeforeReturnAsync(2000);
 
-                assert.notOk(actualResult, "Method awaited without returning response.");
+                assert.equal(expectedResult, actualResult, "Return null");
             });
 
             QUnit.test("ReturnHello:", async (assert) =>
