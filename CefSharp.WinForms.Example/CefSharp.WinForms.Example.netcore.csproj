@@ -11,7 +11,8 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFrameworks>netcoreapp3.1;net5.0-windows</TargetFrameworks>
+        <TargetFrameworks Condition="'$(VisualStudioVersion)'=='17.0'">$(TargetFrameworks);net6.0-windows</TargetFrameworks>
         <RootNamespace>CefSharp.WinForms.Example</RootNamespace>
         <AssemblyName>CefSharp.WinForms.Example</AssemblyName>
         <UseWindowsForms>true</UseWindowsForms>
@@ -39,6 +40,7 @@
         <ProjectReference Include="..\CefSharp.WinForms\CefSharp.WinForms.netcore.csproj" />
         <ProjectReference Include="..\CefSharp\CefSharp.netcore.csproj" />
         <PackageReference Include="chromiumembeddedframework.runtime" Version="98.1.21" />
+        <PackageReference Include="chromiumembeddedframework.runtime" Version="100.0.23" />
     </ItemGroup>
 
     <ItemGroup>

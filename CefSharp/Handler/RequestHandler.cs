@@ -20,9 +20,9 @@ namespace CefSharp.Handler
         }
 
         /// <summary>
-        /// Called before browser navigation. If the navigation is allowed <see cref="IWebBrowser.FrameLoadStart"/> and
-        /// <see cref="IWebBrowser.FrameLoadEnd"/>
-        /// will be called. If the navigation is canceled <see cref="IWebBrowser.LoadError"/> will be called with an ErrorCode value of
+        /// Called before browser navigation. If the navigation is allowed <see cref="IChromiumWebBrowserBase.FrameLoadStart"/> and
+        /// <see cref="IChromiumWebBrowserBase.FrameLoadEnd"/>
+        /// will be called. If the navigation is canceled <see cref="IChromiumWebBrowserBase.LoadError"/> will be called with an ErrorCode value of
         /// <see cref="CefErrorCode.Aborted"/>.
         /// </summary>
         /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control.</param>
@@ -214,22 +214,6 @@ namespace CefSharp.Handler
         {
             callback.Dispose();
             return false;
-        }
-
-        /// <inheritdoc/>
-        void IRequestHandler.OnPluginCrashed(IWebBrowser chromiumWebBrowser, IBrowser browser, string pluginPath)
-        {
-            OnPluginCrashed(chromiumWebBrowser, browser, pluginPath);
-        }
-
-        /// <summary>
-        /// Called when a plugin has crashed.
-        /// </summary>
-        /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control.</param>
-        /// <param name="browser">the browser object.</param>
-        /// <param name="pluginPath">path of the plugin that crashed.</param>
-        protected virtual void OnPluginCrashed(IWebBrowser chromiumWebBrowser, IBrowser browser, string pluginPath)
-        {
         }
 
         /// <inheritdoc/>

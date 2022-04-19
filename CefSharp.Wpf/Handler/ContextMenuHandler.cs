@@ -265,7 +265,7 @@ namespace CefSharp.Wpf.Handler
                 }
                 case CefMenuCommand.Find:
                 {
-                    browser.GetHost().Find(0, model.SelectionText, true, false, false);
+                    browser.GetHost().Find(model.SelectionText, true, false, false);
                     break;
                 }
 
@@ -305,7 +305,7 @@ namespace CefSharp.Wpf.Handler
 
                 var subItems = model.GetSubMenuAt(i);
 
-                IList<MenuModel> subMenus = subItems == null ? null : GetMenuItems(subItems);
+                var subMenus = subItems == null ? null : GetMenuItems(subItems);
 
                 var menuItem = new MenuModel
                 {

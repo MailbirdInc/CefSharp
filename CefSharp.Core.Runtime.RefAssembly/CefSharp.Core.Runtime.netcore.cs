@@ -34,7 +34,6 @@ namespace CefSharp.Core
         public virtual CefSharp.CefState LocalStorage { get { throw null; } set { } }
         public virtual int MinimumFontSize { get { throw null; } set { } }
         public virtual int MinimumLogicalFontSize { get { throw null; } set { } }
-        public virtual CefSharp.CefState Plugins { get { throw null; } set { } }
         public virtual CefSharp.CefState RemoteFonts { get { throw null; } set { } }
         public virtual string SansSerifFontFamily { get { throw null; } set { } }
         public virtual string SerifFontFamily { get { throw null; } set { } }
@@ -77,7 +76,6 @@ namespace CefSharp.Core
         public static CefSharp.IRequestContext GetGlobalRequestContext() { throw null; }
         public static string GetMimeType(string extension) { throw null; }
         public static int GetMinLogLevel() { throw null; }
-        public static System.Threading.Tasks.Task<System.Collections.Generic.List<CefSharp.WebPluginInfo>> GetPlugins() { throw null; }
         public static bool Initialize(CefSharp.Core.CefSettingsBase cefSettings) { throw null; }
         public static bool Initialize(CefSharp.Core.CefSettingsBase cefSettings, bool performDependencyCheck) { throw null; }
         public static bool Initialize(CefSharp.Core.CefSettingsBase cefSettings, bool performDependencyCheck, CefSharp.IApp cefApp) { throw null; }
@@ -85,15 +83,12 @@ namespace CefSharp.Core
         public static CefSharp.UrlParts ParseUrl(string url) { throw null; }
         public static void PreShutdown() { }
         public static void QuitMessageLoop() { }
-        public static void RefreshWebPlugins() { }
         public static bool RemoveCrossOriginWhitelistEntry(string sourceOrigin, string targetProtocol, string targetDomain, bool allowTargetSubdomains) { throw null; }
         public static void RemoveDisposable(System.IDisposable item) { }
         public static void RunMessageLoop() { }
         public static void SetCrashKeyValue(string key, string value) { }
         public static void Shutdown() { }
         public static void ShutdownWithoutChecks() { }
-        public static void UnregisterInternalWebPlugin(string path) { }
-        public static void VisitWebPluginInfo(CefSharp.IWebPluginInfoVisitor visitor) { }
         public static void WaitForBrowsersToClose() { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -183,6 +178,7 @@ namespace CefSharp.Core
     {
         public NativeMethodWrapper() { }
         public static bool IsFocused(System.IntPtr handle) { throw null; }
+        public static System.IntPtr LoadCursorFromLibCef(int resourceIdentifier) { throw null; }
         public static void MemoryCopy(System.IntPtr dest, System.IntPtr src, int numberOfBytes) { }
         public static void RemoveExNoActivateStyle(System.IntPtr browserHwnd) { }
         public static void SetWindowParent(System.IntPtr child, System.IntPtr newParent) { }

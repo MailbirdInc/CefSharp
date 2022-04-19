@@ -489,7 +489,14 @@ namespace CefSharp.WinForms.Example
 
         }
 
-        public async void CopySourceToClipBoardAsync()
+        public async Task HideScrollbarsAsync()
+        {
+            var devTools = Browser.GetDevToolsClient();
+
+            await devTools.Emulation.SetScrollbarsHiddenAsync(true);
+        }
+
+        public async Task CopySourceToClipBoardAsync()
         {
             var htmlSource = await Browser.GetSourceAsync();
 
@@ -525,7 +532,7 @@ namespace CefSharp.WinForms.Example
         {
             if (!string.IsNullOrEmpty(findTextBox.Text))
             {
-                Browser.Find(0, findTextBox.Text, next, false, false);
+                Browser.Find(findTextBox.Text, next, false, false);
             }
         }
 

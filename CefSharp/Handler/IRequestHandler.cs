@@ -15,8 +15,8 @@ namespace CefSharp
     {
         /// <summary>
         /// Called before browser navigation.
-        /// If the navigation is allowed <see cref="IWebBrowser.FrameLoadStart"/> and <see cref="IWebBrowser.FrameLoadEnd"/>
-        /// will be called. If the navigation is canceled <see cref="IWebBrowser.LoadError"/> will be called with an ErrorCode
+        /// If the navigation is allowed <see cref="IChromiumWebBrowserBase.FrameLoadStart"/> and <see cref="IChromiumWebBrowserBase.FrameLoadEnd"/>
+        /// will be called. If the navigation is canceled <see cref="IChromiumWebBrowserBase.LoadError"/> will be called with an ErrorCode
         /// value of <see cref="CefErrorCode.Aborted"/>. 
         /// </summary>
         /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control</param>
@@ -134,14 +134,6 @@ namespace CefSharp
         /// <returns>Return true to continue the request and call ISelectClientCertificateCallback.Select() with the selected certificate for authentication. 
         /// Return false to use the default behavior where the browser selects the first certificate from the list. </returns>
         bool OnSelectClientCertificate(IWebBrowser chromiumWebBrowser, IBrowser browser, bool isProxy, string host, int port, X509Certificate2Collection certificates, ISelectClientCertificateCallback callback);
-
-        /// <summary>
-        /// Called when a plugin has crashed
-        /// </summary>
-        /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control</param>
-        /// <param name="browser">the browser object</param>
-        /// <param name="pluginPath">path of the plugin that crashed</param>
-        void OnPluginCrashed(IWebBrowser chromiumWebBrowser, IBrowser browser, string pluginPath);
 
         /// <summary>
         /// Called on the CEF UI thread when the render view associated
