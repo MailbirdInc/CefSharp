@@ -81,6 +81,8 @@ namespace CefSharp.Core
         public static bool Initialize(CefSharp.Core.CefSettingsBase cefSettings, bool performDependencyCheck, CefSharp.IApp cefApp) { throw null; }
         public static bool Initialize(CefSharp.Core.CefSettingsBase cefSettings, bool performDependencyCheck, CefSharp.IBrowserProcessHandler browserProcessHandler) { throw null; }
         public static CefSharp.UrlParts ParseUrl(string url) { throw null; }
+        public static bool PostAction(CefSharp.CefThreadIds threadId, System.Action action) { throw null; }
+        public static bool PostDelayedAction(CefSharp.CefThreadIds threadId, System.Action action, int delayInMs) { throw null; }
         public static void PreShutdown() { }
         public static void QuitMessageLoop() { }
         public static bool RemoveCrossOriginWhitelistEntry(string sourceOrigin, string targetProtocol, string targetDomain, bool allowTargetSubdomains) { throw null; }
@@ -90,13 +92,13 @@ namespace CefSharp.Core
         public static void Shutdown() { }
         public static void ShutdownWithoutChecks() { }
         public static void WaitForBrowsersToClose() { }
+        public static void WaitForBrowsersToClose(int timeoutInMiliseconds) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class CefSettingsBase : System.IDisposable
     {
         public CefSettingsBase() { }
         public string AcceptLanguageList { get { throw null; } set { } }
-        public string ApplicationClientIdForFileScanning { get { throw null; } set { } }
         public uint BackgroundColor { get { throw null; } set { } }
         public string BrowserSubprocessPath { get { throw null; } set { } }
         public string CachePath { get { throw null; } set { } }
@@ -149,6 +151,7 @@ namespace CefSharp.Core
         public virtual string LinkTitle { get { throw null; } set { } }
         public virtual string LinkUrl { get { throw null; } set { } }
         public virtual void AddFile(string path, string displayName) { }
+        public virtual void ClearFilenames() { }
         public virtual CefSharp.IDragData Clone() { throw null; }
         public static CefSharp.IDragData Create() { throw null; }
         public void Dispose() { }
@@ -329,6 +332,7 @@ namespace CefSharp.Core
         public virtual int Width { get { throw null; } set { } }
         public virtual System.IntPtr WindowHandle { get { throw null; } set { } }
         public virtual bool WindowlessRenderingEnabled { get { throw null; } set { } }
+        public virtual string WindowName { get { throw null; } set { } }
         public virtual int X { get { throw null; } set { } }
         public virtual int Y { get { throw null; } set { } }
         public void Dispose() { }

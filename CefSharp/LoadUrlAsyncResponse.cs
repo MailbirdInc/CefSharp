@@ -5,7 +5,7 @@
 namespace CefSharp
 {
     /// <summary>
-    /// Response returned from <see cref="IWebBrowser.LoadUrlAsync(string, System.Threading.SynchronizationContext)"/>
+    /// Response returned from <see cref="IChromiumWebBrowserBase.LoadUrlAsync(string)"/>
     /// </summary>
     public class LoadUrlAsyncResponse
     {

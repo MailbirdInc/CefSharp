@@ -15,10 +15,12 @@
 #include <include/cef_origin_whitelist.h>
 #include <include/cef_crash_util.h>
 #include <include/cef_parser.h>
+#include <include/cef_task.h>
 #include <include/internal/cef_types.h>
 
 #include "Internals/CefSharpApp.h"
 #include "Internals/CefTaskScheduler.h"
+#include "Internals/CefTaskDelegate.h"
 #include "CookieManager.h"
 #include "CefSettingsBase.h"
 #include "RequestContext.h"
@@ -561,7 +563,7 @@ namespace CefSharp
                         {
                             throw gcnew Exception("Cef.Shutdown must be called on the same thread that Cef.Initialize was called - typically your UI thread. " +
                                 "If you called Cef.Initialize on a Thread other than the UI thread then you will need to call Cef.Shutdown on the same thread. " +
-                                "Cef.Initialize was called on ManagedThreadId: " + _initializedThreadId + "where Cef.Shutdown is being called on " +
+                                "Cef.Initialize was called on ManagedThreadId: " + _initializedThreadId + " where Cef.Shutdown is being called on " +
                                 "ManagedThreadId: " + Thread::CurrentThread->ManagedThreadId);
                         }
 
@@ -848,6 +850,21 @@ namespace CefSharp
             /// </summary>
             static void WaitForBrowsersToClose()
             {
+                WaitForBrowsersToClose(750);
+            }
+
+            /// <summary>
+            /// Helper method to ensure all ChromiumWebBrowser instances have been
+            /// closed/disposed, should be called before Cef.Shutdown.
+            /// Disposes all remaning ChromiumWebBrowser instances
+            /// then waits for CEF to release it's remaning CefBrowser instances.
+            /// Finally a small delay of 50ms to allow for CEF to finish it's cleanup.
+            /// Should only be called when MultiThreadedMessageLoop = true;
+            /// (Hasn't been tested when when CEF integrates into main message loop).
+            /// </summary>
+            /// <param name="timeoutInMiliseconds">The timeout in miliseconds.</param>
+            static void WaitForBrowsersToClose(int timeoutInMiliseconds)
+            {
                 if (!_waitForBrowsersToCloseEnabled)
                 {
                     throw gcnew Exception("This feature is currently disabled. Call Cef.EnableWaitForBrowsersToClose before calling Cef.Initialize to enable.");
@@ -863,10 +880,37 @@ namespace CefSharp
                 _disposables->Clear();
 
                 //Wait for the browsers to close
-                BrowserRefCounter::Instance->WaitForBrowsersToClose(500);
+                BrowserRefCounter::Instance->WaitForBrowsersToClose(timeoutInMiliseconds);
 
                 //A few extra ms to allow for CEF to finish 
                 Thread::Sleep(50);
+            }
+
+            /// <summary>
+            /// Post an action for delayed execution on the specified thread.
+            /// </summary>
+            /// <param name="threadId">thread id</param>
+            /// <param name="action">action to execute</param>
+            /// <param name="delayInMs">delay in ms</param>
+            /// <returns>bool</returns>
+            static bool PostDelayedAction(CefThreadIds threadId, Action^ action, int delayInMs)
+            {
+                auto task = new CefTaskDelegate(action);
+
+                return CefPostDelayedTask((cef_thread_id_t)threadId, task, delayInMs);
+            }
+
+            /// <summary>
+            /// Post an action for execution on the specified thread.
+            /// </summary>
+            /// <param name="threadId">thread id</param>
+            /// <param name="action">action to execute</param>
+            /// <returns>bool</returns>
+            static bool PostAction(CefThreadIds threadId, Action^ action)
+            {
+                auto task = new CefTaskDelegate(action);
+
+                return CefPostTask((cef_thread_id_t)threadId, task);
             }
         };
     }

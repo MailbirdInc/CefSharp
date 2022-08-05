@@ -65,6 +65,33 @@ namespace CefSharp.Test.OffScreen
         }
 
         [Fact]
+        public async Task ShouldRespectDisposed()
+        {
+            ChromiumWebBrowser browser;
+
+            using (browser = new ChromiumWebBrowser(CefExample.DefaultUrl))
+            {
+                var response = await browser.WaitForInitialLoadAsync();
+
+                Assert.True(response.Success);
+
+                var mainFrame = browser.GetMainFrame();
+                Assert.True(mainFrame.IsValid);
+                Assert.Equal(CefExample.DefaultUrl, mainFrame.Url);
+                Assert.Equal(200, response.HttpStatusCode);
+
+                output.WriteLine("Url {0}", mainFrame.Url);
+            }
+
+            Assert.True(browser.IsDisposed);
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                browser.Copy();
+            });
+        }
+
+        [Fact]
         public async Task CanLoadInvalidDomain()
         {
             using (var browser = new ChromiumWebBrowser("notfound.cefsharp.test"))
@@ -100,6 +127,8 @@ namespace CefSharp.Test.OffScreen
         [Fact]
         public void BrowserRefCountDecrementedOnDispose()
         {
+            var currentCount = BrowserRefCounter.Instance.Count;
+
             var manualResetEvent = new ManualResetEvent(false);
 
             var browser = new ChromiumWebBrowser("https://google.com");
@@ -114,13 +143,14 @@ namespace CefSharp.Test.OffScreen
             manualResetEvent.WaitOne();
 
             //TODO: Refactor this so reference is injected into browser
-            Assert.Equal(1, BrowserRefCounter.Instance.Count);
+            Assert.Equal(currentCount + 1, BrowserRefCounter.Instance.Count);
 
             browser.Dispose();
 
-            Assert.True(BrowserRefCounter.Instance.Count <= 1);
+            Cef.WaitForBrowsersToClose(5000);
 
-            Cef.WaitForBrowsersToClose();
+            output.WriteLine("BrowserRefCounter Log");
+            output.WriteLine(BrowserRefCounter.Instance.GetLog());
 
             Assert.Equal(0, BrowserRefCounter.Instance.Count);
         }
@@ -808,7 +838,7 @@ namespace CefSharp.Test.OffScreen
                 }
 
 
-                var result3 = await browser.CaptureScreenshotAsync(viewport: new Viewport { Width = 100, Height = 200 });
+                var result3 = await browser.CaptureScreenshotAsync(viewport: new Viewport { Width = 100, Height = 200, Scale = 2 });
                 Assert.Equal(1466, browser.Size.Width);
                 Assert.Equal(968, browser.Size.Height);
                 Assert.Equal(2, browser.DeviceScaleFactor);

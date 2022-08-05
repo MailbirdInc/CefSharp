@@ -320,6 +320,11 @@ namespace CefSharp.WinForms
         bool IWebBrowserInternal.HasParent { get; set; }
 
         /// <summary>
+        /// Used by CefSharp.Puppeteer to associate a single DevToolsContext with a ChromiumWebBrowser instance.
+        /// </summary>
+        IDisposable IWebBrowserInternal.DevToolsContext { get; set; }
+
+        /// <summary>
         /// Gets the browser adapter.
         /// </summary>
         /// <value>The browser adapter.</value>
@@ -370,6 +375,13 @@ namespace CefSharp.WinForms
         }
 
         /// <inheritdoc/>
+        public Task<WaitForNavigationAsyncResponse> WaitForNavigationAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            //WaitForNavigationAsync is actually a static method so that CefSharp.Wpf.HwndHost can reuse the code
+            return CefSharp.WebBrowserExtensions.WaitForNavigationAsync(this, timeout, cancellationToken);
+        }
+
+        /// <inheritdoc/>
         public Task<LoadUrlAsyncResponse> WaitForInitialLoadAsync()
         {
             return initialLoadTaskCompletionSource.Task;
@@ -390,6 +402,21 @@ namespace CefSharp.WinForms
             browser = browserAdapter.GetBrowser(browserId);
 
             return browser != null;
+        }
+
+        /// <inheritdoc/>
+        public async Task<DevTools.DOM.Rect> GetContentSizeAsync()
+        {
+            ThrowExceptionIfDisposed();
+            ThrowExceptionIfBrowserNotInitialized();
+
+            using (var devToolsClient = browser.GetDevToolsClient())
+            {
+                //Get the content size
+                var layoutMetricsResponse = await devToolsClient.Page.GetLayoutMetricsAsync().ConfigureAwait(continueOnCapturedContext: false);
+
+                return layoutMetricsResponse.CssContentSize;
+            }
         }
 
         private void InitialLoad(bool? isLoading, CefErrorCode? errorCode)
@@ -466,6 +493,8 @@ namespace CefSharp.WinForms
             MenuHandler = null;
             ResourceRequestHandlerFactory = null;
             RenderProcessMessageHandler = null;
+
+            this.DisposeDevToolsContext();
         }
 
         /// <summary>
@@ -499,7 +528,7 @@ namespace CefSharp.WinForms
         {
             if (IsDisposed)
             {
-                throw new ObjectDisposedException("browser", "Browser has been disposed");
+                throw new ObjectDisposedException("ChromiumWebBrowser");
             }
         }
     }

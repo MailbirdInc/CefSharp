@@ -628,5 +628,44 @@ namespace CefSharp
         {
             Core.Cef.WaitForBrowsersToClose();
         }
+
+
+        /// <summary>
+        /// Helper method to ensure all ChromiumWebBrowser instances have been
+        /// closed/disposed, should be called before Cef.Shutdown.
+        /// Disposes all remaining ChromiumWebBrowser instances
+        /// then waits for CEF to release its remaining CefBrowser instances.
+        /// Finally a small delay of 50ms to allow for CEF to finish it's cleanup.
+        /// Should only be called when MultiThreadedMessageLoop = true;
+        /// (Hasn't been tested when when CEF integrates into main message loop).
+        /// </summary>
+        /// <param name="timeoutInMiliseconds">The timeout in miliseconds.</param>
+        public static void WaitForBrowsersToClose(int timeoutInMiliseconds)
+        {
+            Core.Cef.WaitForBrowsersToClose(timeoutInMiliseconds);
+        }
+
+        /// <summary>
+        /// Post an action for delayed execution on the specified thread.
+        /// </summary>
+        /// <param name="threadId">thread id</param>
+        /// <param name="action">action to execute</param>
+        /// <param name="delayInMs">delay in ms</param>
+        /// <returns>bool</returns>
+        public static bool PostDelayedAction(CefThreadIds threadId, Action action, int delayInMs)
+        {
+            return Core.Cef.PostDelayedAction(threadId, action, delayInMs);
+        }
+
+        /// <summary>
+        /// Post an action for execution on the specified thread.
+        /// </summary>
+        /// <param name="threadId">thread id</param>
+        /// <param name="action">action to execute</param>
+        /// <returns>bool</returns>
+        public static bool PostAction(CefThreadIds threadId, Action action)
+        {
+            return Core.Cef.PostAction(threadId, action);
+        }
     }
 }

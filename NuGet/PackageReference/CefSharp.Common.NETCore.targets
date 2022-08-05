@@ -7,6 +7,13 @@
     <CefSharpRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('win')) and $(RuntimeIdentifier.Contains('-x64'))">win-x64</CefSharpRuntimeIdentifier>
     <CefSharpRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('win')) and $(RuntimeIdentifier.Contains('-arm64'))">win-arm64</CefSharpRuntimeIdentifier>
     <CefSharpRuntimeIdentifier Condition="'$(CefSharpRuntimeIdentifierOverride)' != ''">$(CefSharpRuntimeIdentifierOverride)</CefSharpRuntimeIdentifier>
+	
+	<!--
+	For SelfContained and SingleFile under .Net 5+ we don't include a default BrowserSubprocess files
+	SelfHosting of the BrowserSubprocess is required
+	Issue https://github.com/cefsharp/CefSharp/issues/3407
+	-->
+	<CefSharpExcludeSubProcessExe Condition="'$(CefSharpExcludeSubProcessExe)' == '' AND '$(_TargetFrameworkVersionWithoutV)' >= '5.0' AND '$(PublishSingleFile)' == 'true' AND '$(SelfContained)' == 'true'">true</CefSharpExcludeSubProcessExe>
     
     <!--
     For Library projects we don't include our additional files and packages, the transitive reference should flow directly to the consuming projects.
@@ -16,13 +23,18 @@
     https://docs.microsoft.com/en-us/dotnet/core/tutorials/creating-app-with-plugin-support#plugin-with-library-dependencies
     -->
     <CefSharpBuildAction Condition="'$(CefSharpBuildAction)' == '' AND '$(OutputType)' == 'Library' AND '$(EnableDynamicLoading)' != 'true'">NoAction</CefSharpBuildAction>
-    <!-- Current supported values are Default, and NoAction (this target doesn't copy any files.) -->
+    <!--
+	Current supported values are Default, Content, and NoAction (this target doesn't copy any files.)
+	For backwards compatability for the older nuget packages Content will be mapped to Default
+	-->
     <CefSharpBuildAction Condition="'$(CefSharpBuildAction)' == ''">Default</CefSharpBuildAction>
+	<CefSharpBuildAction Condition="'$(CefSharpBuildAction)' == 'Content'">Default</CefSharpBuildAction>
   </PropertyGroup>
+  
   <ItemGroup>
     <_CefSharpBrowserSubProcessFiles Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\runtimes\$(CefSharpRuntimeIdentifier)\native\CefSharp.BrowserSubprocess.runtimeconfig.json'))"/>
-    <_CefSharpBrowserSubProcessFiles Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\runtimes\$(CefSharpRuntimeIdentifier)\native\CefSharp.BrowserSubprocess.exe'))" Condition="'$(_TargetFrameworkVersionWithoutV)' >= '5.0' AND '$(PublishSingleFile)' == 'true' AND '$(SelfContained)' == 'true'"/>
-    <_CefSharpBrowserSubProcessFiles Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\runtimes\$(CefSharpRuntimeIdentifier)\native\CefSharp.BrowserSubprocess.dll'))" Condition="'$(_TargetFrameworkVersionWithoutV)' >= '5.0' AND '$(PublishSingleFile)' == 'true' AND '$(SelfContained)' == 'true'"/>
+    <_CefSharpBrowserSubProcessFiles Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\runtimes\$(CefSharpRuntimeIdentifier)\native\CefSharp.BrowserSubprocess.exe'))" Condition="'$(CefSharpExcludeSubProcessExe)' == 'true'"/>
+    <_CefSharpBrowserSubProcessFiles Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\runtimes\$(CefSharpRuntimeIdentifier)\native\CefSharp.BrowserSubprocess.dll'))" Condition="'$(CefSharpExcludeSubProcessExe)' == 'true'"/>
   </ItemGroup>
   
   <!--
@@ -43,7 +55,7 @@
   </Target>
   
   <!--
-  For SelfContained and SingleFile under .Net 5 we don't include a default BrowserSubprocess files
+  For SelfContained and SingleFile under .Net 5+ we don't include a default BrowserSubprocess files
   SelfHosting of the BrowserSubprocess is required
   Issue https://github.com/cefsharp/CefSharp/issues/3407
   -->
@@ -71,6 +83,7 @@
   <Target Name="CefSharpAfterBuildDiagnostic">
     <Message Importance="high" Text="CefSharp After Build Diagnostic" />
     <Message Importance="high" Text="CefSharpBuildAction = $(CefSharpBuildAction)" />
+	<Message Importance="high" Text="CefSharpExcludeSubProcessExe = $(CefSharpExcludeSubProcessExe)" />
     <Message Importance="high" Text="RuntimeIdentifier = $(RuntimeIdentifier)" />
     <Message Importance="high" Text="CefSharpRuntimeIdentifier = $(CefSharpRuntimeIdentifier)" />
     <Message Importance="high" Text="Platform = $(Platform)" />
@@ -102,26 +115,12 @@
           <Visible>false</Visible>
           <IncludeInVsix>true</IncludeInVsix>
         </Content>
-        <Content Include="@(CefRuntimeWin64SwiftShader)">
-          <Link>swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
       </ItemGroup>
     </When>
     <When Condition="'$(CefSharpRuntimeIdentifier)' == 'win-x86'">
       <ItemGroup>
         <Content Include="@(CefRuntimeWin32Locales)">
           <Link>locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
-        <Content Include="@(CefRuntimeWin32SwiftShader)">
-          <Link>swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <PublishState>Included</PublishState>
           <Visible>false</Visible>
@@ -138,29 +137,15 @@
           <Visible>false</Visible>
           <IncludeInVsix>true</IncludeInVsix>
         </Content>
-        <Content Include="@(CefRuntimeWinArm64SwiftShader)">
-          <Link>swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="chromiumembeddedframework.runtime.win-x64" Version="100.0.23" />
-        <PackageReference Include="chromiumembeddedframework.runtime.win-x86" Version="100.0.23" />
-        <PackageReference Include="chromiumembeddedframework.runtime.win-arm64" Version="100.0.23" />
+        <PackageReference Include="chromiumembeddedframework.runtime.win-x64" Version="103.0.12" />
+        <PackageReference Include="chromiumembeddedframework.runtime.win-x86" Version="103.0.12" />
+        <PackageReference Include="chromiumembeddedframework.runtime.win-arm64" Version="103.0.12" />
         <Content Include="@(CefRuntimeWin32Locales)">
           <Link>runtimes\win-x86\native\locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
-        <Content Include="@(CefRuntimeWin32SwiftShader)">
-          <Link>runtimes\win-x86\native\swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <PublishState>Included</PublishState>
           <Visible>false</Visible>
@@ -188,13 +173,6 @@
           <Visible>false</Visible>
           <IncludeInVsix>true</IncludeInVsix>
         </Content>
-        <Content Include="@(CefRuntimeWin64SwiftShader)">
-          <Link>runtimes\win-x64\native\swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
         <Content Include="$(MSBuildThisFileDirectory)..\runtimes\win-x64\lib\netcoreapp3.1\CefSharp.dll">
           <Link>runtimes\win-x64\native\%(RecursiveDir)%(FileName)%(Extension)</Link>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -212,13 +190,6 @@
         
         <Content Include="@(CefRuntimeWinArm64Locales)">
           <Link>runtimes\win-arm64\native\locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <PublishState>Included</PublishState>
-          <Visible>false</Visible>
-          <IncludeInVsix>true</IncludeInVsix>
-        </Content>
-        <Content Include="@(CefRuntimeWinArm64SwiftShader)">
-          <Link>runtimes\win-arm64\native\swiftshader\%(RecursiveDir)%(FileName)%(Extension)</Link>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <PublishState>Included</PublishState>
           <Visible>false</Visible>

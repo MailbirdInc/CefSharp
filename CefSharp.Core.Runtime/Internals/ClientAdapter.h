@@ -179,7 +179,7 @@ namespace CefSharp
 
             // CefDialogHandler
             virtual DECL bool OnFileDialog(CefRefPtr<CefBrowser> browser, FileDialogMode mode, const CefString& title,
-                const CefString& default_file_path, const std::vector<CefString>& accept_filters, int selected_accept_filter,
+                const CefString& default_file_path, const std::vector<CefString>& accept_filters,
                 CefRefPtr<CefFileDialogCallback> callback) override;
 
             //CefDragHandler
@@ -187,6 +187,7 @@ namespace CefSharp
             virtual DECL void OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const std::vector<CefDraggableRegion>& regions) override;
 
             //CefDownloadHandler
+            virtual DECL bool CanDownload(CefRefPtr<CefBrowser> browser, const CefString & url, const CefString & request_method) override;
             virtual DECL void OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                 const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) override;
             virtual DECL void OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,

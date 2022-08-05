@@ -402,16 +402,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// GUID string used for identifying the application. This is passed to the system AV function for scanning downloaded files. By
-        /// default, the GUID will be an empty string and the file will be treated as an untrusted file when the GUID is empty.
-        /// </summary>
-        public string ApplicationClientIdForFileScanning
-        {
-            get { return settings.ApplicationClientIdForFileScanning; }
-            set { settings.ApplicationClientIdForFileScanning = value; }
-        }
-
-        /// <summary>
         /// Registers a custom scheme using the provided settings.
         /// </summary>
         /// <param name="scheme">The CefCustomScheme which provides the details about the scheme.</param>
@@ -422,7 +412,7 @@ namespace CefSharp
 
         /// <summary>
         /// Set command line argument to disable GPU Acceleration. WebGL will use
-        /// software rendering via Swiftshader (https://swiftshader.googlesource.com/SwiftShader#introduction)
+        /// software rendering
         /// </summary>
         public void DisableGpuAcceleration()
         {
@@ -445,9 +435,8 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Set command line arguments for best OSR (Offscreen and WPF) Rendering performance Swiftshader will be used for WebGL, look at the source
-        /// to determine which flags best suite your requirements. See https://swiftshader.googlesource.com/SwiftShader#introduction for
-        /// details on Swiftshader
+        /// Set command line arguments for best OSR (Offscreen and WPF) Rendering performance Software Rendering will be used for WebGL, look at the source
+        /// to determine which flags best suite your requirements. 
         /// </summary>
         public void SetOffScreenRenderingBestPerformanceArgs()
         {

@@ -5,9 +5,9 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "vs2019",
     [Parameter(Position = 1)]
-    [string] $Version = "100.0.120",
+    [string] $Version = "103.0.80",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "100.0.120",
+    [string] $AssemblyVersion = "103.0.80",
     [Parameter(Position = 3)]
     [ValidateSet("NetFramework", "NetCore", "NetFramework452", "NetCore31")]
     [string] $TargetFramework = "NetFramework",
@@ -282,7 +282,14 @@ function Nupkg
                     {
                         $targetFolder = "runtimes\win-$a"
                     }
+                    else
+                    {
+                        # Remove cef.redist dependency
+                        $depNode =  $NupkgXml.package.metadata.dependencies.group.dependency | Where-Object {$_.Attributes["id"].Value.Equals("cef.redist." + $a) };
+                        $depNode.ParentNode.RemoveChild($depNode) | Out-Null
+                    }
                     
+                    #Remove files
                     $nodes =  $NupkgXml.package.files.file | Where-Object {$_.Attributes["target"].Value.StartsWith($targetFolder) };
 
                     $nodes | ForEach-Object { $_.ParentNode.RemoveChild($_) } | Out-Null

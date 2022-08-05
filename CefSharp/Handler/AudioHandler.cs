@@ -55,7 +55,7 @@ namespace CefSharp.Handler
 
         /// <summary>
         /// Called on a browser audio capture thread when the browser starts streaming audio.
-        /// OnAudioSteamStopped will always be called after OnAudioStreamStarted; both methods may be called multiple
+        /// OnAudioStreamStopped will always be called after OnAudioStreamStarted; both methods may be called multiple
         /// times for the same browser.
         /// </summary>
         /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control</param>
@@ -83,6 +83,7 @@ namespace CefSharp.Handler
         /// you can calculate the size of the <paramref name="data"/> array in bytes.
         /// </summary>
         /// <param name="chromiumWebBrowser"></param>
+        /// <param name="browser">the browser object</param>
         /// <param name="data">is an array representing the raw PCM data as a floating point type, i.e. 4-byte value(s).</param>
         /// <param name="noOfFrames">is the number of frames in the PCM packet</param>
         /// <param name="pts">is the presentation timestamp (in milliseconds since the Unix Epoch)
@@ -99,7 +100,7 @@ namespace CefSharp.Handler
         }
 
         /// <summary>
-        /// Called on the CEF UI thread when the stream has stopped. OnAudioSteamStopped will always be called after <see cref="OnAudioStreamStarted"/>;
+        /// Called on the CEF UI thread when the stream has stopped. OnAudioStreamStopped will always be called after <see cref="OnAudioStreamStarted"/>;
         /// both methods may be called multiple times for the same stream.
         /// </summary>
         /// <param name="chromiumWebBrowser">the ChromiumWebBrowser control</param>

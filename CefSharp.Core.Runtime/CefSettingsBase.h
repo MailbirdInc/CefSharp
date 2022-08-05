@@ -48,6 +48,10 @@ namespace CefSharp
                 BrowserSubprocessPath = Path::Combine(Path::GetDirectoryName(CefSettingsBase::typeid->Assembly->Location), "CefSharp.BrowserSubprocess.exe");
                 _cefCustomSchemes = gcnew List<CefCustomScheme^>();
                 _cefCommandLineArgs = gcnew CommandLineArgDictionary();
+
+                //Disable Windows Spellchecker as CEF doesn't support yet
+                //https://bitbucket.org/chromiumembedded/cef/issues/3345/getresourceresponsefilter-not-called-for
+                _cefCommandLineArgs->Add("disable-features", "CombineResponseBody,CalculateNativeWinOcclusion,WinUseBrowserSpellChecker");
             }
 
             /// <summary>
@@ -389,16 +393,6 @@ namespace CefSharp
             {
                 bool get() { return _cefSettings->cookieable_schemes_exclude_defaults == 1; }
                 void set(bool value) { _cefSettings->cookieable_schemes_exclude_defaults = value; }
-            }
-
-            /// <summary>
-            /// GUID string used for identifying the application. This is passed to the system AV function for scanning downloaded files. By
-            /// default, the GUID will be an empty string and the file will be treated as an untrusted file when the GUID is empty.
-            /// </summary>
-            property String^ ApplicationClientIdForFileScanning
-            {
-                String^ get() { return StringUtils::ToClr(_cefSettings->application_client_id_for_file_scanning); }
-                void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->application_client_id_for_file_scanning, value); }
             }
 
             /// <summary>

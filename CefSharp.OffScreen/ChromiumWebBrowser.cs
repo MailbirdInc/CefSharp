@@ -261,6 +261,11 @@ namespace CefSharp.OffScreen
                 CanExecuteJavascriptInMainFrame = false;
                 Interlocked.Exchange(ref browserInitialized, 0);
 
+                //Stop rendering immediately so later on when we dispose of the
+                //RenderHandler no further OnPaint calls take place
+                //Check browser not null as it's possible to call Dispose before it's created
+                browser?.GetHost().WasHidden(true);
+
                 // Don't reference event listeners any longer:
                 AddressChanged = null;
                 BrowserInitialized = null;
@@ -295,6 +300,13 @@ namespace CefSharp.OffScreen
                 // LifeSpanHandler is set to null after managedCefBrowserAdapter.Dispose so ILifeSpanHandler.DoClose
                 // is called.
                 LifeSpanHandler = null;
+
+                //Take a copy of the RenderHandler then set to property to null
+                //Before we dispose, reduces the changes of any OnPaint calls
+                //using the RenderHandler after Dispose
+                var renderHandler = RenderHandler;
+                RenderHandler = null;
+                renderHandler?.Dispose();
             }
 
             Cef.RemoveDisposable(this);
@@ -550,6 +562,11 @@ namespace CefSharp.OffScreen
                     return screenShot.Data;
                 }
 
+                if (viewport.Scale <= 0)
+                {
+                    throw new ArgumentException($"{nameof(viewport)}.{nameof(viewport.Scale)} must be greater than 0.");
+                }
+
                 //https://bitbucket.org/chromiumembedded/cef/issues/3103/offscreen-capture-screenshot-with-devtools
                 //CEF OSR mode doesn't set the size internally when CaptureScreenShot is called with a clip param specified, so
                 //we must manually resize our view if size is greater
@@ -563,19 +580,14 @@ namespace CefSharp.OffScreen
                 {
                     newHeight = size.Height;
                 }
-                var newScale = viewport.Scale;
-                if (newScale == 0)
-                {
-                    newScale = deviceScaleFactor;
-                }
 
-                if ((int)newWidth > size.Width || (int)newHeight > size.Height || newScale != deviceScaleFactor)
+                if ((int)newWidth > size.Width || (int)newHeight > size.Height || viewport.Scale != deviceScaleFactor)
                 {
-                    await ResizeAsync((int)newWidth, (int)newHeight, (float)newScale).ConfigureAwait(continueOnCapturedContext:false);
+                    await ResizeAsync((int)newWidth, (int)newHeight, (float)viewport.Scale).ConfigureAwait(continueOnCapturedContext:false);
                 }
 
                 //Create a copy instead of modifying users object as we need to set Scale to 1
-                //as CEF doesn't support passing custom scale.
+                //as CEF doesn't support passing custom scale for OSR.
                 var clip = new Viewport
                 {
                     Height = viewport.Height,
@@ -643,24 +655,6 @@ namespace CefSharp.OffScreen
             return tcs.Task;
         }
 
-        /// <summary>
-        /// Size of scrollable area in CSS pixels
-        /// </summary>
-        /// <returns>A task that can be awaited to get the size of the scrollable area in CSS pixels.</returns>
-        public async Task<DevTools.DOM.Rect> GetContentSizeAsync()
-        {
-            ThrowExceptionIfDisposed();
-            ThrowExceptionIfBrowserNotInitialized();
-
-            using (var devToolsClient = browser.GetDevToolsClient())
-            {
-                //Get the content size
-                var layoutMetricsResponse = await devToolsClient.Page.GetLayoutMetricsAsync().ConfigureAwait(continueOnCapturedContext:false);
-
-                return layoutMetricsResponse.CssContentSize;
-            }
-        }
-
         /// <inheritdoc/>
         public void Load(string url)
         {
@@ -684,6 +678,66 @@ namespace CefSharp.OffScreen
                 Address = url;
             }
         }
+
+#if NETCOREAPP || NET462
+        /// <summary>
+        /// Waits for the page rendering to be idle for <paramref name="idleTimeInMs"/>.
+        /// Rendering is considered to be idle when no <see cref="Paint"/> events have occured
+        /// for <paramref name="idleTimeInMs"/>.
+        /// This is useful for scenarios like taking a screen shot.
+        /// </summary>
+        /// <param name="idleTimeInMs">optional idleTime in miliseconds, default to 500ms</param>
+        /// <param name="timeout">optional timeout, if not specified defaults to thirty(30) seconds.</param>
+        /// <param name="cancellationToken">optional CancellationToken</param>
+        /// <returns>Task that resolves when page rendering has been idle for <paramref name="idleTimeInMs"/></returns>
+        public async Task WaitForRenderIdleAsync(int idleTimeInMs = 500, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            var renderIdleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var idleTimer = new System.Timers.Timer
+            {
+                Interval = idleTimeInMs,
+                AutoReset = false
+            };
+
+            EventHandler<OnPaintEventArgs> handler = null;
+
+            idleTimer.Elapsed += (sender, args) =>
+            {
+                Paint -= handler;
+
+                idleTimer.Stop();
+                idleTimer.Dispose();
+
+                renderIdleTcs.TrySetResult(true);
+            };
+
+            //Every time Paint is called we reset our timer
+            handler = (s, args) =>
+            {
+                idleTimer.Stop();
+                idleTimer.Start();
+            };
+
+            idleTimer.Start();
+
+            Paint += handler;
+
+            try
+            {
+                await TaskTimeoutExtensions.WaitAsync(renderIdleTcs.Task, timeout ?? TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+            }
+            catch(Exception)
+            {
+                Paint -= handler;
+
+                idleTimer?.Stop();
+                idleTimer?.Dispose();
+
+                throw;
+            }
+        }
+#endif
 
         /// <summary>
         /// The javascript object repository, one repository per ChromiumWebBrowser instance.
@@ -730,7 +784,16 @@ namespace CefSharp.OffScreen
         /// <returns>ScreenInfo.</returns>
         protected virtual ScreenInfo? GetScreenInfo()
         {
-            return RenderHandler?.GetScreenInfo();
+            var renderHandler = RenderHandler;
+
+            if(renderHandler == null)
+            {
+                var screenInfo = new ScreenInfo { DeviceScaleFactor = DeviceScaleFactor };
+
+                return screenInfo;
+            }
+
+            return renderHandler.GetScreenInfo();
         }
 
         /// <summary>
@@ -748,12 +811,18 @@ namespace CefSharp.OffScreen
         /// <returns>ViewRect.</returns>
         protected virtual Rect GetViewRect()
         {
-            if (RenderHandler == null)
+            var renderHandler = RenderHandler;
+
+            if (renderHandler == null)
             {
-                return new Rect(0, 0, 640, 480);
+                var size = Size;
+
+                var viewRect = new Rect(0, 0, size.Width, size.Height);
+
+                return viewRect;
             }
 
-            return RenderHandler.GetViewRect();
+            return renderHandler.GetViewRect();
         }
 
         /// <summary>

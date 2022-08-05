@@ -167,7 +167,6 @@ namespace CefSharp.DevTools
                 CefThread.ExecuteOnUiThread(() =>
                 {
                     ExecuteDevToolsMethod(browserHost, messageId, method, parameters, methodResultContext);
-                    return (object)null;
                 });
             }
             else
@@ -202,7 +201,7 @@ namespace CefSharp.DevTools
         }
 
         /// <inheritdoc/>
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             //Dispose can be called from different Threads
             //CEF maintains a reference and the user
