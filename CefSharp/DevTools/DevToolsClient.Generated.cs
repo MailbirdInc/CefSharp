@@ -36595,34 +36595,6 @@ namespace CefSharp.DevTools.DOMStorage
 
 namespace CefSharp.DevTools.DOMStorage
 {
-    /// <summary>
-    /// GetStorageKeyForFrameResponse
-    /// </summary>
-    [System.Runtime.Serialization.DataContractAttribute]
-    public class GetStorageKeyForFrameResponse : CefSharp.DevTools.DevToolsDomainResponseBase
-    {
-        [System.Runtime.Serialization.DataMemberAttribute]
-        internal string storageKey
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// storageKey
-        /// </summary>
-        public string StorageKey
-        {
-            get
-            {
-                return storageKey;
-            }
-        }
-    }
-}
-
-namespace CefSharp.DevTools.DOMStorage
-{
     using System.Linq;
 
     /// <summary>
@@ -36784,20 +36756,6 @@ namespace CefSharp.DevTools.DOMStorage
             dict.Add("key", key);
             dict.Add("value", value);
             return _client.ExecuteDevToolsMethodAsync<DevToolsMethodResponse>("DOMStorage.setDOMStorageItem", dict);
-        }
-
-        partial void ValidateGetStorageKeyForFrame(string frameId);
-        /// <summary>
-        /// GetStorageKeyForFrame
-        /// </summary>
-        /// <param name = "frameId">frameId</param>
-        /// <returns>returns System.Threading.Tasks.Task&lt;GetStorageKeyForFrameResponse&gt;</returns>
-        public System.Threading.Tasks.Task<GetStorageKeyForFrameResponse> GetStorageKeyForFrameAsync(string frameId)
-        {
-            ValidateGetStorageKeyForFrame(frameId);
-            var dict = new System.Collections.Generic.Dictionary<string, object>();
-            dict.Add("frameId", frameId);
-            return _client.ExecuteDevToolsMethodAsync<GetStorageKeyForFrameResponse>("DOMStorage.getStorageKeyForFrame", dict);
         }
     }
 }
