@@ -73,7 +73,9 @@ namespace CefSharp.Test.JavascriptBinding
             }
         }
 #else
-        [Fact(Skip = "Issue https://github.com/cefsharp/CefSharp/issues/3867")]
+
+        // Issue https://github.com/cefsharp/CefSharp/issues/3867
+        [SkipIfRunOnAppVeyorFact]
         public async Task LoadJavaScriptBindingQunitTestsSuccessfulCompletion()
         {
             using (var browser = new ChromiumWebBrowser(CefExample.BindingTestUrl, automaticallyCreateBrowser: false))
@@ -162,7 +164,10 @@ namespace CefSharp.Test.JavascriptBinding
         //Skipping Issue https://github.com/cefsharp/CefSharp/issues/3867
         public async Task LoadLegacyJavaScriptBindingQunitTestsSuccessfulCompletion()
         {
-            using (var browser = new ChromiumWebBrowser(CefExample.LegacyBindingTestUrl, automaticallyCreateBrowser: false))
+            var requestContext = new RequestContext();
+            requestContext.RegisterSchemeHandlerFactory("https", CefExample.ExampleDomain, new CefSharpSchemeHandlerFactory());
+
+            using (var browser = new ChromiumWebBrowser(CefExample.LegacyBindingTestUrl, requestContext:requestContext, automaticallyCreateBrowser: false))
             {
                 //TODO: Extract this into some sort of helper setup method
                 var bindingOptions = BindingOptions.DefaultBinder;

@@ -44,6 +44,9 @@ namespace CefSharp.Wpf.Example.Views
 
             browser.RequestHandler = new ExampleRequestHandler();
 
+            //Test Handler allow All Permission
+            browser.PermissionHandler = new ExamplePermissionHandler();
+
             var bindingOptions = new BindingOptions()
             {
                 Binder = BindingOptions.DefaultBinder.Binder,

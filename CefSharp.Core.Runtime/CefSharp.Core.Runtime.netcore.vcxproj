@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\cef.sdk.103.0.12\build\cef.sdk.props" Condition="Exists('$(SolutionDir)\packages\cef.sdk.103.0.12\build\cef.sdk.props')" />
+  <Import Project="$(SolutionDir)\packages\cef.sdk.105.3.39\build\cef.sdk.props" Condition="Exists('$(SolutionDir)\packages\cef.sdk.105.3.39\build\cef.sdk.props')" />
   <Import Project="$(SolutionDir)\packages\Microsoft.SourceLink.GitHub.1.0.0\build\Microsoft.SourceLink.GitHub.props" Condition="Exists('$(SolutionDir)\packages\Microsoft.SourceLink.GitHub.1.0.0\build\Microsoft.SourceLink.GitHub.props')" />
   <Import Project="$(SolutionDir)\packages\Microsoft.SourceLink.Common.1.0.0\build\Microsoft.SourceLink.Common.props" Condition="Exists('$(SolutionDir)\packages\Microsoft.SourceLink.Common.1.0.0\build\Microsoft.SourceLink.Common.props')" />
   <Import Project="$(SolutionDir)\packages\Microsoft.Build.Tasks.Git.1.0.0\build\Microsoft.Build.Tasks.Git.props" Condition="Exists('$(SolutionDir)\packages\Microsoft.Build.Tasks.Git.1.0.0\build\Microsoft.Build.Tasks.Git.props')" />
@@ -362,6 +362,8 @@
     <ClInclude Include="BrowserSettings.h" />
     <ClInclude Include="Cef.h" />
     <ClInclude Include="Internals\CefDevToolsMessageObserverAdapter.h" />
+    <ClInclude Include="Internals\CefMediaAccessCallbackWrapper.h" />
+    <ClInclude Include="Internals\CefPermissionPromptCallbackWrapper.h" />
     <ClInclude Include="Internals\CefRefCountManaged.h" />
     <ClInclude Include="Internals\CefRegistrationWrapper.h" />
     <ClInclude Include="Internals\CefResourceReadCallbackWrapper.h" />

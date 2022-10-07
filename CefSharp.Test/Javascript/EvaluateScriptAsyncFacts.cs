@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
@@ -98,6 +99,28 @@ namespace CefSharp.Test.Javascript
             Assert.Equal(num, javascriptResponse.Result);
 
             output.WriteLine("Expected {0} : Actual {1}", num, javascriptResponse.Result);
+        }
+
+        [Theory]
+        [InlineData("1970-01-02", "1970-01-02")]
+        [InlineData("1980-01-01", "1980-01-01")]
+        //https://github.com/cefsharp/CefSharp/issues/4234
+        public async Task CanEvaluateDateValues(DateTime expected, string actual)
+        {
+            var browser = classFixture.Browser;
+
+            Assert.False(browser.IsLoading);
+
+            var javascriptResponse = await browser.EvaluateScriptAsync($"new Date('{actual}');");
+            Assert.True(javascriptResponse.Success);
+
+            var actualType = javascriptResponse.Result.GetType();
+            var actualDateTime = (DateTime)javascriptResponse.Result;
+
+            Assert.Equal(typeof(DateTime), actualType);
+            Assert.Equal(expected.ToLocalTime(), actualDateTime);
+
+            output.WriteLine("Expected {0} : Actual {1}", expected.ToLocalTime(), actualDateTime);
         }
     }
 }
