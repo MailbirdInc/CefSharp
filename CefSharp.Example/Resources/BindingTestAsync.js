@@ -108,6 +108,37 @@ QUnit.module('BindingTestAsync', (hooks) =>
         });
     });
 
+    QUnit.test("Async call (echoDateTime): now", async (assert) =>
+    {
+        const now = new Date();
+        const res = await boundAsync.echoDateTime(now);
+
+        assert.deepEqual(res, now, "Expected echo datetime");
+    });
+
+    QUnit.test("Async call (echoDateTime): unixTimeZero", async (assert) =>
+    {
+        const unixTimeZero = new Date(Date.parse('01 Jan 1970 00:00:00 GMT'));
+        const res = await boundAsync.echoDateTime(unixTimeZero);
+
+        assert.deepEqual(res, unixTimeZero, "Expected echo unixTimeZero");
+    });
+
+    QUnit.test("Async call (echoNullableDateTime):", async (assert) =>
+    {
+        const now = new Date();
+        const res = await boundAsync.echoNullableDateTime(now);
+
+        assert.deepEqual(res, now, "Expected echo datetime");
+    });
+
+    QUnit.test("Async call (echoNullableDateTime) null param:", async (assert) =>
+    {
+        const res = await boundAsync.echoNullableDateTime(null);
+
+        assert.equal(res, null, "Expected null");
+    });
+
     QUnit.test("Async call (echoArray):", async (assert) =>
     {
         const res = await boundAsync.echoArray(["one", null, "three"]);

@@ -7,11 +7,30 @@ using System;
 namespace CefSharp.Internals
 {
     /// <summary>
-    /// Mapping to/from CefTime/CefBaseTime
+    /// Mapping to/from CefBaseTime
     /// </summary>
     public static class CefTimeUtils
     {
-        private static DateTime FirstOfTheFirstNineteenSeventy = new DateTime(1970, 1, 1, 0, 0, 0);
+        private static IBaseTimeConverter BaseTimeConverter = new BaseTimeConverter();
+
+        /// <summary>
+        /// Assign your own custom <see cref="IBaseTimeConverter"/> converter
+        /// used to convert <see cref="DateTime"/> to/from CefBaseTime
+        /// </summary>
+        /// <param name="converter">converter</param>
+        /// <remarks>
+        /// Must be called in all processes for custom conversion of DateTime
+        /// used by the Sync Javascript Binding (.Net 4.x only)
+        /// </remarks>
+        public static void UseBaseTimeConveter(IBaseTimeConverter converter)
+        {
+            if (converter == null)
+            {
+                throw new ArgumentNullException(nameof(converter));
+            }
+
+            BaseTimeConverter = converter;
+        }
 
         /// <summary>
         /// Converts from CefBaseTime to DateTime?
@@ -29,7 +48,7 @@ namespace CefSharp.Internals
                 return null;
             }
 
-            return DateTime.FromFileTime(val * 10);
+            return FromBaseTimeToDateTime(val);
         }
 
         /// <summary>
@@ -43,51 +62,19 @@ namespace CefSharp.Internals
         /// <returns>returns a <see cref="DateTime"/> of <see cref="DateTimeKind.Local"/></returns>
         public static DateTime FromBaseTimeToDateTime(long val)
         {
-            return DateTime.FromFileTime(val * 10);
-        }
-
-        public static DateTime ConvertCefTimeToDateTime(double epoch)
-        {
-            if (epoch == 0)
-            {
-                return DateTime.MinValue;
-            }
-            return new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(epoch).ToLocalTime();
+            return BaseTimeConverter.FromBaseTimeToDateTime(val);
         }
 
         /// <summary>
-        /// Converts a cef
+        /// Converts from DateTime to CefBaseTime
         /// </summary>
-        /// <param name="year">year</param>
-        /// <param name="month">month</param>
-        /// <param name="day">day</param>
-        /// <param name="hour">hour</param>
-        /// <param name="minute">minute</param>
-        /// <param name="second">second</param>
-        /// <param name="millisecond">millisecond</param>
-        /// <returns>DateTime</returns>
-        public static DateTime FromCefTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        /// <param name="dateTime">DateTime</param>
+        /// <returns>
+        /// Represents a wall clock time in UTC. Time as microseconds since the Windows epoch (1601).
+        /// </returns>
+        public static long FromDateTimeToBaseTime(DateTime dateTime)
         {
-            try
-            {
-                return new DateTime(year, month, day, hour, minute, second, millisecond);
-            }
-            catch (Exception)
-            {
-                return DateTime.MinValue;
-            }
-        }
-
-        /// <summary>
-        /// Returns epoch (different from 01/01/1970)
-        /// </summary>
-        /// <param name="dateTime">datetime</param>
-        /// <returns>epoch</returns>
-        public static double ToCefTime(DateTime dateTime)
-        {
-            var timeSpan = dateTime - FirstOfTheFirstNineteenSeventy;
-
-            return timeSpan.TotalSeconds;
+            return BaseTimeConverter.FromDateTimeToBaseTime(dateTime);
         }
     }
 }

@@ -34,6 +34,7 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="chromiumembeddedframework.runtime" Version="105.3.39" />
+        <PackageReference Include="chromiumembeddedframework.runtime" Version="106.0.29" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
 
         <PackageReference Include="Moq" Version="4.13.0" />

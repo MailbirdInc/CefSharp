@@ -78,7 +78,10 @@ namespace CefSharp.Test.JavascriptBinding
         [SkipIfRunOnAppVeyorFact]
         public async Task LoadJavaScriptBindingQunitTestsSuccessfulCompletion()
         {
-            using (var browser = new ChromiumWebBrowser(CefExample.BindingTestUrl, automaticallyCreateBrowser: false))
+            var requestContext = new RequestContext();
+            requestContext.RegisterSchemeHandlerFactory("https", CefExample.ExampleDomain, new CefSharpSchemeHandlerFactory());
+
+            using (var browser = new ChromiumWebBrowser(CefExample.BindingTestUrl, requestContext: requestContext, automaticallyCreateBrowser: false))
             {
                 //TODO: Extract this into some sort of helper setup method
                 var bindingOptions = BindingOptions.DefaultBinder;
