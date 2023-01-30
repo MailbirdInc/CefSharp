@@ -140,11 +140,31 @@ namespace CefSharp.Wpf
         /// </summary>
         private static bool DesignMode;
 
+        // https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        private bool resizeHackIgnoreOnPaint;
+        private Structs.Size? resizeHackSize;
+
         /// <summary>
         /// This flag is set when the browser gets focus before the underlying CEF browser
         /// has been initialized.
         /// </summary>
         private bool initialFocus;
+
+        /// <summary>
+        /// When enabled the browser will resize by 1px when it becomes visible to workaround
+        /// the upstream issue
+        /// Hack to work around upstream issue https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// Disabled by default
+        /// </summary>
+        public bool ResizeHackEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Number of milliseconds to wait after resizing the browser when it first
+        /// becomes visible. After the delay the browser will revert to it's
+        /// original size.
+        /// Hack to workaround upstream issue https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// </summary>
+        public int ResizeHackDelayInMs { get; set; } = 50;
 
         /// <summary>
         /// Gets a value indicating whether this instance is disposed.
@@ -319,6 +339,9 @@ namespace CefSharp.Wpf
         /// <value>The redo command.</value>
         public ICommand RedoCommand { get; private set; }
 
+        /// <inheritdoc/>
+        public ICommand ToggleAudioMuteCommand { get; private set; }
+
         /// <summary>
         /// The dpi scale factor, if the browser has already been initialized
         /// you must manually call IBrowserHost.NotifyScreenInfoChanged for the
@@ -423,6 +446,30 @@ namespace CefSharp.Wpf
         private static void CefShutdown()
         {
             Cef.Shutdown();
+        }
+
+        /// <summary>
+        /// To control how <see cref="Cef.Shutdown"/> is called, this method will
+        /// unsubscribe from <see cref="Application.Exit"/>,
+        /// <see cref="Dispatcher.ShutdownStarted"/> and <see cref="Dispatcher.ShutdownFinished"/>.
+        /// </summary>
+        public static void UnregisterShutdownHandler()
+        {
+            //Use Dispatcher.FromThread as it returns null if no dispatcher
+            //is available for this thread.
+            var dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+            if (dispatcher != null)
+            {
+                dispatcher.ShutdownStarted -= DispatcherShutdownStarted;
+                dispatcher.ShutdownFinished -= DispatcherShutdownFinished;
+            }
+
+            var app = Application.Current;
+
+            if (app != null)
+            {
+                app.Exit -= OnApplicationExit;
+            }
         }
 
         /// <summary>
@@ -555,6 +602,7 @@ namespace CefSharp.Wpf
             SelectAllCommand = new DelegateCommand(this.SelectAll);
             UndoCommand = new DelegateCommand(this.Undo);
             RedoCommand = new DelegateCommand(this.Redo);
+            ToggleAudioMuteCommand = new DelegateCommand(this.ToggleAudioMute);
 
             managedCefBrowserAdapter = ManagedCefBrowserAdapter.Create(this, true);
 
@@ -772,7 +820,18 @@ namespace CefSharp.Wpf
         /// <returns>View Rectangle</returns>
         protected virtual Rect GetViewRect()
         {
-            return viewRect;
+            //Take a local copy as the value is set on a different thread,
+            //Its possible the struct is set to null after our initial check.
+            var resizeRect = resizeHackSize;
+
+            if (resizeRect == null)
+            {
+                return viewRect;
+            }
+
+            var size = resizeRect.Value;
+
+            return new Rect(0, 0, size.Width, size.Height);
         }
 
         /// <inheritdoc />
@@ -925,6 +984,11 @@ namespace CefSharp.Wpf
         /// <param name="height">height</param>
         protected virtual void OnPaint(bool isPopup, Rect dirtyRect, IntPtr buffer, int width, int height)
         {
+            if (resizeHackIgnoreOnPaint)
+            {
+                return;
+            }
+
             var paint = Paint;
             if (paint != null)
             {
@@ -1736,6 +1800,21 @@ namespace CefSharp.Wpf
             if (browser != null)
             {
                 browser.GetHost().WasHidden(hidden);
+
+                if (ResizeHackEnabled)
+                {
+                    if (hidden)
+                    {
+                        resizeHackIgnoreOnPaint = true;
+                    }
+                    else
+                    {
+                        _ = CefUiThreadRunAsync(async () =>
+                        {
+                            await ResizeHackRun();
+                        });
+                    }
+                }
             }
         }
 
@@ -1996,7 +2075,7 @@ namespace CefSharp.Wpf
         {
             var point = e.GetPosition(this);
 
-            return new MouseEvent((int)point.X, (int)point.Y, CefEventFlags.None);
+            return new MouseEvent((int)point.X, (int)point.Y, e.GetModifiers());
         }
 
         /// <summary>
@@ -2667,6 +2746,50 @@ namespace CefSharp.Wpf
             ThrowExceptionIfBrowserNotInitialized();
 
             return browser;
+        }
+        
+        private async Task CefUiThreadRunAsync(Action action)
+        {
+            if (!IsDisposed && InternalIsBrowserInitialized())
+            {
+                if (Cef.CurrentlyOnThread(CefThreadIds.TID_UI))
+                {
+                    action();
+                }
+                else
+                {
+                    await Cef.UIThreadTaskFactory.StartNew(delegate
+                    {
+                        action();
+                    });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resize hack for https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// </summary>
+        /// <returns>Task</returns>
+        private async Task ResizeHackRun()
+        {
+            var host = browser?.GetHost();
+            if (host != null && !host.IsDisposed)
+            {
+                resizeHackSize = new Structs.Size(viewRect.Width + 1, viewRect.Height + 1);
+                host.WasResized();
+
+                await Task.Delay(ResizeHackDelayInMs);
+
+                if (!host.IsDisposed)
+                {
+                    resizeHackSize = null;
+                    host.WasResized();
+
+                    resizeHackIgnoreOnPaint = false;
+
+                    host.Invalidate(PaintElementType.View);
+                }
+            }
         }
     }
 }

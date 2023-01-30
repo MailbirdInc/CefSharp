@@ -92,9 +92,9 @@ namespace CefSharp.Test.WinForms
         {
             using (var browser = new ChromiumWebBrowser("www.google.com"))
             {
-                var settings = Core.ObjectFactory.CreateBrowserSettings(true);
-                settings.ImageLoading = CefState.Disabled;
-                browser.RequestContext = RequestContext.Configure().Create();
+                browser.RequestContext = RequestContext.Configure()
+                    .WithSharedSettings(Cef.GetGlobalRequestContext())
+                    .Create();
 
                 browser.Size = new System.Drawing.Size(1024, 768);
                 browser.CreateControl();

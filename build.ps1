@@ -5,9 +5,9 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "vs2019",
     [Parameter(Position = 1)]
-    [string] $Version = "106.0.260",
+    [string] $Version = "109.1.110",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "106.0.260",
+    [string] $AssemblyVersion = "109.1.110",
     [Parameter(Position = 3)]
     [ValidateSet("NetFramework", "NetCore", "NetFramework452", "NetCore31")]
     [string] $TargetFramework = "NetFramework",
@@ -189,7 +189,13 @@ function VSX
         
     if( -not $VSInstallPath -or -not (Test-Path $VSInstallPath))
     {
-        Die "Visual Studio $VS_OFFICIAL_VER is not installed on your development machine, unable to continue, ran command: $VSWherePath -version $versionSearchStr -property installationPath"
+        $VSInstallPath = & $VSwherePath -version $versionSearchStr -property installationPath $VS_PRE -products 'Microsoft.VisualStudio.Product.BuildTools'
+		Write-Diagnostic "BuildTools $($VS_OFFICIAL_VER)InstallPath: $VSInstallPath"
+
+        if( -not $VSInstallPath -or -not (Test-Path $VSInstallPath))
+        {
+            Die "Visual Studio $VS_OFFICIAL_VER is not installed on your development machine, unable to continue, ran command: $VSWherePath -version $versionSearchStr -property installationPath"
+        }
     }
         
     $VisualStudioVersion = "$VS_VER.0"

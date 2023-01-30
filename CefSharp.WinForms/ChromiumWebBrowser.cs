@@ -272,6 +272,15 @@ namespace CefSharp.WinForms
         }
 
         /// <summary>
+        /// To control how <see cref="Cef.Shutdown"/> is called, this method will
+        /// unsubscribe from <see cref="Application.ApplicationExit"/>,
+        /// </summary>
+        public static void UnregisterShutdownHandler()
+        {
+            Application.ApplicationExit -= OnApplicationExit;
+        }
+
+        /// <summary>
         /// <strong>Important!!!</strong>
         /// This constructor exists as the WinForms designer requires a parameterless constructor, if you are instantiating
         /// an instance of this class in code then use the <see cref="ChromiumWebBrowser(string, IRequestContext)"/>
@@ -691,6 +700,42 @@ namespace CefSharp.WinForms
         }
 
         /// <summary>
+        /// Called from <see cref="OnAfterBrowserCreated(IBrowser)"/> when we set focus
+        /// to the CefBrowser instance via <see cref="IBrowserHost.SetFocus(bool)"/>.
+        /// Method is only called if the browser got focus via <see cref="OnGotFocus(EventArgs)"/>
+        /// before the call to <see cref="OnAfterBrowserCreated(IBrowser)"/>.
+        /// Can be overridden to provide custom behaviour.
+        /// </summary>
+        protected virtual void OnSetBrowserInitialFocus()
+        {
+            // MultiThreadedMessageLoop = true
+            // Starting in M104 CEF changes mean that calling CefBrowserHost::SetFocus(true)
+            // directly in OnAfterCreated result in the browser focus being in a strange state when using
+            // MultiThreadedMessageLoop. Dealaying the SetFocus call results in the correct behaviour.
+            // Here we Invoke back into the WinForms UI Thread, check if we have Focus then call
+            // SetFocus (which will call back onto the CEF UI Thread).
+            // It's possible to use Cef.PostAction to invoke directly on the CEF UI Thread,
+            // this also seems to work as expected, using the WinForms UI Thread allows
+            // us to check the Focused property to determine if we actully have focus
+            // https://bitbucket.org/chromiumembedded/cef/issues/3436/chromium-based-browser-loses-focus-when
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() =>
+                {
+                    if (Disposing || IsDisposed || browser?.IsDisposed == true)
+                    {
+                        return;
+                    }
+
+                    if (Focused)
+                    {
+                        browser?.GetHost()?.SetFocus(true);
+                    }
+                }));
+            }
+        }
+
+        /// <summary>
         /// Called after browser created.
         /// </summary>
         /// <param name="browser">The browser.</param>
@@ -728,8 +773,8 @@ namespace CefSharp.WinForms
 
             if(initialFocus)
             {
-                browser.GetHost()?.SetFocus(true);
-            }
+                OnSetBrowserInitialFocus();
+            }            
 
             RaiseIsBrowserInitializedChangedEvent();
         }

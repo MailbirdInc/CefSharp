@@ -101,7 +101,9 @@ namespace CefSharp.Test.Wpf
         {
             using (var browser = new ChromiumWebBrowser("www.google.com"))
             {
-                browser.RequestContext = RequestContext.Configure().Create();
+                browser.RequestContext = RequestContext.Configure()
+                    .WithSharedSettings(Cef.GetGlobalRequestContext())
+                    .Create();
 
                 browser.CreateBrowser(null, new Size(1024, 786));
 

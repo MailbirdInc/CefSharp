@@ -131,6 +131,11 @@ namespace CefSharp.Wpf.Example
                     var cmd = browserViewModel.WebBrowser.ZoomResetCommand;
                     cmd.Execute(null);
                 }
+                else if (param == "ToggleAudioMute")
+                {
+                    var cmd = browserViewModel.WebBrowser.ToggleAudioMuteCommand;
+                    cmd.Execute(null);
+                }
                 else if (param == "ClearHttpAuthCredentials")
                 {
                     var browserHost = browserViewModel.WebBrowser.GetBrowserHost();
@@ -256,10 +261,10 @@ namespace CefSharp.Wpf.Example
                     var success = await browserViewModel.WebBrowser.PrintToPdfAsync(dialog.FileName, new PdfPrintSettings
                     {
                         MarginType = CefPdfPrintMarginType.Custom,
-                        MarginBottom = 10,
-                        MarginTop = 0,
-                        MarginLeft = 20,
-                        MarginRight = 10,
+                        MarginBottom = 0.01,
+                        MarginTop = 0.01,
+                        MarginLeft = 0.01,
+                        MarginRight = 0.01,
                     });
 
                     if (success)
