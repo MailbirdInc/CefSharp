@@ -33,7 +33,6 @@
         <ProjectReference Include="..\CefSharp\CefSharp.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="chromiumembeddedframework.runtime" Version="106.0.29" />
         <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
         <PackageReference Include="chromiumembeddedframework.runtime" Version="109.1.11" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
@@ -63,7 +62,6 @@
         <Page Remove="bin.netcore\**" />
         <Page Remove="obj.netcore\**" />
     </ItemGroup>
-    <Import Project="..\CefSharp.Native.props" />
     <ItemGroup>
       <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
