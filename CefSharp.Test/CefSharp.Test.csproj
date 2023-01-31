@@ -65,5 +65,5 @@
     <ItemGroup>
       <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
-    <Import Project="$(SolutionDir)\CefSharp.Native.props" />
+    <Import Project="..\CefSharp.Native.props" />
 </Project>
