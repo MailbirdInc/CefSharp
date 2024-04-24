@@ -21,11 +21,11 @@ namespace CefSharp
             auto result = gcnew JavascriptCallback();
             result->Id = newId;
             result->BrowserId = _browserId;
-            result->FrameId = context->GetFrame()->GetIdentifier();
+            result->FrameId = StringUtils::ToClr(context->GetFrame()->GetIdentifier());
             return result;
         }
 
-        JavascriptCallbackWrapper^ JavascriptCallbackRegistry::FindWrapper(int64 id)
+        JavascriptCallbackWrapper^ JavascriptCallbackRegistry::FindWrapper(int64_t id)
         {
             JavascriptCallbackWrapper^ callback;
             _callbacks->TryGetValue(id, callback);

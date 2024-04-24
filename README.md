@@ -88,8 +88,20 @@ If you're new to `CefSharp` and are downloading the source to check it out, plea
 
 | Branch                                                                | CEF Version  | VC++ Version | .Net Version | Status |
 |-----------------------------------------------------------------------|------|-------|---------|-----------------|
-| [master](https://github.com/cefsharp/CefSharp/)                       | 5359 | 2019* | 4.5.2** | Development     |
-| [cefsharp/108](https://github.com/cefsharp/CefSharp/tree/cefsharp/108)| 5359 | 2019* | 4.5.2** | **Release**     |
+| [master](https://github.com/cefsharp/CefSharp/)                       | 6099 | 2019* | 4.6.2** | Development     |
+| [cefsharp/120](https://github.com/cefsharp/CefSharp/tree/cefsharp/120)| 6099 | 2019* | 4.6.2** | **Release**     |
+| [cefsharp/119](https://github.com/cefsharp/CefSharp/tree/cefsharp/119)| 6045 | 2019* | 4.6.2** | Unsupported     |
+| [cefsharp/118](https://github.com/cefsharp/CefSharp/tree/cefsharp/118)| 5993 | 2019* | 4.6.2** | Unsupported     |
+| [cefsharp/117](https://github.com/cefsharp/CefSharp/tree/cefsharp/117)| 5938 | 2019* | 4.6.2** | Unsupported     |
+| [cefsharp/116](https://github.com/cefsharp/CefSharp/tree/cefsharp/116)| 5845 | 2019* | 4.6.2** | Unsupported     |
+| [cefsharp/115](https://github.com/cefsharp/CefSharp/tree/cefsharp/115)| 5790 | 2019* | 4.6.2** | Unsupported     |
+| [cefsharp/114](https://github.com/cefsharp/CefSharp/tree/cefsharp/114)| 5735 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/113](https://github.com/cefsharp/CefSharp/tree/cefsharp/113)| 5615 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/112](https://github.com/cefsharp/CefSharp/tree/cefsharp/112)| 5615 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/111](https://github.com/cefsharp/CefSharp/tree/cefsharp/111)| 5563 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/110](https://github.com/cefsharp/CefSharp/tree/cefsharp/110)| 5481 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/109](https://github.com/cefsharp/CefSharp/tree/cefsharp/109)| 5414 | 2019* | 4.5.2** | Unsupported     |
+| [cefsharp/108](https://github.com/cefsharp/CefSharp/tree/cefsharp/108)| 5359 | 2019* | 4.5.2** | Unsupported     |
 | [cefsharp/107](https://github.com/cefsharp/CefSharp/tree/cefsharp/107)| 5304 | 2019* | 4.5.2** | Unsupported     |
 | [cefsharp/106](https://github.com/cefsharp/CefSharp/tree/cefsharp/106)| 5249 | 2019* | 4.5.2** | Unsupported     |
 | [cefsharp/105](https://github.com/cefsharp/CefSharp/tree/cefsharp/105)| 5195 | 2019* | 4.5.2** | Unsupported     |
@@ -152,7 +164,7 @@ As a stay at home dad I ([@amaitland](https://github.com/amaitland)) rely on you
 ## Links
 
 - [CefGlue](https://gitlab.com/xiliumhq/chromiumembedded/cefglue): An alternative .NET CEF wrapper built using P/Invoke.
-- [CEF Bitbucket Project](https://bitbucket.org/chromiumembedded/cef/overview) : The official CEF issue tracker
+- [CEF GitHub Project](https://github.com/chromiumembedded/cef) : The official CEF issue tracker
 - [CEF Forum](http://magpcss.org/ceforum/) : The official CEF Forum
 - [CEF API Docs](http://magpcss.org/ceforum/apidocs3/index-all.html) : Well worth a read if you are implementing a new feature
 - [CefSharp API Doc](http://cefsharp.github.io/api/)

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SignAssembly>true</SignAssembly>
@@ -28,7 +28,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="DevTools\DevToolsClient.Generated.netcore.cs" />
     <Compile Remove="Internals\Json\JsonEnumConverter.cs" />
     <Compile Remove="Internals\Json\JsonEnumConverterFactory.cs" />
     <Compile Remove="Internals\Partial\ChromiumWebBrowser.Partial.cs" />

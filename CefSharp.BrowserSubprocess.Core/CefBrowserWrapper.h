@@ -31,7 +31,7 @@ namespace CefSharp
 
         internal:
             //Frame Identifier is used as Key
-            property ConcurrentDictionary<int64, JavascriptRootObjectWrapper^>^ JavascriptRootObjectWrappers;
+            property ConcurrentDictionary<String^, JavascriptRootObjectWrapper^>^ JavascriptRootObjectWrappers;
 
         public:
             CefBrowserWrapper(CefRefPtr<CefBrowser> cefBrowser)
@@ -40,7 +40,7 @@ namespace CefSharp
                 BrowserId = cefBrowser->GetIdentifier();
                 IsPopup = cefBrowser->IsPopup();
 
-                JavascriptRootObjectWrappers = gcnew ConcurrentDictionary<int64, JavascriptRootObjectWrapper^>();
+                JavascriptRootObjectWrappers = gcnew ConcurrentDictionary<String^, JavascriptRootObjectWrapper^>();
             }
 
             !CefBrowserWrapper()
@@ -54,7 +54,7 @@ namespace CefSharp
 
                 if (JavascriptRootObjectWrappers != nullptr)
                 {
-                    for each (KeyValuePair<int64, JavascriptRootObjectWrapper^> entry in JavascriptRootObjectWrappers)
+                    for each (KeyValuePair<String^, JavascriptRootObjectWrapper^> entry in JavascriptRootObjectWrappers)
                     {
                         delete entry.Value;
                     }

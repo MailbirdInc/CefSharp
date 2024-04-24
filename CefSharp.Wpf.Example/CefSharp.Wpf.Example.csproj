@@ -31,7 +31,8 @@
         <Folder Include="Assets\Images\" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="chromiumembeddedframework.runtime" Version="109.1.11" />
+        <PackageReference Include="chromiumembeddedframework.runtime" Version="123.0.6" />
+        <PackageReference Include="MaterialDesignThemes" Version="4.8.0" />
     </ItemGroup>
     <ItemGroup>
         <Compile Remove="bin.netcore\**" />
@@ -43,5 +44,5 @@
         <Page Remove="bin.netcore\**" />
         <Page Remove="obj.netcore\**" />
     </ItemGroup>
-    <Import Project="..\CefSharp.Native.props" />
+    <Import Project="$(MSBuildThisFileDirectory)..\CefSharp.Native.props" />
 </Project>

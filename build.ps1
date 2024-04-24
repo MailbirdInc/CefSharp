@@ -1,13 +1,13 @@
-﻿#requires -Version 5
+#requires -Version 5
 
 param(
     [ValidateSet("vs2022","vs2019", "nupkg-only", "update-build-version")]
     [Parameter(Position = 0)] 
     [string] $Target = "vs2019",
     [Parameter(Position = 1)]
-    [string] $Version = "109.1.110",
+    [string] $Version = "123.0.60",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "109.1.110",
+    [string] $AssemblyVersion = "123.0.60",
     [Parameter(Position = 3)]
     [ValidateSet("NetFramework", "NetCore", "NetFramework452", "NetCore31")]
     [string] $TargetFramework = "NetFramework",
@@ -183,13 +183,17 @@ function VSX
 
     $versionSearchStr = "[$VS_VER.0," + ($VS_VER+1) + ".0)"
 
+    $ErrorActionPreference="SilentlyContinue"
     $VSInstallPath = & $VSWherePath -version $versionSearchStr -property installationPath $VS_PRE
+    $ErrorActionPreference="Stop"
     
     Write-Diagnostic "$($VS_OFFICIAL_VER)InstallPath: $VSInstallPath"
         
     if( -not $VSInstallPath -or -not (Test-Path $VSInstallPath))
     {
+        $ErrorActionPreference="SilentlyContinue"
         $VSInstallPath = & $VSwherePath -version $versionSearchStr -property installationPath $VS_PRE -products 'Microsoft.VisualStudio.Product.BuildTools'
+        $ErrorActionPreference="Stop"
 		Write-Diagnostic "BuildTools $($VS_OFFICIAL_VER)InstallPath: $VSInstallPath"
 
         if( -not $VSInstallPath -or -not (Test-Path $VSInstallPath))
@@ -265,7 +269,15 @@ function Nupkg
         return
     }
 
-    Write-Diagnostic "Building nuget package"
+    $gitBranch = git rev-parse --abbrev-ref HEAD
+    $gitCommit = git rev-parse HEAD
+
+    if (Test-Path Env:\APPVEYOR_REPO_BRANCH) # https://github.com/appveyor/ci/issues/1606
+    {
+        $gitBranch = $env:APPVEYOR_REPO_BRANCH
+    }
+
+    Write-Diagnostic "Building nuget package for $gitCommit on $gitBranch"
 
     # Build packages
     foreach($file in $Files)
@@ -307,11 +319,11 @@ function Nupkg
             #Only show package analysis for newer packages
             if($IsNetCoreBuild)
             {
-                . $nuget pack $filePath -Version $Version -OutputDirectory $NugetPackagePath -Properties "RedistVersion=$RedistVersion;"
+                . $nuget pack $filePath -Version $Version -OutputDirectory $NugetPackagePath -Properties "RedistVersion=$RedistVersion;Branch=$gitBranch;CommitSha=$gitCommit;"
             }
             else
             {
-                . $nuget pack $filePath -NoPackageAnalysis -Version $Version -OutputDirectory $NugetPackagePath -Properties "RedistVersion=$RedistVersion;"
+                . $nuget pack $filePath -NoPackageAnalysis -Version $Version -OutputDirectory $NugetPackagePath -Properties "RedistVersion=$RedistVersion;Branch=$gitBranch;CommitSha=$gitCommit;"
             }
         }
         finally
@@ -442,11 +454,16 @@ function WriteVersionToNugetTargets
     $Filename = Join-Path $WorkingDir NuGet\PackageReference\CefSharp.Common.NETCore.targets
     
     Write-Diagnostic  "Write Version ($RedistVersion) to $Filename"
+	
+	$RunTimeJsonData = Get-Content -Encoding UTF8 $Filename
+
     $Regex1  = '" Version=".*"';
     $Replace = '" Version="' + $RedistVersion + '"';
-    
-    $RunTimeJsonData = Get-Content -Encoding UTF8 $Filename
     $NewString = $RunTimeJsonData -replace $Regex1, $Replace
+	
+	$Regex1  = '" VersionOverride=".*"';
+    $Replace = '" VersionOverride="' + $RedistVersion + '"';
+    $NewString = $NewString -replace $Regex1, $Replace
     
     $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
     [System.IO.File]::WriteAllLines($Filename, $NewString, $Utf8NoBomEncoding)

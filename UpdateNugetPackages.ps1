@@ -3,7 +3,7 @@
 
 param(
 	[Parameter(Position = 1)]
-	[string] $CefVersion = "109.1.11",
+	[string] $CefVersion = "123.0.6",
 	[Parameter(Position = 2)]
 	[string] $CefSharpVersion = ""
 	)
@@ -45,6 +45,19 @@ function RemoveEnsureNuGetPackageBuildImports
 
 		$xml.Save( $FileName )
 	}
+}
+
+function WriteVersionToPowershellBuildScript
+{
+	param([Parameter(Position = 0, ValueFromPipeline = $true)][string] $VersionNo)
+	
+    $Filename = Join-Path $WorkingDir build.ps1
+    
+    $buildScriptData = Get-Content -Encoding UTF8 $Filename
+    $NewString = $buildScriptData -replace 'Version = "[\d\.]+"', ('Version = "' + $VersionNo + '"')
+    
+    $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+    [System.IO.File]::WriteAllLines($Filename, $NewString, $Utf8NoBomEncoding)
 }
 
 if ($CefSharpVersion -eq "")
@@ -95,5 +108,7 @@ foreach($file in $csprojFiles)
 	
 	$xml.Save( $file )
 }
+
+WriteVersionToPowershellBuildScript $CefSharpVersion
 
 .\build.ps1 -Target update-build-version -Version $CefSharpVersion -AssemblyVersion $CefSharpVersion

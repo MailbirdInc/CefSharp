@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace CefSharp
 {
     /// <summary>
-    /// Interface for common events/methods/properties for <see cref="ChromiumWebBrowser"/> and popup host implementations.
+    /// Interface for common events/methods/properties for ChromiumWebBrowser and popup host implementations.
     /// </summary>
     /// <seealso cref="IDisposable" />
     public interface IChromiumWebBrowserBase : IDisposable
@@ -76,7 +76,7 @@ namespace CefSharp
 
         /// <summary>
         /// Loads the specified <paramref name="url"/> in the Main Frame.
-        /// Same as calling <see cref="Load(string)"/>
+        /// Same as calling <see cref="IWebBrowser.Load(string)"/>
         /// </summary>
         /// <param name="url">The URL to be loaded.</param>
         /// <remarks>

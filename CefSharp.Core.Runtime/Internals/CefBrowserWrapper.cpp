@@ -159,8 +159,15 @@ bool CefBrowserWrapper::HasDocument::get()
 IFrame^ CefBrowserWrapper::MainFrame::get()
 {
     ThrowIfDisposed();
+
     auto frame = _browser->GetMainFrame();
-    return gcnew CefFrameWrapper(frame);
+
+    if (frame.get())
+    {
+        return gcnew CefFrameWrapper(frame);
+    }
+
+    return nullptr;
 }
 
 ///
@@ -170,18 +177,26 @@ IFrame^ CefBrowserWrapper::MainFrame::get()
 IFrame^ CefBrowserWrapper::FocusedFrame::get()
 {
     ThrowIfDisposed();
-    return gcnew CefFrameWrapper(_browser->GetFocusedFrame());
+
+    auto frame = _browser->GetFocusedFrame();
+
+    if (frame.get())
+    {
+        return gcnew CefFrameWrapper(frame);
+    }
+
+    return nullptr;
 }
 
 ///
 // Returns the frame with the specified identifier, or NULL if not found.
 ///
 /*--cef(capi_name=get_frame_byident)--*/
-IFrame^ CefBrowserWrapper::GetFrame(Int64 identifier)
+IFrame^ CefBrowserWrapper::GetFrameByIdentifier(String^ identifier)
 {
     ThrowIfDisposed();
 
-    auto frame = _browser->GetFrame(identifier);
+    auto frame = _browser->GetFrameByIdentifier(StringUtils::ToNative(identifier));
 
     if (frame.get())
     {
@@ -195,11 +210,11 @@ IFrame^ CefBrowserWrapper::GetFrame(Int64 identifier)
 // Returns the frame with the specified name, or NULL if not found.
 ///
 /*--cef(optional_param=name)--*/
-IFrame^ CefBrowserWrapper::GetFrame(String^ name)
+IFrame^ CefBrowserWrapper::GetFrameByName(String^ name)
 {
     ThrowIfDisposed();
 
-    auto frame = _browser->GetFrame(StringUtils::ToNative(name));
+    auto frame = _browser->GetFrameByName(StringUtils::ToNative(name));
 
     if (frame.get())
     {
@@ -223,16 +238,16 @@ int CefBrowserWrapper::GetFrameCount()
 // Returns the identifiers of all existing frames.
 ///
 /*--cef(count_func=identifiers:GetFrameCount)--*/
-List<Int64>^ CefBrowserWrapper::GetFrameIdentifiers()
+List<String^>^ CefBrowserWrapper::GetFrameIdentifiers()
 {
     ThrowIfDisposed();
 
-    std::vector<Int64> identifiers;
+    std::vector<CefString> identifiers;
     _browser->GetFrameIdentifiers(identifiers);
-    List<Int64>^ results = gcnew List<Int64>(static_cast<int>(identifiers.size()));
+    List<String^>^ results = gcnew List<String^>(static_cast<int>(identifiers.size()));
     for (UINT i = 0; i < identifiers.size(); i++)
     {
-        results->Add(identifiers[i]);
+        results->Add(StringUtils::ToClr(identifiers[i]));
     }
     return results;
 }
@@ -249,6 +264,24 @@ List<String^>^ CefBrowserWrapper::GetFrameNames()
 
     _browser->GetFrameNames(names);
     return StringUtils::ToClr(names);
+}
+
+IReadOnlyCollection<IFrame^>^ CefBrowserWrapper::GetAllFrames()
+{
+    std::vector<CefString> identifiers;
+    _browser->GetFrameIdentifiers(identifiers);
+
+    auto results = gcnew List<IFrame^>(static_cast<int>(identifiers.size()));
+    for (UINT i = 0; i < identifiers.size(); i++)
+    {
+        auto frame = _browser->GetFrameByIdentifier(identifiers[i]);
+
+        if (frame.get())
+        {
+            results->Add(gcnew CefFrameWrapper(frame));
+        }
+    }
+    return results;
 }
 
 MCefRefPtr<CefBrowser> CefBrowserWrapper::Browser::get()

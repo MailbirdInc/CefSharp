@@ -13,6 +13,7 @@ namespace CefSharp.BrowserSubprocess
     /// <summary>
     /// SelfHost allows your application executable to be used as the BrowserSubProcess
     /// with minimal effort.
+    /// https://github.com/cefsharp/CefSharp/wiki/SelfHost-BrowserSubProcess
     /// </summary>
     /// <example>
     /// //WinForms Example
@@ -21,8 +22,6 @@ namespace CefSharp.BrowserSubprocess
     ///	  [STAThread]
     ///   public static int Main(string[] args)
     ///   {
-    ///     Cef.EnableHighDPISupport();
-    ///
     ///     var exitCode = CefSharp.BrowserSubprocess.SelfHost.Main(args);
     ///
     ///     if (exitCode >= 0)
@@ -43,7 +42,7 @@ namespace CefSharp.BrowserSubprocess
     ///   }
     /// }
     /// </example>
-public class SelfHost
+    public class SelfHost
     {
         /// <summary>
         /// This function should be called from the application entry point function (typically Program.Main)
@@ -51,8 +50,6 @@ public class SelfHost
         /// This overload is specifically used for .Net Core. For hosting your own BrowserSubProcess
         /// it's preferable to use the Main method provided by this class.
         /// - Pass in command line args
-        /// - To support High DPI Displays you should call  Cef.EnableHighDPISupport before any other processing
-        /// or add the relevant entries to your app.manifest
         /// </summary>
         /// <param name="args">command line args</param>
         /// <returns>
@@ -80,12 +77,13 @@ public class SelfHost
                 browserSubprocessDllPath = Path.Combine(Path.GetDirectoryName(typeof(CefSharp.Core.BrowserSettings).Assembly.Location), "CefSharp.BrowserSubprocess.Core.dll");
             }
             var browserSubprocessDll = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(browserSubprocessDllPath);
+            var browserSubprocessExecutableType = browserSubprocessDll.GetType("CefSharp.BrowserSubprocess.BrowserSubprocessExecutable");
 #else
             var browserSubprocessDllPath = Path.Combine(Path.GetDirectoryName(typeof(CefSharp.Core.BrowserSettings).Assembly.Location), "CefSharp.BrowserSubprocess.Core.dll");
             var browserSubprocessDll = System.Reflection.Assembly.LoadFrom(browserSubprocessDllPath);
-            
+            var browserSubprocessExecutableType = browserSubprocessDll.GetType("CefSharp.BrowserSubprocess.WcfBrowserSubprocessExecutable");
 #endif
-            var browserSubprocessExecutableType = browserSubprocessDll.GetType("CefSharp.BrowserSubprocess.BrowserSubprocessExecutable");
+
             var browserSubprocessExecutable = Activator.CreateInstance(browserSubprocessExecutableType);
 
             var mainMethod = browserSubprocessExecutableType.GetMethod("MainSelfHost", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);

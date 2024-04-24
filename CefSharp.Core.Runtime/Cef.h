@@ -639,16 +639,6 @@ namespace CefSharp
             }
 
             /// <summary>
-            /// Call during process startup to enable High-DPI support on Windows 7 or newer.
-            /// Older versions of Windows should be left DPI-unaware because they do not
-            /// support DirectWrite and GDI fonts are kerned very badly.
-            /// </summary>
-            static void EnableHighDPISupport()
-            {
-                CefEnableHighDPISupport();
-            }
-
-            /// <summary>
             /// Returns true if called on the specified CEF thread.
             /// </summary>
             /// <returns>Returns true if called on the specified thread.</returns>
@@ -684,7 +674,7 @@ namespace CefSharp
             /// <param name="g">Green</param>
             /// <param name="b">Blue</param>
             /// <returns>Returns the color.</returns>
-            static uint32 ColorSetARGB(uint32 a, uint32 r, uint32 g, uint32 b)
+            static uint32_t ColorSetARGB(uint32_t a, uint32_t r, uint32_t g, uint32_t b)
             {
                 return CefColorSetARGB(a, r, g, b);
             }

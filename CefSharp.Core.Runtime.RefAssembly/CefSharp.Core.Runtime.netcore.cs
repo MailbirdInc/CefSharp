@@ -14,7 +14,6 @@ namespace CefSharp.Core
     {
         public BrowserSettings() { }
         public BrowserSettings(bool autoDispose) { }
-        public virtual string AcceptLanguageList { get { throw null; } set { } }
         public virtual bool AutoDispose { get { throw null; } }
         public virtual uint BackgroundColor { get { throw null; } set { } }
         public virtual string CursiveFontFamily { get { throw null; } set { } }
@@ -68,7 +67,6 @@ namespace CefSharp.Core
         public static uint ColorSetARGB(uint a, uint r, uint g, uint b) { throw null; }
         public static bool CurrentlyOnThread(CefSharp.CefThreadIds threadId) { throw null; }
         public static void DoMessageLoopWork() { }
-        public static void EnableHighDPISupport() { }
         public static void EnableWaitForBrowsersToClose() { }
         public static int ExecuteProcess() { throw null; }
         public static CefSharp.ICookieManager GetGlobalCookieManager() { throw null; }
@@ -124,7 +122,6 @@ namespace CefSharp.Core
         public int UncaughtExceptionStackSize { get { throw null; } set { } }
         public string UserAgent { get { throw null; } set { } }
         public string UserAgentProduct { get { throw null; } set { } }
-        public string UserDataPath { get { throw null; } set { } }
         public bool WindowlessRenderingEnabled { get { throw null; } set { } }
         public void Dispose() { }
         protected void Dispose(bool A_0) { }
@@ -137,6 +134,7 @@ namespace CefSharp.Core
         internal DragData() { }
         public virtual string FileName { get { throw null; } set { } }
         public virtual System.Collections.Generic.IList<string> FileNames { get { throw null; } }
+        public virtual System.Collections.Generic.IList<string> FilePaths { get { throw null; } }
         public virtual string FragmentBaseUrl { get { throw null; } set { } }
         public virtual string FragmentHtml { get { throw null; } set { } }
         public virtual string FragmentText { get { throw null; } set { } }
@@ -192,10 +190,7 @@ namespace CefSharp.Core
     {
         internal PopupFeatures() { }
         public virtual int? Height { get { throw null; } }
-        public virtual bool MenuBarVisible { get { throw null; } }
-        public virtual bool ScrollbarsVisible { get { throw null; } }
-        public virtual bool StatusBarVisible { get { throw null; } }
-        public virtual bool ToolBarVisible { get { throw null; } }
+        public virtual bool IsPopup { get { throw null; } }
         public virtual int? Width { get { throw null; } }
         public virtual int? X { get { throw null; } }
         public virtual int? Y { get { throw null; } }

@@ -308,24 +308,10 @@ namespace CefSharp
             /// CefSettings.BackgroundColor value will be used. If the alpha component is fully transparent
             /// for a windowless (WPF/OffScreen) browser then transparent painting will be enabled.
             /// </summary>
-            virtual property uint32 BackgroundColor
+            virtual property uint32_t BackgroundColor
             {
-                uint32 get() { return _browserSettings->background_color; }
-                void set(uint32 value) { _browserSettings->background_color = value; }
-            }
-
-            /// <summary>
-            /// Comma delimited ordered list of language codes without any whitespace that
-            /// will be used in the "Accept-Language" HTTP header. May be overridden on a
-            /// per-browser basis using the CefBrowserSettings.AcceptLanguageList value.
-            /// If both values are empty then "en-US,en" will be used. Can be overridden
-            /// for individual RequestContext instances via the
-            /// RequestContextSettings.AcceptLanguageList value.
-            /// </summary>
-            virtual property String^ AcceptLanguageList
-            {
-                String^ get() { return StringUtils::ToClr(_browserSettings->accept_language_list); }
-                void set(String^ value) { StringUtils::AssignNativeFromClr(_browserSettings->accept_language_list, value); }
+                uint32_t get() { return _browserSettings->background_color; }
+                void set(uint32_t value) { _browserSettings->background_color = value; }
             }
 
             /// <summary>

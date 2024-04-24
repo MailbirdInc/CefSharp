@@ -5,7 +5,8 @@
     <version>$version$</version>
     <authors>The CefSharp Authors</authors>
     <owners>The CefSharp Authors</owners>
-    <projectUrl>https://github.com/cefsharp/cefsharp</projectUrl>
+    <projectUrl>https://github.com/cefsharp/CefSharp</projectUrl>
+    <repository type="git" url="https://github.com/cefsharp/CefSharp.git" branch="$Branch$" commit="$CommitSha$" />
     <license type="file">LICENSE</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The CefSharp Chromium-based browser component (OffScreen control).</description>
@@ -14,7 +15,7 @@
     <dependencies>
       <group targetFramework=".NETCoreApp3.1">
         <dependency id="CefSharp.Common.NETCore" version="[$version$]" include="Runtime,Compile,Build,Native" />
-		<dependency id="System.Drawing.Common" version="4.7.0" />
+		<dependency id="System.Drawing.Common" version="4.7.3" />
       </group>
     </dependencies>
     <releaseNotes>

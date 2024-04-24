@@ -115,10 +115,40 @@ namespace CefSharp
                 }
             }
 
-            virtual void OnScheduleMessagePumpWork(int64 delay_ms)  override
+            virtual void OnScheduleMessagePumpWork(int64_t delay_ms)  override
             {
                 //We rely on previous checks to make sure _app and _app->BrowserProcessHandler aren't null
                 _app->BrowserProcessHandler->OnScheduleMessagePumpWork(delay_ms);
+            }
+
+            virtual bool OnAlreadyRunningAppRelaunch(CefRefPtr<CefCommandLine> commandLine, const CefString& currentDirectory) override
+            {
+                if (Object::ReferenceEquals(_app, nullptr) || Object::ReferenceEquals(_app->BrowserProcessHandler, nullptr))
+                {
+                    return false;
+                }
+
+                auto managedArgs = gcnew Dictionary<String^, String^>();
+
+                CefCommandLine::ArgumentList args;
+                commandLine->GetArguments(args);
+
+                for (auto arg : args)
+                {
+                    managedArgs->Add(StringUtils::ToClr(arg), String::Empty);
+                }
+
+                CefCommandLine::SwitchMap switches;
+                commandLine->GetSwitches(switches);
+
+                for (auto s : switches)
+                {
+                    managedArgs->Add(StringUtils::ToClr(s.first), StringUtils::ToClr(s.second));
+                }
+
+                auto readOnlyArgs = gcnew System::Collections::ObjectModel::ReadOnlyDictionary<String^, String^>(managedArgs);
+
+                return _app->BrowserProcessHandler->OnAlreadyRunningAppRelaunch(readOnlyArgs, StringUtils::ToClr(currentDirectory));
             }
 
             virtual void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> commandLine) override
@@ -135,7 +165,7 @@ namespace CefSharp
                     commandLine->AppendSwitch(StringUtils::ToNative(CefSharpArguments::ExitIfParentProcessClosed));
                 }
 
-                //ChannelId was removed in https://bitbucket.org/chromiumembedded/cef/issues/1912/notreached-in-logchannelidandcookiestores
+                //ChannelId was removed in https://github.com/chromiumembedded/cef/issues/1912
                 //We need to know the process Id to establish WCF communication and for monitoring of parent process exit
                 commandLine->AppendArgument(StringUtils::ToNative(CefSharpArguments::HostProcessIdArgument + "=" + Process::GetCurrentProcess()->Id));
 

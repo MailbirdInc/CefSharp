@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using CefSharp.OffScreen;
+using Xunit;
 
 namespace CefSharp.Test
 {

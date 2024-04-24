@@ -140,7 +140,7 @@ namespace CefSharp.Wpf
         /// </summary>
         private static bool DesignMode;
 
-        // https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        // https://github.com/chromiumembedded/cef/issues/3427
         private bool resizeHackIgnoreOnPaint;
         private Structs.Size? resizeHackSize;
 
@@ -151,9 +151,14 @@ namespace CefSharp.Wpf
         private bool initialFocus;
 
         /// <summary>
+        /// The class that coordinates the positioning of the dropdown if wanted.
+        /// </summary>
+        internal IMousePositionTransform MousePositionTransform { get; set; }
+
+        /// <summary>
         /// When enabled the browser will resize by 1px when it becomes visible to workaround
         /// the upstream issue
-        /// Hack to work around upstream issue https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// Hack to work around upstream issue https://github.com/chromiumembedded/cef/issues/3427
         /// Disabled by default
         /// </summary>
         public bool ResizeHackEnabled { get; set; } = false;
@@ -162,7 +167,7 @@ namespace CefSharp.Wpf
         /// Number of milliseconds to wait after resizing the browser when it first
         /// becomes visible. After the delay the browser will revert to it's
         /// original size.
-        /// Hack to workaround upstream issue https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// Hack to workaround upstream issue https://github.com/chromiumembedded/cef/issues/3427
         /// </summary>
         public int ResizeHackDelayInMs { get; set; } = 50;
 
@@ -613,6 +618,7 @@ namespace CefSharp.Wpf
             PresentationSource.AddSourceChangedHandler(this, PresentationSourceChangedHandler);
 
             MenuHandler = new ContextMenuHandler();
+            MousePositionTransform = new NoOpMousePositionTransform();
 
             UseLayoutRounding = true;
         }
@@ -1037,7 +1043,11 @@ namespace CefSharp.Wpf
         /// <param name="isOpen">if set to <c>true</c> [is open].</param>
         protected virtual void OnPopupShow(bool isOpen)
         {
-            UiThreadRunAsync(() => { popupImage.Visibility = isOpen ? Visibility.Visible : Visibility.Hidden; });
+            UiThreadRunAsync(() =>
+            {
+                popupImage.Visibility = isOpen ? Visibility.Visible : Visibility.Hidden;
+                MousePositionTransform.OnPopupShow(isOpen);
+            });
         }
 
         /// <inheritdoc />
@@ -1580,12 +1590,28 @@ namespace CefSharp.Wpf
         /// The tooltip text property
         /// </summary>
         public static readonly DependencyProperty TooltipTextProperty =
-            DependencyProperty.Register(nameof(TooltipText), typeof(string), typeof(ChromiumWebBrowser), new PropertyMetadata(null, (sender, e) => ((ChromiumWebBrowser)sender).OnTooltipTextChanged()));
+            DependencyProperty.Register(nameof(TooltipText), typeof(string), typeof(ChromiumWebBrowser), new PropertyMetadata(null, OnTooltipTextChanged));
 
         /// <summary>
-        /// Called when [tooltip text changed].
+        /// Handles the <see cref="TooltipTextProperty" /> change.
         /// </summary>
-        private void OnTooltipTextChanged()
+        /// <param name="d">dependency object.</param>
+        /// <param name="e">The <see cref="DependencyPropertyChangedEventArgs"/> instance containing property change data.</param>
+        private static void OnTooltipTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var owner = (ChromiumWebBrowser)d;
+            var oldValue = (string)e.OldValue;
+            var newValue = (string)e.NewValue;
+
+            owner.OnTooltipTextChanged(oldValue, newValue);
+        }
+
+        /// <summary>
+        /// Called when tooltip text was changed changed.
+        /// </summary>
+        /// <param name="oldValue">old value</param>
+        /// <param name="newValue">new value</param>
+        protected virtual void OnTooltipTextChanged(string oldValue, string newValue)
         {
             var timer = tooltipTimer;
             if (timer == null)
@@ -1593,14 +1619,21 @@ namespace CefSharp.Wpf
                 return;
             }
 
-            if (string.IsNullOrEmpty(TooltipText))
+            // There are cases where oldValue is null and newValue is string.Empty
+            // and vice versa, simply ignore when string.IsNullOrEmpty for both.
+            if (string.IsNullOrEmpty(oldValue) && string.IsNullOrEmpty(newValue))
             {
-                UiThreadRunAsync(() => UpdateTooltip(null), DispatcherPriority.Render);
+                return;
+            }
 
+            if (string.IsNullOrEmpty(newValue))
+            {
                 if (timer.IsEnabled)
                 {
                     timer.Stop();
                 }
+
+                OpenOrCloseToolTip(null);
             }
             else if (!timer.IsEnabled)
             {
@@ -1724,10 +1757,10 @@ namespace CefSharp.Wpf
                     {
                         CleanupElement = window;
                     }
-                    else if(CleanupElement is Window parent)
+                    else if (CleanupElement is Window parent)
                     {
-                        //If the CleanupElement is a window then move it to the new Window
-                        if(parent != window)
+                        // If the CleanupElement is a window then move it to the new Window
+                        if (parent != window)
                         {
                             CleanupElement = window;
                         }
@@ -1753,7 +1786,6 @@ namespace CefSharp.Wpf
             }
         }
 
-#if NETCOREAPP || NET462
         /// <inheritdoc/>
         protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
         {
@@ -1761,7 +1793,6 @@ namespace CefSharp.Wpf
 
             base.OnDpiChanged(oldDpi, newDpi);
         }
-#endif
 
         private void OnWindowStateChanged(object sender, EventArgs e)
         {
@@ -2087,8 +2118,10 @@ namespace CefSharp.Wpf
             popupImage.Width = rect.Width;
             popupImage.Height = rect.Height;
 
-            Canvas.SetLeft(popupImage, rect.X);
-            Canvas.SetTop(popupImage, rect.Y);
+            var point = MousePositionTransform.UpdatePopupSizeAndPosition(rect, viewRect);
+
+            Canvas.SetLeft(popupImage, point.X);
+            Canvas.SetTop(popupImage, point.Y);
         }
 
         /// <summary>
@@ -2103,7 +2136,7 @@ namespace CefSharp.Wpf
             {
                 tooltipTimer.Stop();
 
-                UpdateTooltip(TooltipText);
+                OpenOrCloseToolTip(TooltipText);
             }
         }
 
@@ -2122,14 +2155,17 @@ namespace CefSharp.Wpf
         }
 
         /// <summary>
-        /// Updates the tooltip.
+        /// Open or Close the tooltip at the current mouse position.
         /// </summary>
-        /// <param name="text">The text.</param>
-        private void UpdateTooltip(string text)
+        /// <param name="text">ToolTip text, if null or empty tooltip will be closed.</param>
+        protected virtual void OpenOrCloseToolTip(string text)
         {
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
-                toolTip.IsOpen = false;
+                if (toolTip.IsOpen)
+                {
+                    toolTip.IsOpen = false;
+                }
             }
             else
             {
@@ -2252,6 +2288,7 @@ namespace CefSharp.Wpf
                 var point = e.GetPosition(this);
                 var modifiers = e.GetModifiers();
 
+                MousePositionTransform.TransformMousePoint(ref point);
                 browser.GetHost().SendMouseMoveEvent((int)point.X, (int)point.Y, false, modifiers);
             }
 
@@ -2269,16 +2306,15 @@ namespace CefSharp.Wpf
                 var point = e.GetPosition(this);
                 var modifiers = e.GetModifiers();
                 var isShiftKeyDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
-                var pointX = (int)point.X;
-                var pointY = (int)point.Y;
+                MousePositionTransform.TransformMousePoint(ref point);
 
                 browser.SendMouseWheelEvent(
-                    pointX,
-                    pointY,
+                    (int)point.X,
+                    (int)point.Y,
                     deltaX: isShiftKeyDown ? e.Delta : 0,
                     deltaY: !isShiftKeyDown ? e.Delta : 0,
                     modifiers: modifiers);
-
+                
                 e.Handled = true;
             }
 
@@ -2420,11 +2456,12 @@ namespace CefSharp.Wpf
                     //Anything greater than 3 then we send click count of 1
                     var clickCount = e.ClickCount;
 
-                    if(clickCount > 3)
+                    if (clickCount > 3)
                     {
                         clickCount = 1;
                     }
-
+                    
+                    MousePositionTransform.TransformMousePoint(ref point);
                     browser.GetHost().SendMouseClickEvent((int)point.X, (int)point.Y, (MouseButtonType)e.ChangedButton, mouseUp, clickCount, modifiers);
                 }
 
@@ -2534,7 +2571,7 @@ namespace CefSharp.Wpf
         /// <inheritdoc/>
         public void Load(string url)
         {
-            if(IsDisposed)
+            if (IsDisposed)
             {
                 return;
             }
@@ -2612,8 +2649,6 @@ namespace CefSharp.Wpf
         /// correspond to 96, 120, 144, 192 DPI (referred to as 100%, 125%, 150%, 200% in the Windows GUI).
         /// </summary>
         /// <param name="newDpi">new DPI</param>
-        /// <remarks>.Net 4.6.2 adds HwndSource.DpiChanged which could be used to automatically
-        /// handle DPI change, unfortunately we still target .Net 4.5.2</remarks>
         public virtual void NotifyDpiChange(float newDpi)
         {
             //Do nothing
@@ -2654,7 +2689,6 @@ namespace CefSharp.Wpf
             }
         }
 
-#if NETCOREAPP || NET462
         /// <summary>
         /// Waits for the page rendering to be idle for <paramref name="idleTimeInMs"/>.
         /// Rendering is considered to be idle when no <see cref="Paint"/> events have occured
@@ -2690,8 +2724,17 @@ namespace CefSharp.Wpf
             //Every time Paint is called we reset our timer
             handler = (s, args) =>
             {
-                idleTimer.Stop();
-                idleTimer.Start();
+                try
+                {
+                    idleTimer?.Stop();
+                    idleTimer?.Start();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // NOTE: When the Elapsed (or Timeout) and Paint are fire at almost exactly
+                    // the same time, the timer maybe Disposed on a different thread.
+                    // https://github.com/cefsharp/CefSharp/issues/4597
+                }
             };
 
             idleTimer.Start();
@@ -2712,7 +2755,6 @@ namespace CefSharp.Wpf
                 throw;
             }
         }
-#endif
 
         /// <summary>
         /// Legacy keyboard handler uses WindowProc callback interceptor to forward keypress events
@@ -2747,7 +2789,7 @@ namespace CefSharp.Wpf
 
             return browser;
         }
-        
+
         private async Task CefUiThreadRunAsync(Action action)
         {
             if (!IsDisposed && InternalIsBrowserInitialized())
@@ -2767,7 +2809,7 @@ namespace CefSharp.Wpf
         }
 
         /// <summary>
-        /// Resize hack for https://bitbucket.org/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
+        /// Resize hack for https://github.com/chromiumembedded/cef/issues/3427/osr-rendering-bug-when-minimizing-and
         /// </summary>
         /// <returns>Task</returns>
         private async Task ResizeHackRun()

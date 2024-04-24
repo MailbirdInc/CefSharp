@@ -423,16 +423,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Call during process startup to enable High-DPI support on Windows 7 or newer.
-        /// Older versions of Windows should be left DPI-unaware because they do not
-        /// support DirectWrite and GDI fonts are kerned very badly.
-        /// </summary>
-        public static void EnableHighDPISupport()
-        {
-            Core.Cef.EnableHighDPISupport();
-        }
-
-        /// <summary>
         /// Returns true if called on the specified CEF thread.
         /// </summary>
         /// <returns>Returns true if called on the specified thread.</returns>

@@ -88,7 +88,7 @@ namespace CefSharp
             /// **Experimental**
             /// Set to true to enable use of the Chrome runtime in CEF. This feature is
             /// considered experimental and is not recommended for most users at this time.
-            /// See issue https://bitbucket.org/chromiumembedded/cef/issues/2969/support-chrome-windows-with-cef-callbacks for details.
+            /// See issue https://github.com/chromiumembedded/cef/issues/2969
             /// </summary>
             property bool ChromeRuntime
             {
@@ -169,17 +169,6 @@ namespace CefSharp
             {
                 String^ get() { return StringUtils::ToClr(_cefSettings->root_cache_path); }
                 void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->root_cache_path, value); }
-            }
-
-            /// <summary>
-            /// The location where user data such as the Widevine CDM module and spell checking dictionary files will be stored on disk.
-            /// If this value is empty then "Local Settings\Application Data\CEF\User Data" directory under the user profile directory
-            /// will be used. If this value is non-empty then it must be an absolute path.
-            /// </summary>
-            property String^ UserDataPath
-            {
-                String^ get() { return StringUtils::ToClr(_cefSettings->user_data_path); }
-                void set(String^ value) { StringUtils::AssignNativeFromClr(_cefSettings->user_data_path, value); }
             }
 
             /// <summary>
@@ -352,10 +341,10 @@ namespace CefSharp
             /// default value of opaque white be used. If the alpha component is fully transparent for a windowless (WPF/OffScreen) browser
             /// then transparent painting will be enabled.
             /// </summary>
-            property uint32 BackgroundColor
+            property uint32_t BackgroundColor
             {
-                uint32 get() { return _cefSettings->background_color; }
-                void set(uint32 value) { _cefSettings->background_color = value; }
+                uint32_t get() { return _cefSettings->background_color; }
+                void set(uint32_t value) { _cefSettings->background_color = value; }
             }
 
             /// <summary>

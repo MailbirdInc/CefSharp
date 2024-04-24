@@ -13,15 +13,15 @@ Thanks for your interest in contributing to the project! Please follow these sim
 
 ### `CefSharp` vs `Chromium Embedded Framework(CEF)`
 
-`CefSharp` simply takes the building blocks provided by `CEF` and attempts to provide a usable '.Net' implementation.
+`CefSharp` simply takes the building blocks provided by the [Chromium Embedded Framework(CEF)](https://github.com/chromiumembedded/cef) and provides a usable '.Net' implementation.
 The upstream [`CEF` forum](http://magpcss.org/ceforum/) is a valuable resource, if your issues seems fairly low level, then please conduct some research before posting.
 
 It maybe helpful to run the `cefclient` application and compare output with `CefSharp`. The `WinForms` and `WPF` versions use two different rendering modes, `WPF` uses Offscreen Rendering (`OSR`). `OffScreen` also uses `OSR` mode.
 
   - Download one of the following:
-    - For x86 download   https://cef-builds.spotifycdn.com/cef_binary_108.4.13%2Bga98cd4c%2Bchromium-108.0.5359.125_windows32_client.tar.bz2
-    - For x64 download   https://cef-builds.spotifycdn.com/cef_binary_108.4.13%2Bga98cd4c%2Bchromium-108.0.5359.125_windows64_client.tar.bz2
-	- For arm64 download https://cef-builds.spotifycdn.com/cef_binary_108.4.13%2Bga98cd4c%2Bchromium-108.0.5359.125_windowsarm64_client.tar.bz2
+    - For x86 download   https://cef-builds.spotifycdn.com/cef_binary_122.1.12%2Bg6e69d20%2Bchromium-122.0.6261.112_windows32_client.tar.bz2
+    - For x64 download   https://cef-builds.spotifycdn.com/cef_binary_122.1.12%2Bg6e69d20%2Bchromium-122.0.6261.112_windows64_client.tar.bz2
+	- For arm64 download https://cef-builds.spotifycdn.com/cef_binary_122.1.12%2Bg6e69d20%2Bchromium-122.0.6261.112_windowsarm64_client.tar.bz2
 	- Extract and run cefclient.exe
 		- If you are using WPF/OffScreen run
 		```
@@ -32,7 +32,7 @@ It maybe helpful to run the `cefclient` application and compare output with `Cef
 		cefclient.exe --multi-threaded-message-loop --no-sandbox
 		```
 	- **MAKE SURE TO TEST WITH THE COMMAND LINE ARGS LISTED ABOVE**
-    - If you can reproduce the problem with `cefclient` then you'll need to report the bug on https://bitbucket.org/chromiumembedded/cef/overview there is no point opening an issue here. (Make sure you search before opening an issue)
+    - If you can reproduce the problem with `cefclient` then you'll need to report the bug on https://github.com/chromiumembedded/cef there is no point opening an issue here. (Make sure you search before opening an issue)
 
 ### What should I include when creating an `Issue`?
 
@@ -47,7 +47,7 @@ Your bug report should **always follow this template**:
 - **Are you using `WinForms`, `WPF` or `OffScreen`?**
 - **What version of the product are you using? On what operating system? x86 or x64?**
     - What version are you using? Nuget? CI Nuget? build from a branch? If so which branch?
-    - Win7, Win 8, Win10, etc?
+    - Win10/11, etc?
 - **Please provide any additional information below.**
     - A stack trace if available, any Exception information.
     - Does the cef log provide any relevant information? (By default there should be a debug.log file in your bin directory)

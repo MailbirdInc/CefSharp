@@ -25,6 +25,7 @@
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <ProduceReferenceAssemblyInOutDir Condition="'$(VisualStudioVersion)'=='17.0'">true</ProduceReferenceAssemblyInOutDir>
     <EmbedAllSources>True</EmbedAllSources>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
@@ -55,7 +56,11 @@
     
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.WinForms.Designer.SDK" Version="1.6.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; compile</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.WindowsDesktop" />
