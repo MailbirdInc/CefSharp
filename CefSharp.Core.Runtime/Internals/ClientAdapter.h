@@ -135,7 +135,7 @@ namespace CefSharp
             virtual DECL bool OnSelectClientCertificate(CefRefPtr<CefBrowser> browser, bool isProxy, const CefString& host, int port,
                 const CefRequestHandler::X509CertificateList& certificates, CefRefPtr<CefSelectClientCertificateCallback> callback) override;
             virtual DECL void OnRenderViewReady(CefRefPtr<CefBrowser> browser) override;
-            virtual DECL void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status) override;
+            virtual DECL void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status, int errorCode, const CefString& errorString) override;
             virtual DECL void OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser) override;
 
             // CefDisplayHandler
@@ -180,8 +180,13 @@ namespace CefSharp
             virtual DECL void OnDialogClosed(CefRefPtr<CefBrowser> browser) override;
 
             // CefDialogHandler
-            virtual DECL bool OnFileDialog(CefRefPtr<CefBrowser> browser, FileDialogMode mode, const CefString& title,
-                const CefString& default_file_path, const std::vector<CefString>& accept_filters,
+            virtual DECL bool OnFileDialog(CefRefPtr<CefBrowser> browser,
+                FileDialogMode mode,
+                const CefString& title,
+                const CefString& default_file_path,
+                const std::vector<CefString>& accept_filters,
+                const std::vector<CefString>& accept_extensions,
+                const std::vector<CefString>& accept_descriptions,
                 CefRefPtr<CefFileDialogCallback> callback) override;
 
             //CefDragHandler
@@ -190,7 +195,7 @@ namespace CefSharp
 
             //CefDownloadHandler
             virtual DECL bool CanDownload(CefRefPtr<CefBrowser> browser, const CefString & url, const CefString & request_method) override;
-            virtual DECL void OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
+            virtual DECL bool OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                 const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) override;
             virtual DECL void OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
                 CefRefPtr<CefDownloadItemCallback> callback) override;

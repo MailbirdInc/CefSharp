@@ -70,18 +70,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// **Experimental**
-        /// Set to true to enable use of the Chrome runtime in CEF. This feature is
-        /// considered experimental and is not recommended for most users at this time.
-        /// See issue https://github.com/chromiumembedded/cef/issues/2969
-        /// </summary>
-        public bool ChromeRuntime
-        {
-            get { return settings.ChromeRuntime; }
-            set { settings.ChromeRuntime = value; }
-        }
-
-        /// <summary>
         /// Set to true to disable configuration of browser process features using standard CEF and Chromium command-line arguments.
         /// Configuration can still be specified using CEF data structures or by adding to CefCommandLineArgs.
         /// </summary>
@@ -128,12 +116,15 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// The location where data for the global browser cache will be stored on disk. In this value is non-empty then it must be
-        /// an absolute path that is must be either equal to or a child directory of CefSettings.RootCachePath (if RootCachePath is
-        /// empty it will default to this value). If the value is empty then browsers will be created in "incognito mode" where
-        /// in-memory caches are used for storage and no data is persisted to disk. HTML5 databases such as localStorage will only
-        /// persist across sessions if a cache path is specified. Can be overridden for individual RequestContext instances via the
-        /// RequestContextSettings.CachePath value.
+        /// The directory where data for the global browser cache will be stored on disk.
+        /// If this value is non-empty then it must be an absolute path that is either equal to or a child directory
+        /// of <see cref="RootCachePath"/>. If this value is empty then browsers will be created in "incognito mode"
+        /// where in-memory caches are used for storage and no profile-specific data is persisted to disk
+        /// (installation-specific data will still be persisted in <see cref="RootCachePath"/>). HTML5 databases
+        /// such as localStorage will only persist across sessions if a cache path is specified.
+        /// Can be overridden for individual RequestContext instances via the <see cref="RequestContextSettings.CachePath"/> value.
+        /// Any child directory value will be ignored and the "default" profile (also a child directory) will be used
+        /// instead.
         /// </summary>
         public string CachePath
         {
@@ -142,13 +133,22 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// The root directory that all CefSettings.CachePath and RequestContextSettings.CachePath values must have in common. If this
-        /// value is empty and CefSettings.CachePath is non-empty then it will default to the CefSettings.CachePath value.
-        /// If this value is non-empty then it must be an absolute path.  Failure to set this value correctly may result in the sandbox
-        /// blocking read/write access to the CachePath directory. NOTE: CefSharp does not implement the CHROMIUM SANDBOX. A non-empty
-        /// RootCachePath can be used in conjuncation with an empty CefSettings.CachePath in instances where you would like browsers
-        /// attached to the Global RequestContext (the default) created in "incognito mode" and instances created with a custom
-        /// RequestContext using a disk based cache.
+        /// The root directory for installation-specific data and the parent directory for profile-specific data.
+        /// All <see cref="CachePath"> and <see cref="RequestContextSettings.CachePath"/> values must have this parent directory
+        /// in common. If this value is empty and <see cref="CachePath"> is non-empty then it will default to the
+        /// <see cref="CachePath"> value. Any non-empty value must be an absolute path. If both values are empty then
+        /// the default platform-specific directory will be used ("AppData\Local\CEF\User Data" directory under the user
+        /// profile directory on Windows).
+        ///
+        /// **Use of the default directory is not recommended in production applications(see below).**
+        /// 
+        /// Multiple application instances writing to the same RootCachePath directory could result in data corruption.
+        /// A process singleton lock based on the RootCachePath value is therefore used to protect against this.
+        /// This singleton behavior applies to all CEF-based applications using version 120 or newer.
+        /// You should customize RootCachePath for your application and implement <see cref="IBrowserProcessHandler.OnAlreadyRunningAppRelaunch"/>,
+        /// which will then be called on any app relaunch with the same RootCachePath value.
+        ///
+        /// Failure to set the RootCachePath value correctly may result in startup crashes or other unexpected behaviors
         /// </summary>
         public string RootCachePath
         {
@@ -246,17 +246,6 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Set to true to disable loading of pack files for resources and locales. A resource bundle handler must be provided for the
-        /// browser and render processes via CefApp.GetResourceBundleHandler() if loading of pack files is disabled. Also configurable
-        /// using the "disable-pack-loading" command- line switch.
-        /// </summary>
-        public bool PackLoadingDisabled
-        {
-            get { return settings.PackLoadingDisabled; }
-            set { settings.PackLoadingDisabled = value; }
-        }
-
-        /// <summary>
         /// Value that will be inserted as the product portion of the default User-Agent string. If empty the Chromium product version
         /// will be used. If UserAgent is specified this value will be ignored. Also configurable using the "user-agent-product" command-
         /// line switch.
@@ -320,17 +309,6 @@ namespace CefSharp
         {
             get { return settings.PersistSessionCookies; }
             set { settings.PersistSessionCookies = value; }
-        }
-
-        /// <summary>
-        /// To persist user preferences as a JSON file in the cache path directory set this value to true. A CachePath value must also be
-        /// specified to enable this feature. Also configurable using the "persist-user-preferences" command-line switch. Can be
-        /// overridden for individual RequestContext instances via the RequestContextSettings.PersistUserPreferences value.
-        /// </summary>
-        public bool PersistUserPreferences
-        {
-            get { return settings.PersistUserPreferences; }
-            set { settings.PersistUserPreferences = value; }
         }
 
         /// <summary>
@@ -424,13 +402,18 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// Set command line arguments for best OSR (Offscreen and WPF) Rendering performance Software Rendering will be used for WebGL, look at the source
-        /// to determine which flags best suite your requirements. 
+        /// Use software rendering and compositing (disable GPU) for increased FPS
+        /// and decreased CPU usage. This will also disable WebGL so don't use this
+        /// method if you need that capability.
         /// </summary>
+        /// <remarks>
+        /// Sets the --disable-gpu and --disable-gpu-compositing command line args
+        /// </remarks>
         public void SetOffScreenRenderingBestPerformanceArgs()
         {
             // Use software rendering and compositing (disable GPU) for increased FPS
-            // and decreased CPU usage. 
+            // and decreased CPU usage. This will also disable WebGL so remove these
+            // switches if you need that capability.
             // See https://github.com/chromiumembedded/cef/issues/1257 for details.
             if (!settings.CefCommandLineArgs.ContainsKey("disable-gpu"))
             {
@@ -440,18 +423,6 @@ namespace CefSharp
             if (!settings.CefCommandLineArgs.ContainsKey("disable-gpu-compositing"))
             {
                 settings.CefCommandLineArgs.Add("disable-gpu-compositing");
-            }
-
-            // Synchronize the frame rate between all processes. This results in
-            // decreased CPU usage by avoiding the generation of extra frames that
-            // would otherwise be discarded. The frame rate can be set at browser
-            // creation time via IBrowserSettings.WindowlessFrameRate or changed
-            // dynamically using IBrowserHost.SetWindowlessFrameRate. In cefclient
-            // it can be set via the command-line using `--off-screen-frame-rate=XX`.
-            // See https://github.com/chromiumembedded/cef/issues/1368 for details.
-            if (!settings.CefCommandLineArgs.ContainsKey("enable-begin-frame-scheduling"))
-            {
-                settings.CefCommandLineArgs.Add("enable-begin-frame-scheduling");
             }
         }
     }

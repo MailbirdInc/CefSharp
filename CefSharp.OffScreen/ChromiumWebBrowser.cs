@@ -42,6 +42,17 @@ namespace CefSharp.OffScreen
         private bool browserCreated;
 
         /// <summary>
+        /// When an empty address is passed into the constructor, we defer browser creation
+        /// until we have a Url.
+        /// Issue https://github.com/cefsharp/CefSharp/issues/4832
+        /// </summary>
+        private bool createBrowserOnNextLoadUrlCall;
+        /// <summary>
+        /// BrowserSettings used by createBrowserOnNextLoadCall
+        /// </summary>
+        private IBrowserSettings browserSettings;
+
+        /// <summary>
         /// Action which is called immediately before the <see cref="BrowserInitialized"/> event after the
         /// uderlying Chromium Embedded Framework (CEF) browser has been created.
         /// </summary>
@@ -191,7 +202,10 @@ namespace CefSharp.OffScreen
         /// that you set <paramref name="automaticallyCreateBrowser"/> to false, subscribe to the event and then call <see cref="CreateBrowser(IWindowInfo, IBrowserSettings)"/>
         /// to ensure you are subscribe to the event before it's fired (Issue https://github.com/cefsharp/CefSharp/issues/3552).
         /// </summary>
-        /// <param name="address">Initial address (url) to load</param>
+        /// <param name="address">
+        /// Initial address (url) to load. If <see cref="string.Empty"/> then cretion of the browser
+        /// will be deferred until <see cref="LoadUrl(string)"/> is called with a non empty Url.
+        /// </param>
         /// <param name="browserSettings">The browser settings to use. If null, the default settings are used.</param>
         /// <param name="requestContext">See <see cref="RequestContext" /> for more details. Defaults to null</param>
         /// <param name="automaticallyCreateBrowser">automatically create the underlying Browser</param>
@@ -210,15 +224,7 @@ namespace CefSharp.OffScreen
             IRequestContext requestContext = null, bool automaticallyCreateBrowser = true,
             Action<IBrowser> onAfterBrowserCreated = null, bool useLegacyRenderHandler = true)
         {
-            if (!Cef.IsInitialized)
-            {
-                var settings = new CefSettings();
-
-                if (!Cef.Initialize(settings))
-                {
-                    throw new InvalidOperationException(CefInitializeFailedErrorMessage);
-                }
-            }
+            InitializeCefInternal();
 
             RequestContext = requestContext;
 
@@ -230,7 +236,15 @@ namespace CefSharp.OffScreen
 
             if (automaticallyCreateBrowser)
             {
-                CreateBrowser(null, browserSettings);
+                if (string.IsNullOrEmpty(address))
+                {
+                    createBrowserOnNextLoadUrlCall = true;
+                    this.browserSettings = browserSettings;
+                }
+                else
+                {
+                    CreateBrowser(null, browserSettings);
+                }
             }
 
             if (useLegacyRenderHandler)
@@ -277,7 +291,10 @@ namespace CefSharp.OffScreen
                 //Stop rendering immediately so later on when we dispose of the
                 //RenderHandler no further OnPaint calls take place
                 //Check browser not null as it's possible to call Dispose before it's created
-                browser?.GetHost().WasHidden(true);
+                if (browser?.IsDisposed == false)
+                {
+                    browser?.GetHost().WasHidden(true);
+                }
 
                 // Don't reference event listeners any longer:
                 AddressChanged = null;
@@ -676,6 +693,16 @@ namespace CefSharp.OffScreen
                 return;
             }
 
+            if (createBrowserOnNextLoadUrlCall)
+            {
+                createBrowserOnNextLoadUrlCall = false;
+                Address = url;
+                CreateBrowser(null, browserSettings);
+                browserSettings = null;
+
+                return;
+            }
+
             //There's a small window here between CreateBrowser
             //and OnAfterBrowserCreated where the Address prop
             //will be updated, though LoadUrl won't be called.
@@ -737,6 +764,10 @@ namespace CefSharp.OffScreen
                     // NOTE: When the Elapsed (or Timeout) and Paint are fire at almost exactly
                     // the same time, the timer maybe Disposed on a different thread.
                     // https://github.com/cefsharp/CefSharp/issues/4597
+                }
+                catch(Exception ex)
+                {
+                    renderIdleTcs.TrySetException(ex);
                 }
             };
 
@@ -874,16 +905,10 @@ namespace CefSharp.OffScreen
             return RenderHandler?.GetScreenPoint(viewX, viewY, out screenX, out screenY) ?? false;
         }
 
-        /// <summary>
-        /// Called when an element has been rendered to the shared texture handle.
-        /// This method is only called when <see cref="IWindowInfo.SharedTextureEnabled"/> is set to true
-        /// </summary>
-        /// <param name="type">indicates whether the element is the view or the popup widget.</param>
-        /// <param name="dirtyRect">contains the set of rectangles in pixel coordinates that need to be repainted</param>
-        /// <param name="sharedHandle">is the handle for a D3D11 Texture2D that can be accessed via ID3D11Device using the OpenSharedResource method.</param>
-        void IRenderWebBrowser.OnAcceleratedPaint(PaintElementType type, Rect dirtyRect, IntPtr sharedHandle)
+        /// <inheritdoc/>
+        void IRenderWebBrowser.OnAcceleratedPaint(PaintElementType type, Rect dirtyRect, AcceleratedPaintInfo acceleratedPaintInfo)
         {
-            RenderHandler?.OnAcceleratedPaint(type, dirtyRect, sharedHandle);
+            RenderHandler?.OnAcceleratedPaint(type, dirtyRect, acceleratedPaintInfo);
         }
 
         /// <summary>

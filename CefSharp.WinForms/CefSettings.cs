@@ -10,5 +10,19 @@ namespace CefSharp.WinForms
     /// </summary>
     public class CefSettings : CefSettingsBase
     {
+        /// <summary>
+        /// Intialize with default values
+        /// </summary>
+        public CefSettings() : base()
+        {
+            // CEF doesn't call GetAuthCredentials unless
+            // the Chrome login prompt is disabled
+            // https://github.com/chromiumembedded/cef/issues/3603 
+            CefCommandLineArgs.Add("disable-chrome-login-prompt");
+
+            // Disable "Restore pages" popup after incorrect shutdown
+            // https://github.com/chromiumembedded/cef/issues/3767
+            CefCommandLineArgs.Add("hide-crash-restore-bubble");
+        }
     }
 }

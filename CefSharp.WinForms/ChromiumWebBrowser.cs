@@ -333,10 +333,7 @@ namespace CefSharp.WinForms
         {
             if (!initialized)
             {
-                if (!Cef.IsInitialized && !Cef.Initialize(new CefSettings()))
-                {
-                    throw new InvalidOperationException(CefInitializeFailedErrorMessage);
-                }
+                InitializeCefInternal();
 
                 Cef.AddDisposable(this);
 
@@ -657,6 +654,7 @@ namespace CefSharp.WinForms
         protected virtual IWindowInfo CreateBrowserWindowInfo(IntPtr handle)
         {
             var windowInfo = Core.ObjectFactory.CreateWindowInfo();
+            windowInfo.RuntimeStyle = CefSharpSettings.RuntimeStyle ?? CefRuntimeStyle.Alloy;
             windowInfo.SetAsChild(handle);
 
             if (!ActivateBrowserOnCreation)

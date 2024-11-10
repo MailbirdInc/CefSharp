@@ -699,7 +699,7 @@ namespace CefSharp
             }
         }
 
-        void ClientAdapter::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
+        void ClientAdapter::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status, int errorCode, const CefString& errorString)
         {
             auto handler = _browserControl->RequestHandler;
 
@@ -707,7 +707,7 @@ namespace CefSharp
             {
                 auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
 
-                handler->OnRenderProcessTerminated(_browserControl, browserWrapper, (CefTerminationStatus)status);
+                handler->OnRenderProcessTerminated(_browserControl, browserWrapper, (CefTerminationStatus)status, errorCode, StringUtils::ToClr(errorString));
             }
         }
 
@@ -958,8 +958,13 @@ namespace CefSharp
             }
         }
 
-        bool ClientAdapter::OnFileDialog(CefRefPtr<CefBrowser> browser, FileDialogMode mode, const CefString& title,
-            const CefString& default_file_path, const std::vector<CefString>& accept_filters,
+        bool ClientAdapter::OnFileDialog(CefRefPtr<CefBrowser> browser,
+            FileDialogMode mode,
+            const CefString& title,
+            const CefString& default_file_path,
+            const std::vector<CefString>& accept_filters,
+            const std::vector<CefString>& accept_extensions,
+            const std::vector<CefString>& accept_descriptions,
             CefRefPtr<CefFileDialogCallback> callback)
         {
             auto handler = _browserControl->DialogHandler;
@@ -979,6 +984,8 @@ namespace CefSharp
                 StringUtils::ToClr(title),
                 StringUtils::ToClr(default_file_path),
                 StringUtils::ToClr(accept_filters),
+                StringUtils::ToClr(accept_extensions),
+                StringUtils::ToClr(accept_descriptions),
                 callbackWrapper);
         }
 
@@ -1025,21 +1032,23 @@ namespace CefSharp
             return handler->CanDownload(_browserControl, browserWrapper, StringUtils::ToClr(url), StringUtils::ToClr(request_method));
         }
 
-        void ClientAdapter::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
+        bool ClientAdapter::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,
             const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback)
         {
             auto handler = _browserControl->DownloadHandler;
 
-            if (handler != nullptr)
+            if (handler == nullptr)
             {
-                auto downloadItem = TypeConversion::FromNative(download_item);
-                downloadItem->SuggestedFileName = StringUtils::ToClr(suggested_name);
-
-                auto callbackWrapper = gcnew CefBeforeDownloadCallbackWrapper(callback);
-                auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
-
-                handler->OnBeforeDownload(_browserControl, browserWrapper, downloadItem, callbackWrapper);
+                return false;
             }
+
+            auto downloadItem = TypeConversion::FromNative(download_item);
+            downloadItem->SuggestedFileName = StringUtils::ToClr(suggested_name);
+
+            auto callbackWrapper = gcnew CefBeforeDownloadCallbackWrapper(callback);
+            auto browserWrapper = GetBrowserWrapper(browser->GetIdentifier(), browser->IsPopup());
+
+            return handler->OnBeforeDownload(_browserControl, browserWrapper, downloadItem, callbackWrapper);
         };
 
         void ClientAdapter::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item,

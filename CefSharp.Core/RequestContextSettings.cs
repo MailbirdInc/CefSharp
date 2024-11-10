@@ -30,26 +30,15 @@ namespace CefSharp
         }
 
         /// <summary>
-        /// To persist user preferences as a JSON file in the cache path directory set
-        /// this value to true. Can be set globally using the
-        /// CefSettings.PersistUserPreferences value. This value will be ignored if
-        /// CachePath is empty or if it matches the CefSettings.CachePath value.
-        /// </summary>
-        public bool PersistUserPreferences
-        {
-            get { return settings.PersistUserPreferences; }
-            set { settings.PersistUserPreferences = value; }
-        }
-
-        /// <summary>
-        /// The location where cache data for this request context will be stored on
-        /// disk. If this value is non-empty then it must be an absolute path that is
-        /// either equal to or a child directory of CefSettings.RootCachePath.
-        /// If the value is empty then browsers will be created in "incognito mode"
-        /// where in-memory caches are used for storage and no data is persisted to disk.
-        /// HTML5 databases such as localStorage will only persist across sessions if a
-        /// cache path is specified. To share the global browser cache and related
-        /// configuration set this value to match the CefSettings.CachePath value.
+        /// The directory where cache data for this request context will be stored on disk.
+        /// If this value is non - empty then it must be an absolute path that is either equal to or a
+        /// child directory of <see cref="CefSettingsBase.RootCachePath"/>.
+        /// If this value is empty then browsers will be created in "incognito mode" where in - memory
+        /// caches are used for storage and no profile - specific data is persisted to disk
+        /// (installation - specific data will still be persisted in <see cref="CefSettingsBase.RootCachePath"/>).
+        /// HTML5 databases such as localStorage will only persist across sessions if a cache path is specified.
+        /// To share the global browser cache and related configuration set this value to match the
+        /// <see cref="CefSettingsBase.CachePath"/> value.
         /// </summary>
         public String CachePath
         {

@@ -6,6 +6,7 @@
 
 using System;
 using System.Threading.Tasks;
+using CefSharp.Enums;
 using CefSharp.Internals;
 
 namespace CefSharp
@@ -50,8 +51,11 @@ namespace CefSharp
         }
 
         /// <summary>Gets a value that indicates whether CefSharp is initialized.</summary>
-        /// <value>true if CefSharp is initialized; otherwise, false.</value>
-        public static bool IsInitialized
+        /// <value>
+        /// true if CefSharp is initialized; returns false if initialize failed.
+        /// null if initialize not yet called.
+        /// </value>
+        public static bool? IsInitialized
         {
             get { return Core.Cef.IsInitialized; }
         }
@@ -368,6 +372,19 @@ namespace CefSharp
         }
 
         /// <summary>
+        /// This function can optionally be called on the main application thread after
+        /// CefInitialize to retrieve the initialization exit code. When CefInitialize
+        /// returns true the exit code will be 0 (<see cref="ResultCode.NormalExit"/>).
+        /// Otherwise, see <see cref="ResultCode"/> for possible exit code values including
+        /// browser process initialization errors and normal early exit conditions
+        /// (such as <see cref="ResultCode.NormalExitProcessNotified"/>  for process singleton relaunch behavior).
+        /// </summary>
+        public static ResultCode GetExitCode()
+        {
+            return Core.Cef.GetExitCode();
+        }
+
+        /// <summary>
         /// Called prior to calling Cef.Shutdown, this disposes of any remaining
         /// ChromiumWebBrowser instances. In WPF this is used from Dispatcher.ShutdownStarted
         /// to release the unmanaged resources held by the ChromiumWebBrowser instances.
@@ -670,6 +687,29 @@ namespace CefSharp
         public static bool PostAction(CefThreadIds threadId, Action action)
         {
             return Core.Cef.PostAction(threadId, action);
+        }
+
+        /// <summary>
+        /// Indicates if the current OS version matches, or is greater than, the Windows 10 version.
+        /// Applications not manifested for Windows 10 return false, even if the current operating system version is Windows 10.
+        /// To manifest your applications for Windows 10, see https://learn.microsoft.com/en-us/windows/win32/sysinfo/targeting-your-application-at-windows-8-1.
+        /// </summary>
+        /// <returns>True if the current OS version matches, or is greater than, the Windows 10 version; otherwise, false.</returns>
+        public static bool IsWindows10OrGreater()
+        {
+            return Core.Cef.IsWindows10OrGreaterEx();
+        }
+
+        /// <summary>
+        /// If the current OS version matches, or is greater than, the Windows 10 version then this method does nothing.
+        /// Applications not manifested for Windows 10 will throw an <see cref="ApplicationException"/>, even if the current operating system version is Windows 10.
+        /// To manifest your applications for Windows 10, see https://learn.microsoft.com/en-us/windows/win32/sysinfo/targeting-your-application-at-windows-8-1.
+        /// </summary>
+        /// <exception cref="ApplicationException"></exception>
+        public static void AssertIsWindows10OrGreater()
+        {
+            if (!IsWindows10OrGreater())
+                throw new ApplicationException("Current OS version is less than Windows 10. Applications not manifested for Windows 10 throw this exception, even if the current operating system version is Windows 10. To manifest your applications for Windows 10, see https://learn.microsoft.com/en-us/windows/win32/sysinfo/targeting-your-application-at-windows-8-1.");
         }
     }
 }
