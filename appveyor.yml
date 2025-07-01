@@ -1,4 +1,4 @@
-version: 130.1.90-RCI{build}
+version: 137.0.100-RCI{build}
 
 clone_depth: 10
 
@@ -12,7 +12,7 @@ build_script:
 
 test_script:
   # Test our Release x64 build
-  - dotnet test CefSharp.Test\bin\x64\Release\win7-x64\CefSharp.Test.dll --verbosity normal
+  - dotnet test CefSharp.Test\bin\x64\Release\win-x64\CefSharp.Test.dll --verbosity normal
   - dotnet test CefSharp.Test\bin.netcore\x64\Release\netcoreapp3.1\win-x64\CefSharp.Test.dll --verbosity normal
 
 artifacts:

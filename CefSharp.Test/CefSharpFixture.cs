@@ -39,6 +39,13 @@ namespace CefSharp.Test
                     throw new Exception(@"Add <add key=""xunit.appDomain"" value=""denied""/> to your app.config to disable appdomains");
                 }
 
+                var apiHash = Cef.ApiHash(Cef.ApiVersion);
+
+                if (Cef.ApiHashPlatform != apiHash)
+                {
+                    throw new Exception($"CEF API Has does not match expected. {apiHash} {Cef.ApiHashPlatform}");
+                }                    
+
                 Cef.EnableWaitForBrowsersToClose();
                 CefSharp.Internals.BrowserRefCounter.Instance.EnableLogging();
 
@@ -58,6 +65,7 @@ namespace CefSharp.Test
                 settings.RootCachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CefSharp\\Tests");
                 //settings.CefCommandLineArgs.Add("renderer-startup-dialog");
                 //settings.CefCommandLineArgs.Add("disable-site-isolation-trials");
+                settings.SetOffScreenRenderingBestPerformanceArgs();
 
                 var success = Cef.Initialize(settings, performDependencyCheck: false, browserProcessHandler: null);
 

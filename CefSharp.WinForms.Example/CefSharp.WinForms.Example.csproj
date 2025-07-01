@@ -9,7 +9,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <StartupObject>CefSharp.WinForms.Example.Program</StartupObject>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+        <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,7 +32,7 @@
         <ProjectReference Include="..\CefSharp\CefSharp.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="chromiumembeddedframework.runtime" Version="130.1.9" />
+        <PackageReference Include="chromiumembeddedframework.runtime" Version="137.0.10" />
         <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

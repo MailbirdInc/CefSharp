@@ -5,11 +5,11 @@ param(
     [Parameter(Position = 0)] 
     [string] $Target = "vs2019",
     [Parameter(Position = 1)]
-    [string] $Version = "130.1.90",
+    [string] $Version = "137.0.100",
     [Parameter(Position = 2)]
-    [string] $AssemblyVersion = "130.1.90",
+    [string] $AssemblyVersion = "137.0.100",
     [Parameter(Position = 3)]
-    [ValidateSet("NetFramework", "NetCore", "NetFramework452", "NetCore31")]
+    [ValidateSet("NetFramework", "NetCore", "NetFramework462", "NetCore31")]
     [string] $TargetFramework = "NetFramework",
     [Parameter(Position = 4)]
     [string] $BuildArches = "x86 x64 arm64"
@@ -486,7 +486,7 @@ if($IsNetCoreBuild)
 {
     $CefSln = Join-Path $WorkingDir 'CefSharp3.netcore.sln'
     $NugetPackagePath = "nuget\PackageReference";
-    $NupkgFiles = @('CefSharp.Common.NETCore.nuspec', 'CefSharp.WinForms.NETCore.nuspec', 'CefSharp.Wpf.NETCore.nuspec','CefSharp.OffScreen.NETCore.nuspec')
+    $NupkgFiles = @('CefSharp.Common.NETCore.nuspec', 'CefSharp.WinForms.NETCore.nuspec', 'CefSharp.Wpf.NETCore.nuspec','CefSharp.OffScreen.NETCore.nuspec', 'CefSharp.Wpf.HwndHost.nuspec')
     $VCXProjPackageConfigFiles = @('CefSharp.Core.Runtime\packages.CefSharp.Core.Runtime.netcore.config', 'CefSharp.BrowserSubprocess.Core\packages.CefSharp.BrowserSubprocess.Core.netcore.config');
     $SupportedArches.AddRange(@("x86", "x64", "arm64"));
 }

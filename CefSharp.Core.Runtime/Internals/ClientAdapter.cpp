@@ -148,7 +148,7 @@ namespace CefSharp
             }
         }
 
-        bool ClientAdapter::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url,
+        bool ClientAdapter::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int popup_id, const CefString& target_url,
             const CefString& target_frame_name, CefLifeSpanHandler::WindowOpenDisposition target_disposition, bool user_gesture,
             const CefPopupFeatures& popupFeatures, CefWindowInfo& windowInfo,
             CefRefPtr<CefClient>& client, CefBrowserSettings& settings, CefRefPtr<CefDictionaryValue>& extraInfo, bool* no_javascript_access)
@@ -1311,7 +1311,7 @@ namespace CefSharp
                 //Call GetObjects with the list of names provided (will default to all if the list is empty
                 //Previously we only sent a response if there were bound objects, now we always send
                 //a response so the promise is resolved.
-                auto objs = objectRepository->GetObjects(names);
+                auto objs = objectRepository->GetObjects(StringUtils::ToClr(frame->GetURL()), names);
 
                 auto msg = CefProcessMessage::Create(kJavascriptRootObjectResponse);
                 auto responseArgList = msg->GetArgumentList();
