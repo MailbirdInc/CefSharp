@@ -16,6 +16,8 @@ namespace CefSharp.Core
         public BrowserSettings(bool autoDispose) { }
         public virtual bool AutoDispose { get { throw null; } }
         public virtual uint BackgroundColor { get { throw null; } set { } }
+        public virtual CefSharp.CefState ChromeStatusBubble { get { throw null; } set { } }
+        public virtual CefSharp.CefState ChromeZoomBubble { get { throw null; } set { } }
         public virtual string CursiveFontFamily { get { throw null; } set { } }
         public virtual CefSharp.CefState Databases { get { throw null; } set { } }
         public virtual string DefaultEncoding { get { throw null; } set { } }
@@ -50,6 +52,8 @@ namespace CefSharp.Core
     public sealed partial class Cef
     {
         public Cef() { }
+        public static string ApiHashPlatform { get { throw null; } }
+        public static int ApiVersion { get { throw null; } }
         public static string CefCommitHash { get { throw null; } }
         public static string CefSharpVersion { get { throw null; } }
         public static string CefVersion { get { throw null; } }
@@ -62,6 +66,7 @@ namespace CefSharp.Core
         public static System.Threading.Tasks.TaskFactory UIThreadTaskFactory { get { throw null; } set { } }
         public static bool AddCrossOriginWhitelistEntry(string sourceOrigin, string targetProtocol, string targetDomain, bool allowTargetSubdomains) { throw null; }
         public static void AddDisposable(System.IDisposable item) { }
+        public static string ApiHash(int version, int entry) { throw null; }
         public static bool ClearCrossOriginWhitelist() { throw null; }
         public static bool ClearSchemeHandlerFactories() { throw null; }
         public static uint ColorSetARGB(uint a, uint r, uint g, uint b) { throw null; }
@@ -104,6 +109,7 @@ namespace CefSharp.Core
         public string CachePath { get { throw null; } set { } }
         public CefSharp.Internals.CommandLineArgDictionary CefCommandLineArgs { get { throw null; } }
         public System.Collections.Generic.IEnumerable<CefSharp.CefCustomScheme> CefCustomSchemes { get { throw null; } }
+        public string ChromePolicyId { get { throw null; } set { } }
         public bool CommandLineArgsDisabled { get { throw null; } set { } }
         public bool CookieableSchemesExcludeDefaults { get { throw null; } set { } }
         public string CookieableSchemesList { get { throw null; } set { } }

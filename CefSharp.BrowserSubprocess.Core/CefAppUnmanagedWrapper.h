@@ -26,9 +26,9 @@ namespace CefSharp
             gcroot<Action<CefBrowserWrapper^>^> _onBrowserCreated;
             gcroot<Action<CefBrowserWrapper^>^> _onBrowserDestroyed;
             gcroot<ConcurrentDictionary<int, CefBrowserWrapper^>^> _browserWrappers;
+            gcroot<ConcurrentDictionary<String^, JavascriptRootObjectWrapper^>^> _jsRootObjectWrappersByFrameId;
             bool _focusedNodeChangedEnabled;
             bool _legacyBindingEnabled;
-            bool _jsBindingApiEnabled = true;
 
             // The property names used to call bound objects
             CefString _jsBindingPropertyName;
@@ -38,6 +38,7 @@ namespace CefSharp
             gcroot<Dictionary<String^, JavascriptObject^>^> _javascriptObjects;
 
             gcroot<RegisterBoundObjectRegistry^> _registerBoundObjectRegistry;
+            bool IsJavascriptBindingApiAllowed(CefBrowserWrapper^ browserWrapper, CefRefPtr<CefFrame> frame);
 
         public:
             static const CefString kPromiseCreatorScript;
@@ -48,6 +49,7 @@ namespace CefSharp
                 _onBrowserCreated = onBrowserCreated;
                 _onBrowserDestroyed = onBrowserDestroyed;
                 _browserWrappers = gcnew ConcurrentDictionary<int, CefBrowserWrapper^>();
+                _jsRootObjectWrappersByFrameId = gcnew ConcurrentDictionary<String^, JavascriptRootObjectWrapper^>();
                 _focusedNodeChangedEnabled = enableFocusedNodeChanged;
                 _javascriptObjects = gcnew Dictionary<String^, JavascriptObject^>();
                 _registerBoundObjectRegistry = gcnew RegisterBoundObjectRegistry();
@@ -67,12 +69,23 @@ namespace CefSharp
 
                     _browserWrappers = nullptr;
                 }
+
+                if (!Object::ReferenceEquals(_jsRootObjectWrappersByFrameId, nullptr))
+                {
+                    for each (JavascriptRootObjectWrapper^ rootObject in Enumerable::OfType<JavascriptRootObjectWrapper^>(_jsRootObjectWrappersByFrameId))
+                    {
+                        delete rootObject;
+                    }
+
+                    _jsRootObjectWrappersByFrameId = nullptr;
+                }
+
                 delete _onBrowserCreated;
                 delete _onBrowserDestroyed;
             }
 
             CefBrowserWrapper^ FindBrowserWrapper(int browserId);
-            JavascriptRootObjectWrapper^ GetJsRootObjectWrapper(int browserId, CefString& frameId);
+            JavascriptRootObjectWrapper^ GetJsRootObjectWrapper(int browserId, const CefString& frameId);
 
             virtual DECL CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override;
             virtual DECL void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extraInfo) override;
